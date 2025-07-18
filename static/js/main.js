@@ -303,7 +303,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="card-footer">
                         <span class="seller-info">卖家: ${info.卖家昵称 || seller.卖家昵称 || '未知'}</span>
-                        <button class="action-btn view-json-btn">查看详情</button>
+                        <span>
+                            <a href="${info.商品链接 || '#'}" target="_blank" class="action-btn">查看详情</a>
+                        </span>
                     </div>
                 </div>
             </div>

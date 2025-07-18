@@ -23,7 +23,7 @@
   },
   {
     "task_name": "婴儿车",
-    "enabled": true,
+    "enabled": false,
     "keyword": "babycare 婴儿车",
     "max_pages": 3,
     "personal_only": true,
