@@ -276,11 +276,18 @@ async def get_logs():
     """
     log_file_path = os.path.join("logs", "scraper.log")
     if not os.path.exists(log_file_path):
-        return JSONResponse(content={"content": "日志文件不存在或尚未创建。"}, status_code=200)
+        return JSONResponse(content={"content":"日志文件不存在或尚未创建。"},status_code = 200)
     try:
-        async with aiofiles.open(log_file_path, 'r', encoding='utf-8') as f:
-            content = await f.read()
+        # 先尝试用 utf-8 读取
+        try:
+            async with aiofiles.open(log_file_path, 'r', encoding = 'utf-8') as f:
+                content = await f.read()
+        except UnicodeDecodeError:
+            # 如果 utf-8 失败，尝试用 gbk 读取
+            async with aiofiles.open(log_file_path,'r', encoding = 'gbk') as f:
+                content = await f.read()
         return {"content": content}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"读取日志文件时出错: {e}")
 
@@ -464,5 +471,8 @@ async def shutdown_event():
 
 
 if __name__ == "__main__":
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
     print("启动 Web 管理界面，请在浏览器访问 http://127.0.0.1:8000")
+
     uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -31,6 +31,8 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 BASE_URL = os.getenv("OPENAI_BASE_URL")
 MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
 NTFY_TOPIC_URL = os.getenv("NTFY_TOPIC_URL")
+WX_BOT_URL = os.getenv("WX_BOT_URL")
+PCURL_TO_MOBILE = os.getenv("PCURL_TO_MOBILE")
 
 # 检查配置是否齐全
 if not all([BASE_URL, MODEL_NAME]):
@@ -54,6 +56,24 @@ IMAGE_DOWNLOAD_HEADERS = {
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
 }
+
+def convert_goofish_link(url: str) -> str:
+    """
+    将Goofish商品链接转换为只包含商品ID的手机端格式。
+
+    Args:
+        url: 原始的Goofish商品链接。
+
+    Returns:
+        转换后的简洁链接，或在无法解析时返回原始链接。
+    """
+    # 匹配第一个链接中的商品ID模式：item?id= 后面的数字串
+    match_first_link = re.search(r'item\?id=(\d+)', url)
+    if match_first_link:
+        item_id = match_first_link.group(1)
+        return f"https://pages.goofish.com/sharexy?loadingVisible=false&bft=item&bfs=idlepc.item&spm=a21ybx.item.0.0&bfp={{\"id\":{item_id}}}"
+
+    return url
 
 def get_link_unique_key(link: str) -> str:
     """截取链接中第一个"&"之前的内容作为唯一标识依据。"""
@@ -475,12 +495,18 @@ async def send_ntfy_notification(product_data, reason):
     if not NTFY_TOPIC_URL:
         print("警告：未在 .env 文件中配置 NTFY_TOPIC_URL，跳过通知。")
         return
-
+    if not WX_BOT_URL:
+        print("警告：未在 .env 文件中配置 WX_BOT_URL，跳过通知。")
+        return
     title = product_data.get('商品标题', 'N/A')
     price = product_data.get('当前售价', 'N/A')
     link = product_data.get('商品链接', '#')
+    if PCURL_TO_MOBILE:
+        mobile_link = convert_goofish_link(link)
+        message = f"价格: {price}\n原因: {reason}\n手机端链接: {mobile_link}\n电脑端链接: {link}"
+    else:
+        message = f"价格: {price}\n原因: {reason}\n链接: {link}"
 
-    message = f"价格: {price}\n原因: {reason}\n链接: {link}"
     notification_title = f"🚨 新推荐! {title[:30]}..."
 
     try:
@@ -504,6 +530,36 @@ async def send_ntfy_notification(product_data, reason):
         print(f"   -> 发送 ntfy 通知失败: {e}")
         raise
 
+    # 企业微信文本消息的 payload 格式
+    payload = {
+        "msgtype": "text",
+        "text": {
+            "content": f"{notification_title}\n{message}"
+        }
+    }
+
+    try:
+        print(f"   -> 正在发送企业微信通知到: {WX_BOT_URL}")
+        # 设置正确的 Content-Type 为 application/json
+        headers = {
+            "Content-Type": "application/json"
+        }
+        # 使用 json 参数直接发送字典，requests 会自动处理编码和 Content-Type
+        response = requests.post(
+            WX_BOT_URL,
+            json=payload,
+            headers=headers,
+            timeout=10
+        )
+        response.raise_for_status()  # 检查HTTP状态码是否为错误 (如4xx或5xx)
+        result = response.json()
+        print(f"   -> 通知发送成功。响应: {result}")
+    except requests.exceptions.RequestException as e:
+        print(f"   -> 发送企业微信通知失败: {e}")
+        raise  # 重新抛出异常，以便上层可以捕获
+    except Exception as e:
+        print(f"   -> 发送企业微信通知时发生未知错误: {e}")
+        raise
 
 @retry_on_failure(retries=5, delay=10)
 async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):

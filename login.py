@@ -1,13 +1,22 @@
 import asyncio
+import os
+
 from playwright.async_api import async_playwright
 
 # 定义保存登录状态的文件路径
 STATE_FILE = "xianyu_state.json"
+LOGIN_IS_EDGE = os.getenv("LOGIN_IS_EDGE")
+
+
 
 async def main():
     async with async_playwright() as p:
         # 启动一个非无头浏览器，这样你才能看到界面并操作
-        browser = await p.chromium.launch(headless=False)
+        # 'channel="msedge"' 指定使用 Edge 浏览器
+        if LOGIN_IS_EDGE:
+            browser = await p.chromium.launch(headless=False, channel="msedge")
+        else:
+            browser = await p.chromium.launch(headless=False)
         context = await browser.new_context()
         page = await context.new_page()
 

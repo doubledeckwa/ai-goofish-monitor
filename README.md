@@ -51,6 +51,16 @@ pip install -r requirements.txt
 
     # ntfy 通知服务配置
     NTFY_TOPIC_URL="https://ntfy.sh/your-topic-name" # 替换为你的 ntfy 主题 URL
+    
+    # 企业微信机器人通知配置
+    WX_BOT_URL="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxx"
+
+    # 是否使用edge 默认使用chrome
+    LOGIN_IS_EDGE=false
+    
+    # 是否开启电脑链接转换为手机链接
+    PCURL_TO_MOBILE=true
+    
     ```
 
 2.  **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，**必须先运行一次登录脚本**以生成会话状态文件。
