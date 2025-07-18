@@ -61,6 +61,8 @@ pip install -r requirements.txt
     # 是否开启电脑链接转换为手机链接
     PCURL_TO_MOBILE=true
     
+    # 爬虫是否以无头模式运行 (true/false)。遇到滑动验证码时，可设为 false
+    RUN_HEADLESS=true
     ```
 
 2.  **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，**必须先运行一次登录脚本**以生成会话状态文件。

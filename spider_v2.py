@@ -33,6 +33,7 @@ MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
 NTFY_TOPIC_URL = os.getenv("NTFY_TOPIC_URL")
 WX_BOT_URL = os.getenv("WX_BOT_URL")
 PCURL_TO_MOBILE = os.getenv("PCURL_TO_MOBILE")
+RUN_HEADLESS = os.getenv("RUN_HEADLESS", "true").lower() != "false"
 
 # 检查配置是否齐全
 if not all([BASE_URL, MODEL_NAME]):
@@ -647,7 +648,7 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
         print(f"LOG: 输出文件 {output_filename} 不存在，将创建新文件。")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=RUN_HEADLESS)
         context = await browser.new_context(storage_state=STATE_FILE, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
         page = await context.new_page()
 
@@ -666,6 +667,21 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
 
             # 等待页面加载出关键筛选元素，以确认已成功进入搜索结果页
             await page.wait_for_selector('text=新发布', timeout=15000)
+
+            # --- 新增：检查是否存在验证弹窗 ---
+            baxia_dialog = page.locator("div.baxia-dialog-mask")
+            if await baxia_dialog.is_visible(timeout=2000): # 短暂等待检查
+                print("\n==================== CRITICAL BLOCK DETECTED ====================")
+                print("检测到闲鱼反爬虫验证弹窗 (baxia-dialog)，无法继续操作。")
+                print("这通常是因为操作过于频繁或被识别为机器人。")
+                print("建议：")
+                print("1. 停止脚本一段时间再试。")
+                print("2. (推荐) 在 .env 文件中设置 RUN_HEADLESS=false，以非无头模式运行，这有助于绕过检测。")
+                print(f"任务 '{keyword}' 将在此处中止。")
+                print("===================================================================")
+                await browser.close()
+                return processed_item_count
+            # --- 结束新增 ---
 
             try:
                 await page.click("div[class*='closeIconBg']", timeout=3000)
