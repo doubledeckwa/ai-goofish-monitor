@@ -194,6 +194,40 @@ graph TD
 └── *.jsonl             # (自动创建) 存放每个任务的抓取和分析结果
 ```
 
+## 常见问题 (FAQ)
+
+这里整理了一些社区用户在 Issues 中提出的常见问题及其解答。
+
+1.  **Q: 运行 `login.py` 或 `spider_v2.py` 时出现 `'gbk' codec can't encode character` 相关的编码错误？**
+    *   **A:** 这是典型的 Windows 环境下的编码问题。项目代码和日志默认使用 UTF-8 编码。
+    *   **解决方案:** 在运行 Python 脚本前，通过设置环境变量强制使用 UTF-8。在 PowerShell 或 CMD 中执行以下命令，然后再运行脚本：
+        ```bash
+        set PYTHONUTF8=1
+        python spider_v2.py 
+        ```
+        或者使用 `chcp 65001` 命令切换活动代码页为 UTF-8。
+
+2.  **Q: 如何配置使用 Gemini / DeepSeek / Grok 或其他非 OpenAI 的大语言模型？**
+    *   **A:** 本项目理论上支持任何提供 OpenAI 兼容 API 接口的模型。关键在于正确配置 `.env` 文件中的三个变量：
+        *   `OPENAI_API_KEY`: 你的模型服务商提供的 API Key。
+        *   `OPENAI_BASE_URL`: 模型服务商提供的 API-Compatible Endpoint 地址。请务必查阅你所使用模型的官方文档，通常格式为 `https://api.your-provider.com/v1` (注意，末尾不需要 `/chat/completions`)。
+        *   `OPENAI_MODEL_NAME`: 你要使用的具体模型名称，例如 `gemini-1.5-pro-latest` 或 `deepseek-chat`。
+    *   **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
+
+3.  **Q: 运行一段时间后被闲鱼检测到，提示“异常流量”或需要滑动验证？**
+    *   **A:** 这是闲鱼的反爬虫机制。为了降低被检测的风险，可以尝试以下方法：
+        *   **关闭无头模式:** 在 `.env` 文件中设置 `RUN_HEADLESS=false`。这样浏览器会以有界面的方式运行，当出现滑动验证码时，你可以手动完成验证，程序会继续执行。
+        *   **降低监控频率:** 避免同时运行大量监控任务。
+        *   **使用干净的网络环境:** 频繁爬取可能导致 IP 被临时标记。
+
+4.  **Q: 是否支持 Docker 部署？**
+    *   **A:** 目前项目暂未提供官方的 Docker 镜像，但这已在未来的计划中。欢迎有经验的社区用户贡献 `Dockerfile`。
+
+5.  **Q: 能否增加按“发货地”筛选商品的功能？**
+    *   **A:** 这是一个很好的建议。目前闲鱼的搜索接口并未直接提供按地区筛选的参数。
+    *   **临时方案:** 你可以在 AI 分析标准 (Prompt) 中明确要求 AI 分析卖家主页信息中的地理位置，并将其作为推荐与否的判断依据之一。例如，在 `_criteria.txt` 文件中加入：“【加分项】卖家 IP 归属地为 XX 省或 XX 市”。
+    *   我们正在研究在未来的版本中加入此功能的可能性。
+
 ## 致谢
 
 本项目在开发过程中参考了以下优秀项目，特此感谢：
@@ -208,3 +242,35 @@ graph TD
 
 - 请遵守闲鱼的用户协议和robots.txt规则，不要进行过于频繁的请求，以免对服务器造成负担或导致账号被限制。
 - 本项目仅供学习和技术研究使用，请勿用于非法用途。
+
+## 常见问题 (FAQ)
+
+这里整理了一些社区用户在 Issues 中提出的常见问题及其解答。
+
+1.  **Q: 运行 `login.py` 或 `spider_v2.py` 时出现 `'gbk' codec can't encode character` 相关的编码错误？**
+    *   **A:** 这是典型的 Windows 环境下的编码问题。项目代码和日志默认使用 UTF-8 编码。
+    *   **解决方案:** 在运行 Python 脚本前，通过设置环境变量强制使用 UTF-8。在 PowerShell 或 CMD 中执行以下命令，然后再运行脚本：
+        ```bash                                                                                                                                                                                                                                       
+        set PYTHONUTF8=1                                                                                                                                                                                                                              
+        python spider_v2.py                                                                                                                                                                                                                           
+        ```                                                                                                                                                                                                                                           
+        或者使用 `chcp 65001` 命令切换活动代码页为 UTF-8。
+
+2.  **Q: 如何配置使用 Gemini / DeepSeek / Grok 或其他非 OpenAI 的大语言模型？**
+    *   **A:** 本项目理论上支持任何提供 OpenAI 兼容 API 接口的模型。关键在于正确配置 `.env` 文件中的三个变量：
+        *   `OPENAI_API_KEY`: 你的模型服务商提供的 API Key。
+        *   `OPENAI_BASE_URL`: 模型服务商提供的 API-Compatible Endpoint 地址。请务必查阅你所使用模型的官方文档，通常格式为 `https://api.your-provider.com/v1` (注意，末尾不需要 `/chat/completions`)。
+        *   `OPENAI_MODEL_NAME`: 你要使用的具体模型名称，例如 `gemini-1.5-pro-latest` 或 `deepseek-chat`。
+    *   **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
+
+3.  **Q: 运行一段时间后被闲鱼检测到，提示“异常流量”或需要滑动验证？**
+    *   **A:** 这是闲鱼的反爬虫机制。为了降低被检测的风险，可以尝试以下方法：
+        *   **关闭无头模式:** 在 `.env` 文件中设置 `RUN_HEADLESS=false`。这样浏览器会以有界面的方式运行，当出现滑动验证码时，你可以手动完成验证，程序会继续执行。
+        *   **降低监控频率:** 避免同时运行大量监控任务。
+        *   **使用干净的网络环境:** 频繁爬取可能导致 IP 被临时标记。
+
+4.  **Q: 是否支持 Docker 部署？**
+    *   **A:** 目前项目暂不支持Docker部署，由于无法绕过浏览器登录。
+
+
+[![Star History Chart](https://api.star-history.com/svg?repos=dingyufei615/ai-goofish-monitor&type=Date)](https://star-history.com/#dingyufei615/ai-goofish-monitor&Date)
