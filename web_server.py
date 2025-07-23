@@ -270,26 +270,42 @@ async def stop_all_tasks():
 
 
 @app.get("/api/logs")
-async def get_logs():
+async def get_logs(from_pos: int = 0):
     """
-    获取爬虫日志文件的内容。
+    获取爬虫日志文件的内容。支持从指定位置增量读取。
     """
     log_file_path = os.path.join("logs", "scraper.log")
     if not os.path.exists(log_file_path):
-        return JSONResponse(content={"content":"日志文件不存在或尚未创建。"},status_code = 200)
+        return JSONResponse(content={"new_content": "日志文件不存在或尚未创建。", "new_pos": 0})
+
     try:
-        # 先尝试用 utf-8 读取
+        # 使用二进制模式打开以精确获取文件大小和位置
+        async with aiofiles.open(log_file_path, 'rb') as f:
+            await f.seek(0, os.SEEK_END)
+            file_size = await f.tell()
+
+            # 如果客户端的位置已经是最新的，直接返回
+            if from_pos >= file_size:
+                return {"new_content": "", "new_pos": file_size}
+
+            await f.seek(from_pos)
+            new_bytes = await f.read()
+        
+        # 解码获取的字节
         try:
-            async with aiofiles.open(log_file_path, 'r', encoding = 'utf-8') as f:
-                content = await f.read()
+            new_content = new_bytes.decode('utf-8')
         except UnicodeDecodeError:
-            # 如果 utf-8 失败，尝试用 gbk 读取
-            async with aiofiles.open(log_file_path,'r', encoding = 'gbk') as f:
-                content = await f.read()
-        return {"content": content}
+            # 如果 utf-8 失败，尝试用 gbk 读取，并忽略无法解码的字符
+            new_content = new_bytes.decode('gbk', errors='ignore')
+
+        return {"new_content": new_content, "new_pos": file_size}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取日志文件时出错: {e}")
+        # 返回错误信息，同时保持位置不变，以便下次重试
+        return JSONResponse(
+            status_code=500,
+            content={"new_content": f"\n读取日志文件时出错: {e}", "new_pos": from_pos}
+        )
 
 
 @app.delete("/api/tasks/{task_id}", response_model=dict)

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.getElementById('main-content');
     const navLinks = document.querySelectorAll('.nav-link');
+    let logRefreshInterval = null;
 
     // --- Templates for each section ---
     const templates = {
@@ -44,7 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <section id="logs-section" class="content-section">
                 <div class="section-header">
                     <h2>运行日志</h2>
-                    <button id="refresh-logs-btn" class="control-button">🔄 刷新</button>
+                    <div>
+                        <label>
+                            <input type="checkbox" id="auto-refresh-logs-checkbox">
+                            自动刷新
+                        </label>
+                        <button id="refresh-logs-btn" class="control-button">🔄 刷新</button>
+                    </div>
                 </div>
                 <pre id="log-content-container">正在加载日志...</pre>
             </section>`,
@@ -231,16 +238,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function fetchLogs() {
+    async function fetchLogs(fromPos = 0) {
         try {
-            const response = await fetch('/api/logs');
+            const response = await fetch(`/api/logs?from_pos=${fromPos}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return await response.json();
         } catch (error) {
             console.error("无法获取日志:", error);
-            return { content: `加载日志失败: ${error.message}` };
+            return { new_content: `\n加载日志失败: ${error.message}`, new_pos: fromPos };
         }
     }
 
@@ -374,6 +381,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     async function navigateTo(hash) {
+        if (logRefreshInterval) {
+            clearInterval(logRefreshInterval);
+            logRefreshInterval = null;
+        }
         const sectionId = hash.substring(1) || 'tasks';
 
         // Update nav links active state
@@ -400,11 +411,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (sectionId === 'results') {
                 await initializeResultsView();
             } else if (sectionId === 'logs') {
-                const logContainer = document.getElementById('log-content-container');
-                const logs = await fetchLogs();
-                logContainer.textContent = logs.content;
-                // 自动滚动到底部
-                logContainer.scrollTop = logContainer.scrollHeight;
+                await initializeLogsView();
             } else if (sectionId === 'settings') {
                 await initializeSettingsView();
             }
@@ -412,6 +419,59 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             mainContent.innerHTML = '<section class="content-section active"><h2>页面未找到</h2></section>';
         }
+    }
+
+    async function initializeLogsView() {
+        const logContainer = document.getElementById('log-content-container');
+        const refreshBtn = document.getElementById('refresh-logs-btn');
+        const autoRefreshCheckbox = document.getElementById('auto-refresh-logs-checkbox');
+        let currentLogSize = 0;
+
+        const updateLogs = async (isFullRefresh = false) => {
+            // For incremental updates, check if user is at the bottom BEFORE adding new content.
+            const shouldAutoScroll = isFullRefresh || (logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 5);
+
+            if (isFullRefresh) {
+                currentLogSize = 0;
+                logContainer.textContent = '正在加载...';
+            }
+            
+            const logData = await fetchLogs(currentLogSize);
+
+            if (isFullRefresh) {
+                // If the log is empty, show a message instead of a blank screen.
+                logContainer.textContent = logData.new_content || '日志为空，等待内容...';
+            } else if (logData.new_content) {
+                // If it was showing the empty message, replace it.
+                if (logContainer.textContent === '日志为空，等待内容...') {
+                    logContainer.textContent = logData.new_content;
+                } else {
+                    logContainer.textContent += logData.new_content;
+                }
+            }
+            currentLogSize = logData.new_pos;
+            
+            // Scroll to bottom if it was a full refresh or if the user was already at the bottom.
+            if(shouldAutoScroll) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        };
+
+        refreshBtn.addEventListener('click', () => updateLogs(true));
+
+        autoRefreshCheckbox.addEventListener('change', () => {
+            if (autoRefreshCheckbox.checked) {
+                if (logRefreshInterval) clearInterval(logRefreshInterval);
+                logRefreshInterval = setInterval(() => updateLogs(false), 1000);
+            } else {
+                if (logRefreshInterval) {
+                    clearInterval(logRefreshInterval);
+                    logRefreshInterval = null;
+                }
+            }
+        });
+
+        await updateLogs(true);
     }
 
     async function fetchAndRenderResults() {
@@ -627,12 +687,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('tasks-table-container');
             const tasks = await fetchTasks();
             container.innerHTML = renderTasksTable(tasks);
-        } else if (button.matches('#refresh-logs-btn')) {
-            const logContainer = document.getElementById('log-content-container');
-            logContainer.textContent = '正在刷新...';
-            const logs = await fetchLogs();
-            logContainer.textContent = logs.content;
-            logContainer.scrollTop = logContainer.scrollHeight;
         }
     });
 
