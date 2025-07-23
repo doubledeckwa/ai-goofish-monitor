@@ -25,6 +25,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="checkbox" id="recommended-only-checkbox">
                         仅看AI推荐
                     </label>
+                    <select id="sort-by-selector">
+                        <option value="crawl_time">按爬取时间</option>
+                        <option value="publish_time">按发布时间</option>
+                        <option value="price">按价格</option>
+                    </select>
+                    <select id="sort-order-selector">
+                        <option value="desc">降序</option>
+                        <option value="asc">升序</option>
+                    </select>
                     <button id="refresh-results-btn" class="control-button">🔄 刷新</button>
                 </div>
                 <div id="results-grid-container">
@@ -191,12 +200,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    async function fetchResultContent(filename, recommendedOnly) {
+    async function fetchResultContent(filename, recommendedOnly, sortBy, sortOrder) {
         try {
             const params = new URLSearchParams({
                 page: 1,
                 limit: 100, // Fetch a decent number of items
-                recommended_only: recommendedOnly
+                recommended_only: recommendedOnly,
+                sort_by: sortBy,
+                sort_order: sortOrder
             });
             const response = await fetch(`/api/results/${filename}?${params}`);
             if (!response.ok) throw new Error(`无法获取文件 ${filename} 的内容`);
@@ -288,6 +299,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const recommendationText = isRecommended ? '推荐' : (ai.is_recommended === false ? '不推荐' : '待定');
             
             const imageUrl = (info.商品图片列表 && info.商品图片列表[0]) ? info.商品图片列表[0] : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+            const crawlTime = item.爬取时间 ? new Date(item.爬取时间).toLocaleString('sv-SE').slice(0, 16) : '未知';
+            const publishTime = info.发布时间 || '未知';
 
             return `
             <div class="result-card" data-item='${JSON.stringify(item)}'>
@@ -303,6 +316,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="card-footer">
                         <span class="seller-info">卖家: ${info.卖家昵称 || seller.卖家昵称 || '未知'}</span>
+                        <div class="time-info">
+                            <p>发布于: ${publishTime}</p>
+                            <p>抓取于: ${crawlTime}</p>
+                        </div>
                         <span>
                             <a href="${info.商品链接 || '#'}" target="_blank" class="action-btn">查看详情</a>
                         </span>
@@ -400,12 +417,16 @@ document.addEventListener('DOMContentLoaded', function() {
     async function fetchAndRenderResults() {
         const selector = document.getElementById('result-file-selector');
         const checkbox = document.getElementById('recommended-only-checkbox');
+        const sortBySelector = document.getElementById('sort-by-selector');
+        const sortOrderSelector = document.getElementById('sort-order-selector');
         const container = document.getElementById('results-grid-container');
 
-        if (!selector || !checkbox || !container) return;
+        if (!selector || !checkbox || !container || !sortBySelector || !sortOrderSelector) return;
 
         const selectedFile = selector.value;
         const recommendedOnly = checkbox.checked;
+        const sortBy = sortBySelector.value;
+        const sortOrder = sortOrderSelector.value;
 
         if (!selectedFile) {
             container.innerHTML = '<p>请先选择一个结果文件。</p>';
@@ -413,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         container.innerHTML = '<p>正在加载结果...</p>';
-        const data = await fetchResultContent(selectedFile, recommendedOnly);
+        const data = await fetchResultContent(selectedFile, recommendedOnly, sortBy, sortOrder);
         container.innerHTML = renderResultsGrid(data);
     }
 
@@ -421,12 +442,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const selector = document.getElementById('result-file-selector');
         const checkbox = document.getElementById('recommended-only-checkbox');
         const refreshBtn = document.getElementById('refresh-results-btn');
+        const sortBySelector = document.getElementById('sort-by-selector');
+        const sortOrderSelector = document.getElementById('sort-order-selector');
 
         const fileData = await fetchResultFiles();
         if (fileData && fileData.files && fileData.files.length > 0) {
             selector.innerHTML = fileData.files.map(f => `<option value="${f}">${f}</option>`).join('');
             selector.addEventListener('change', fetchAndRenderResults);
             checkbox.addEventListener('change', fetchAndRenderResults);
+            sortBySelector.addEventListener('change', fetchAndRenderResults);
+            sortOrderSelector.addEventListener('change', fetchAndRenderResults);
             refreshBtn.addEventListener('click', fetchAndRenderResults);
             // Initial load
             await fetchAndRenderResults();
