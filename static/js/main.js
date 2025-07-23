@@ -493,6 +493,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        localStorage.setItem('lastSelectedResultFile', selectedFile);
+
         container.innerHTML = '<p>正在加载结果...</p>';
         const data = await fetchResultContent(selectedFile, recommendedOnly, sortBy, sortOrder);
         container.innerHTML = renderResultsGrid(data);
@@ -507,7 +509,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const fileData = await fetchResultFiles();
         if (fileData && fileData.files && fileData.files.length > 0) {
-            selector.innerHTML = fileData.files.map(f => `<option value="${f}">${f}</option>`).join('');
+            const lastSelectedFile = localStorage.getItem('lastSelectedResultFile');
+            // Determine the file to select. Default to the first file if nothing is stored or if the stored file no longer exists.
+            let fileToSelect = fileData.files[0];
+            if (lastSelectedFile && fileData.files.includes(lastSelectedFile)) {
+                fileToSelect = lastSelectedFile;
+            }
+
+            selector.innerHTML = fileData.files.map(f =>
+                `<option value="${f}" ${f === fileToSelect ? 'selected' : ''}>${f}</option>`
+            ).join('');
+
+            // The selector's value is now correctly set by the 'selected' attribute.
+            // We can proceed with adding listeners and the initial fetch.
+
             selector.addEventListener('change', fetchAndRenderResults);
             checkbox.addEventListener('change', fetchAndRenderResults);
             sortBySelector.addEventListener('change', fetchAndRenderResults);
