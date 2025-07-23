@@ -471,8 +471,17 @@ async def shutdown_event():
 
 
 if __name__ == "__main__":
+    # 从 .env 文件加载环境变量
+    config = dotenv_values(".env")
+    
+    # 获取服务器端口，如果未设置则默认为 8000
+    server_port = int(config.get("SERVER_PORT", 8000))
+
+    # 设置默认编码
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    print("启动 Web 管理界面，请在浏览器访问 http://127.0.0.1:8000")
+    
+    print(f"启动 Web 管理界面，请在浏览器访问 http://127.0.0.1:{server_port}")
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    # 启动 Uvicorn 服务器
+    uvicorn.run(app, host="127.0.0.1", port=server_port)

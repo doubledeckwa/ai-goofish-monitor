@@ -69,6 +69,9 @@ pip install -r requirements.txt
     
     # 爬虫是否以无头模式运行 (true/false)。遇到滑动验证码时，可设为 false 
     RUN_HEADLESS=true
+
+    # 服务端口自定义 不配置默认8000
+    SERVER_PORT=8000
     ```
 
 2.  **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，**必须先运行一次登录脚本**以生成会话状态文件。
