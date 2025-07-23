@@ -327,9 +327,9 @@ async def list_result_files():
 
 
 @app.get("/api/results/{filename}")
-async def get_result_file_content(filename: str, page: int = 1, limit: int = 20, recommended_only: bool = False):
+async def get_result_file_content(filename: str, page: int = 1, limit: int = 20, recommended_only: bool = False, sort_by: str = "crawl_time", sort_order: str = "desc"):
     """
-    读取指定的 .jsonl 文件内容，支持分页和筛选。
+    读取指定的 .jsonl 文件内容，支持分页、筛选和排序。
     """
     if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="无效的文件名。")
@@ -353,7 +353,23 @@ async def get_result_file_content(filename: str, page: int = 1, limit: int = 20,
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"读取结果文件时出错: {e}")
 
-    results.reverse()
+    # --- Sorting logic ---
+    def get_sort_key(item):
+        info = item.get("商品信息", {})
+        if sort_by == "publish_time":
+            # Handles "未知时间" by placing it at the end/start depending on order
+            return info.get("发布时间", "0000-00-00 00:00")
+        elif sort_by == "price":
+            price_str = str(info.get("当前售价", "0")).replace("¥", "").replace(",", "").strip()
+            try:
+                return float(price_str)
+            except (ValueError, TypeError):
+                return 0.0 # Default for unparsable prices
+        else: # default to crawl_time
+            return item.get("爬取时间", "")
+
+    is_reverse = (sort_order == "desc")
+    results.sort(key=get_sort_key, reverse=is_reverse)
     
     total_items = len(results)
     start = (page - 1) * limit
