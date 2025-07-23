@@ -483,5 +483,9 @@ if __name__ == "__main__":
     
     print(f"启动 Web 管理界面，请在浏览器访问 http://127.0.0.1:{server_port}")
 
+<<<<<<< HEAD
     # 启动 Uvicorn 服务器
     uvicorn.run(app, host="127.0.0.1", port=server_port)
+=======
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+>>>>>>> 4b2e576f23ffe36e51ae456090b4c675f41c733a
