@@ -71,6 +71,9 @@ pip install -r requirements.txt
     # 本地运行时遇到滑动验证码时，可设为 false 手动进行滑动验证，如果出现风控建议停止运行。
     # 使用docker部署不支持GUI，设置 RUN_HEADLESS=true 否则无法运行。
     RUN_HEADLESS=true
+
+    # 服务端口自定义 不配置默认8000
+    SERVER_PORT=8000
     ```
 
 2.  **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，**必须先运行一次登录脚本**以生成会话状态文件。
