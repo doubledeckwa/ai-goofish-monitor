@@ -67,7 +67,9 @@ pip install -r requirements.txt
     # 是否开启电脑链接转换为手机链接
     PCURL_TO_MOBILE=true
     
-    # 爬虫是否以无头模式运行 (true/false)。遇到滑动验证码时，可设为 false 
+    # 爬虫是否以无头模式运行 (true/false)。
+    # 本地运行时遇到滑动验证码时，可设为 false 手动进行滑动验证，如果出现风控建议停止运行。
+    # 使用docker部署不支持GUI，设置 RUN_HEADLESS=true 否则无法运行。
     RUN_HEADLESS=true
     ```
 
@@ -92,6 +94,58 @@ python web_server.py
 2.  在弹出的窗口中，用自然语言描述你的购买需求（例如：“我想买一台95新以上的索尼A7M4相机，预算1万3以内，快门数低于5000”），并填写任务名称、关键词等信息。
 3.  点击创建，AI将自动为你生成一套复杂的分析标准。
 4.  回到主界面，点击右上角的 **“🚀 全部启动”**，开始享受自动化监控！
+
+## 🐳 Docker 部署 (推荐)
+
+使用 Docker 可以将应用及其所有依赖项打包到一个标准化的单元中，实现快速、可靠和一致的部署。
+
+### 第 1 步: 环境准备 (与本地部署类似)
+
+1.  **安装 Docker**: 请确保你的系统已安装 [Docker Engine](https://docs.docker.com/engine/install/)。
+
+2.  **克隆项目并配置**:
+    ```bash
+    git clone https://github.com/dingyufei615/ai-goofish-monitor
+    cd ai-goofish-monitor
+    ```
+
+3.  **创建 `.env` 文件**: 参考 **[快速开始](#-快速开始-web-ui-推荐)** 部分的说明，在项目根目录创建并填写 `.env` 文件。
+
+4.  **获取登录状态 (关键步骤!)**: **在宿主机上 (非 Docker 内)** 运行登录脚本，以生成 `xianyu_state.json` 文件。这是因为登录过程需要人工交互（扫码），无法在 Docker 构建过程中完成。
+    ```bash
+    # 确保你本地有 python 环境并已安装依赖
+    pip install -r requirements.txt
+    python login.py 
+    ```
+    扫码登录成功后，项目根目录会生成 `xianyu_state.json` 文件。
+
+### 第 2 步: 运行 Docker 容器
+
+现在你无需构建镜像，可以直接使用我们发布在 Docker Hub 上的官方镜像来运行。
+
+执行以下命令来启动容器。该命令会将当前项目目录挂载到容器内部，使用容器内的Python环境和依赖来运行你本地的代码，从而实现配置文件、日志和结果的持久化。
+
+```bash
+docker run -d --name ai-goofish-monitor-app -p 8000:8000 \
+  --env-file .env \
+  -v "$(pwd):/app" \
+  dingyufei/goofish-monitor:latest
+```
+- `-d`: 后台运行容器。
+- `--name`: 为容器指定一个名称。
+- `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
+- `--env-file .env`: 加载 `.env` 文件中的环境变量。
+- `-v "$(pwd):/app"`: **(重要)** 将宿主机当前目录挂载到容器的 `/app` 目录。这使得你在宿主机上对代码、`config.json` 或 `prompts` 的修改能立即在容器内生效，并且容器生成的日志和结果文件 (`.jsonl`) 也会被保存在宿主机上。
+
+如果容器内遇到网络问题，请自行排查或使用代理。
+
+### 第 3 步: 访问和管理
+
+- **访问 Web UI**: 在浏览器中打开 `http://127.0.0.1:8000`。
+- **查看实时日志**: `docker logs -f ai-goofish-monitor-app`
+- **停止容器**: `docker stop ai-goofish-monitor-app`
+- **启动已停止的容器**: `docker start ai-goofish-monitor-app`
+- **移除容器**: `docker rm ai-goofish-monitor-app`
 
 ## 📸 Web UI 功能一览
 
@@ -220,8 +274,6 @@ graph TD
         *   **降低监控频率:** 避免同时运行大量监控任务。
         *   **使用干净的网络环境:** 频繁爬取可能导致 IP 被临时标记。
 
-4.  **Q: 是否支持 Docker 部署？**
-    *   **A:** 目前项目暂不支持Docker部署，由于无法绕过浏览器登录。
 
 ## 致谢
 
