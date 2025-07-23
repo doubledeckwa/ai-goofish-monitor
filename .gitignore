@@ -5,5 +5,5 @@ xianyu_state.json
 .aider*
 images/
 logs/
-*.jsonl
+jsonl/
 __pycache__/

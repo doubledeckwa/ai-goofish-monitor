@@ -324,6 +324,16 @@ async def delete_task(task_id: int):
 
     deleted_task = tasks.pop(task_id)
 
+    # 尝试删除关联的 criteria 文件
+    criteria_file = deleted_task.get("ai_prompt_criteria_file")
+    if criteria_file and os.path.exists(criteria_file):
+        try:
+            os.remove(criteria_file)
+            print(f"成功删除关联的分析标准文件: {criteria_file}")
+        except OSError as e:
+            # 如果文件删除失败，只记录日志，不中断主流程
+            print(f"警告: 删除文件 {criteria_file} 失败: {e}")
+
     try:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
@@ -338,7 +348,10 @@ async def list_result_files():
     """
     列出所有生成的 .jsonl 结果文件。
     """
-    files = glob.glob("*.jsonl")
+    jsonl_dir = "jsonl"
+    if not os.path.isdir(jsonl_dir):
+        return {"files": []}
+    files = [f for f in os.listdir(jsonl_dir) if f.endswith(".jsonl")]
     return {"files": files}
 
 
@@ -350,12 +363,13 @@ async def get_result_file_content(filename: str, page: int = 1, limit: int = 20,
     if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="无效的文件名。")
     
-    if not os.path.exists(filename):
+    filepath = os.path.join("jsonl", filename)
+    if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="结果文件未找到。")
 
     results = []
     try:
-        async with aiofiles.open(filename, 'r', encoding='utf-8') as f:
+        async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
             async for line in f:
                 try:
                     record = json.loads(line)

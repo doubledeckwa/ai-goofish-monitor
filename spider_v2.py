@@ -88,7 +88,9 @@ async def random_sleep(min_seconds: float, max_seconds: float):
 
 async def save_to_jsonl(data_record: dict, keyword: str):
     """将一个包含商品和卖家信息的完整记录追加保存到 .jsonl 文件。"""
-    filename = f"{keyword.replace(' ', '_')}_full_data.jsonl"
+    output_dir = "jsonl"
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, f"{keyword.replace(' ', '_')}_full_data.jsonl")
     try:
         with open(filename, "a", encoding="utf-8") as f:
             f.write(json.dumps(data_record, ensure_ascii=False) + "\n")
@@ -628,7 +630,7 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
     stop_scraping = False
 
     processed_links = set()
-    output_filename = f"{keyword.replace(' ', '_')}_full_data.jsonl"
+    output_filename = os.path.join("jsonl", f"{keyword.replace(' ', '_')}_full_data.jsonl")
     if os.path.exists(output_filename):
         print(f"LOG: 发现已存在文件 {output_filename}，正在加载历史记录以去重...")
         try:
