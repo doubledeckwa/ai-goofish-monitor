@@ -1,7 +1,7 @@
 [
   {
     "task_name": "MacBook Air M1",
-    "enabled": false,
+    "enabled": true,
     "keyword": "macbook air m1",
     "max_pages": 3,
     "personal_only": true,
