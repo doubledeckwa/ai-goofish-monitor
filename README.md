@@ -121,31 +121,23 @@ python web_server.py
 
 ### 第 2 步: 运行 Docker 容器
 
-现在你无需构建镜像，可以直接使用我们发布在 Docker Hub 上的官方镜像来运行。
+项目已包含 `docker-compose.yaml` 文件，我们推荐使用 `docker-compose` 来管理容器，这比使用 `docker run` 更方便。
 
-执行以下命令来启动容器。该命令会将当前项目目录挂载到容器内部，使用容器内的Python环境和依赖来运行你本地的代码，从而实现配置文件、日志和结果的持久化。
-
+在项目根目录下，运行以下命令来启动容器：
 ```bash
-docker run -d --name ai-goofish-monitor-app -p 8000:8000 \
-  --env-file .env \
-  -v "$(pwd):/app" \
-  dingyufei/goofish-monitor:latest
+docker-compose up -d
 ```
-- `-d`: 后台运行容器。
-- `--name`: 为容器指定一个名称。
-- `-p 8000:8000`: 将容器的8000端口映射到宿主机的8000端口。
-- `--env-file .env`: 加载 `.env` 文件中的环境变量。
-- `-v "$(pwd):/app"`: **(重要)** 将宿主机当前目录挂载到容器的 `/app` 目录。这使得你在宿主机上对代码、`config.json` 或 `prompts` 的修改能立即在容器内生效，并且容器生成的日志和结果文件 (`.jsonl`) 也会被保存在宿主机上。
+这会以后台模式启动服务。`docker-compose` 会自动读取 `.env` 文件和 `docker-compose.yaml` 的配置，并根据其内容来创建和启动容器。
 
 如果容器内遇到网络问题，请自行排查或使用代理。
 
 ### 第 3 步: 访问和管理
 
 - **访问 Web UI**: 在浏览器中打开 `http://127.0.0.1:8000`。
-- **查看实时日志**: `docker logs -f ai-goofish-monitor-app`
-- **停止容器**: `docker stop ai-goofish-monitor-app`
-- **启动已停止的容器**: `docker start ai-goofish-monitor-app`
-- **移除容器**: `docker rm ai-goofish-monitor-app`
+- **查看实时日志**: `docker-compose logs -f`
+- **停止容器**: `docker-compose stop`
+- **启动已停止的容器**: `docker-compose start`
+- **停止并移除容器**: `docker-compose down`
 
 ## 📸 Web UI 功能一览
 
