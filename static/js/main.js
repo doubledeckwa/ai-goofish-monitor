@@ -322,14 +322,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p title="${ai.reason || ''}">原因: ${ai.reason || '无分析'}</p>
                     </div>
                     <div class="card-footer">
-                        <span class="seller-info">卖家: ${info.卖家昵称 || seller.卖家昵称 || '未知'}</span>
-                        <div class="time-info">
-                            <p>发布于: ${publishTime}</p>
-                            <p>抓取于: ${crawlTime}</p>
+                        <div>
+                            <span class="seller-info" title="${info.卖家昵称 || seller.卖家昵称 || '未知'}">卖家: ${info.卖家昵称 || seller.卖家昵称 || '未知'}</span>
+                            <div class="time-info">
+                                <p>发布于: ${publishTime}</p>
+                                <p>抓取于: ${crawlTime}</p>
+                            </div>
                         </div>
-                        <span>
-                            <a href="${info.商品链接 || '#'}" target="_blank" class="action-btn">查看详情</a>
-                        </span>
+                        <a href="${info.商品链接 || '#'}" target="_blank" class="action-btn">查看详情</a>
                     </div>
                 </div>
             </div>
