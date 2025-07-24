@@ -655,11 +655,8 @@ input:checked + .slider:before {
 .card-ai-summary p {
     margin: 0;
     color: #555;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: pre-wrap; /* Allow wrapping */
+    word-break: break-word; /* Break long words */
 }
 
 .card-footer {
@@ -671,6 +668,31 @@ input:checked + .slider:before {
     border-top: 1px solid #f0f0f0;
     padding-top: 12px;
     margin-top: auto;
+    gap: 16px;
+}
+
+.card-footer > div {
+    min-width: 0; /* Allow flex item to shrink and text to ellipsis */
+}
+
+.seller-info {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.time-info p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.card-footer .action-btn {
+    flex-shrink: 0; /* Prevent the button from shrinking */
 }
 
 .view-json-btn {
