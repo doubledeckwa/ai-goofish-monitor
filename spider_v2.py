@@ -607,13 +607,25 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
     ai_response_content = response.choices[0].message.content
 
     try:
-        return json.loads(ai_response_content)
+        # --- 新增代码：从Markdown代码块中提取JSON ---
+        # 寻找第一个 "{" 和最后一个 "}" 来捕获完整的JSON对象
+        json_start_index = ai_response_content.find('{')
+        json_end_index = ai_response_content.rfind('}')
+        
+        if json_start_index != -1 and json_end_index != -1:
+            clean_json_str = ai_response_content[json_start_index : json_end_index + 1]
+            return json.loads(clean_json_str)
+        else:
+            # 如果找不到 "{" 或 "}"，说明响应格式异常，按原样尝试解析并准备捕获错误
+            print("---!!! AI RESPONSE WARNING: Could not find JSON object markers '{' and '}' in the response. !!!---")
+            return json.loads(ai_response_content) # 这行很可能会再次触发错误，但保留逻辑完整性
+        # --- 修改结束 ---
+        
     except json.JSONDecodeError as e:
         print("---!!! AI RESPONSE PARSING FAILED (JSONDecodeError) !!!---")
         print(f"原始返回值 (Raw response from AI):\n---\n{ai_response_content}\n---")
         raise e
-
-
+        
 async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
     """
     【核心执行器】
