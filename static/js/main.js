@@ -45,12 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <section id="logs-section" class="content-section">
                 <div class="section-header">
                     <h2>运行日志</h2>
-                    <div>
+                    <div class="log-controls">
                         <label>
                             <input type="checkbox" id="auto-refresh-logs-checkbox">
                             自动刷新
                         </label>
                         <button id="refresh-logs-btn" class="control-button">🔄 刷新</button>
+                        <button id="clear-logs-btn" class="control-button danger-btn">🗑️ 清空日志</button>
                     </div>
                 </div>
                 <pre id="log-content-container">正在加载日志...</pre>
@@ -234,6 +235,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return await response.json();
         } catch (error) {
             console.error("无法获取系统状态:", error);
+            return null;
+        }
+    }
+
+    async function clearLogs() {
+        try {
+            const response = await fetch('/api/logs', { method: 'DELETE' });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || '清空日志失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error("无法清空日志:", error);
+            alert(`错误: ${error.message}`);
             return null;
         }
     }
@@ -425,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const logContainer = document.getElementById('log-content-container');
         const refreshBtn = document.getElementById('refresh-logs-btn');
         const autoRefreshCheckbox = document.getElementById('auto-refresh-logs-checkbox');
+        const clearBtn = document.getElementById('clear-logs-btn');
         let currentLogSize = 0;
 
         const updateLogs = async (isFullRefresh = false) => {
@@ -458,6 +475,16 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         refreshBtn.addEventListener('click', () => updateLogs(true));
+
+        clearBtn.addEventListener('click', async () => {
+            if (confirm('你确定要清空所有运行日志吗？此操作不可恢复。')) {
+                const result = await clearLogs();
+                if (result) {
+                    await updateLogs(true);
+                    alert('日志已清空。');
+                }
+            }
+        });
 
         autoRefreshCheckbox.addEventListener('change', () => {
             if (autoRefreshCheckbox.checked) {

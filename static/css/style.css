@@ -89,6 +89,18 @@ header h1 {
     border-color: #ff7875;
 }
 
+.control-button.danger-btn {
+    background-color: #ff4d4f;
+    color: white;
+    border-color: #ff4d4f;
+}
+
+.control-button.danger-btn:hover {
+    background-color: #ff7875;
+    border-color: #ff7875;
+    color: white;
+}
+
 
 .container {
     display: flex;
@@ -485,6 +497,12 @@ input:checked + .slider:before {
     border-top: 1px solid #f0f0f0;
     display: flex;
     justify-content: flex-end;
+    gap: 12px;
+}
+
+.log-controls {
+    display: flex;
+    align-items: center;
     gap: 12px;
 }
 

@@ -308,6 +308,24 @@ async def get_logs(from_pos: int = 0):
         )
 
 
+@app.delete("/api/logs", response_model=dict)
+async def clear_logs():
+    """
+    清空日志文件内容。
+    """
+    log_file_path = os.path.join("logs", "scraper.log")
+    if not os.path.exists(log_file_path):
+        return {"message": "日志文件不存在，无需清空。"}
+
+    try:
+        # 使用 'w' 模式打开文件会清空内容
+        async with aiofiles.open(log_file_path, 'w') as f:
+            await f.write("")
+        return {"message": "日志已成功清空。"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"清空日志文件时出错: {e}")
+
+
 @app.delete("/api/tasks/{task_id}", response_model=dict)
 async def delete_task(task_id: int):
     """
