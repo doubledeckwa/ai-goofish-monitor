@@ -75,6 +75,9 @@ pip install -r requirements.txt
     # 使用docker部署不支持GUI，设置 RUN_HEADLESS=true 否则无法运行。
     RUN_HEADLESS=true
 
+    # (可选) AI调试模式 (true/false)。开启后会在控制台打印更多用于排查AI分析问题的日志。
+    AI_DEBUG_MODE=false
+
     # 服务端口自定义 不配置默认8000
     SERVER_PORT=8000
     ```
