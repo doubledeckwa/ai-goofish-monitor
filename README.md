@@ -15,13 +15,13 @@
 
 ## 页面截图
 后台任务管理
-![img.png](img.png)
+![img.png](static/img.png)
 
 后台监控截图
-![img_1.png](img_1.png)
+![img_1.png](static/img_1.png)
 
 ntf通知截图
-![img_2.png](img_2.png)
+![img_2.png](static/img_2.png)
 
 ## 🚀 快速开始 (Web UI 推荐)
 

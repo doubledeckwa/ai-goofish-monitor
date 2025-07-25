@@ -4,6 +4,7 @@ import aiofiles
 import os
 import glob
 import asyncio
+import signal
 import sys
 from dotenv import dotenv_values
 from fastapi import FastAPI, Request, HTTPException
@@ -239,10 +240,13 @@ async def start_all_tasks():
 
         # 使用与Web服务器相同的Python解释器来运行爬虫脚本
         # 增加 -u 参数来禁用I/O缓冲，确保日志实时写入文件
+        # 在非 Windows 系统上，使用 setsid 创建新进程组，以便能终止整个进程树
+        preexec_fn = os.setsid if sys.platform != "win32" else None
         scraper_process = await asyncio.create_subprocess_exec(
             sys.executable, "-u", "spider_v2.py",
             stdout=log_file_handle,
-            stderr=log_file_handle
+            stderr=log_file_handle,
+            preexec_fn=preexec_fn
         )
         print(f"启动爬虫进程，PID: {scraper_process.pid}，日志输出到 {log_file_path}")
         return {"message": "所有启用任务已启动。"}
@@ -260,11 +264,22 @@ async def stop_all_tasks():
         raise HTTPException(status_code=400, detail="没有正在运行的监控任务。")
 
     try:
-        scraper_process.terminate()
+        if sys.platform != "win32":
+            # 在非 Windows 系统上，终止整个进程组
+            os.killpg(os.getpgid(scraper_process.pid), signal.SIGTERM)
+        else:
+            # 在 Windows 上，只能终止主进程
+            scraper_process.terminate()
+
         await scraper_process.wait()
         print(f"爬虫进程 {scraper_process.pid} 已终止。")
         scraper_process = None
         return {"message": "所有任务已停止。"}
+    except ProcessLookupError:
+        # 进程可能已经不存在
+        print(f"试图终止的爬虫进程已不存在。")
+        scraper_process = None
+        return {"message": "任务已经停止。"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"停止爬虫进程时出错: {e}")
 
@@ -524,14 +539,27 @@ async def shutdown_event():
     global scraper_process
     if scraper_process and scraper_process.returncode is None:
         print(f"Web服务器正在关闭，正在终止爬虫进程 {scraper_process.pid}...")
-        scraper_process.terminate()
         try:
+            if sys.platform != "win32":
+                os.killpg(os.getpgid(scraper_process.pid), signal.SIGTERM)
+            else:
+                scraper_process.terminate()
+
             await asyncio.wait_for(scraper_process.wait(), timeout=5.0)
             print("爬虫进程已成功终止。")
+        except ProcessLookupError:
+            print("试图终止的爬虫进程已不存在。")
         except asyncio.TimeoutError:
             print("等待爬虫进程终止超时，将强制终止。")
-            scraper_process.kill()
-        scraper_process = None
+            try:
+                if sys.platform != "win32":
+                    os.killpg(os.getpgid(scraper_process.pid), signal.SIGKILL)
+                else:
+                    scraper_process.kill()
+            except ProcessLookupError:
+                print("试图强制终止的爬虫进程已不存在。")
+        finally:
+            scraper_process = None
 
 
 if __name__ == "__main__":
