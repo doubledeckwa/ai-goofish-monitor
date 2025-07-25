@@ -10,7 +10,7 @@ import re
 import time
 from datetime import datetime
 from functools import wraps
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 
 import requests
 from dotenv import load_dotenv
@@ -83,7 +83,8 @@ def convert_goofish_link(url: str) -> str:
     match_first_link = re.search(r'item\?id=(\d+)', url)
     if match_first_link:
         item_id = match_first_link.group(1)
-        return f"https://pages.goofish.com/sharexy?loadingVisible=false&bft=item&bfs=idlepc.item&spm=a21ybx.item.0.0&bfp={{\"id\":{item_id}}}"
+        bfp_json = f'{{"id":{item_id}}}'
+        return f"https://pages.goofish.com/sharexy?loadingVisible=false&bft=item&bfs=idlepc.item&spm=a21ybx.item.0.0&bfp={quote(bfp_json)}"
 
     return url
 
