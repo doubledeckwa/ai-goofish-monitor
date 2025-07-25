@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 # 定义保存登录状态的文件路径
 STATE_FILE = "xianyu_state.json"
 LOGIN_IS_EDGE = os.getenv("LOGIN_IS_EDGE", "false").lower() == "true"
-
+RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true"
 
 
 async def main():
@@ -16,8 +16,11 @@ async def main():
         if LOGIN_IS_EDGE:
             browser = await p.chromium.launch(headless=False, channel="msedge")
         else:
-            # 明确指定使用系统安装的 Chrome 浏览器，以绕过 Playwright 的内部浏览器管理问题
-            browser = await p.chromium.launch(headless=False, channel="chrome")
+            # Docker环境内，使用Playwright自带的chromium；本地环境，使用系统安装的Chrome
+            if RUNNING_IN_DOCKER:
+                browser = await p.chromium.launch(headless=False)
+            else:
+                browser = await p.chromium.launch(headless=False, channel="chrome")
         context = await browser.new_context()
         page = await context.new_page()
 

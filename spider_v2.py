@@ -36,6 +36,7 @@ WX_BOT_URL = os.getenv("WX_BOT_URL")
 PCURL_TO_MOBILE = os.getenv("PCURL_TO_MOBILE")
 RUN_HEADLESS = os.getenv("RUN_HEADLESS", "true").lower() != "false"
 LOGIN_IS_EDGE = os.getenv("LOGIN_IS_EDGE", "false").lower() == "true"
+RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true"
 AI_DEBUG_MODE = os.getenv("AI_DEBUG_MODE", "false").lower() == "true"
 
 # 检查配置是否齐全
@@ -693,8 +694,11 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
         if LOGIN_IS_EDGE:
             browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="msedge")
         else:
-            # 明确指定使用系统安装的 Chrome 浏览器，以绕过 Playwright 的内部浏览器管理问题
-            browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome")
+            # Docker环境内，使用Playwright自带的chromium；本地环境，使用系统安装的Chrome
+            if RUNNING_IN_DOCKER:
+                browser = await p.chromium.launch(headless=RUN_HEADLESS)
+            else:
+                browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome")
         context = await browser.new_context(storage_state=STATE_FILE, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
         page = await context.new_page()
 
