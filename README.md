@@ -55,6 +55,9 @@ pip install -r requirements.txt
     # 使用的模型名称，模型需要支持图片上传。
     OPENAI_MODEL_NAME="gemini-2.5-pro"
 
+    # (可选) 为AI请求配置HTTP/S代理。支持 http 和 socks5。例如: http://127.0.0.1:7890 或 socks5://127.0.0.1:1080
+    PROXY_URL=""
+
     # ntfy 通知服务配置
     NTFY_TOPIC_URL="https://ntfy.sh/your-topic-name" # 替换为你的 ntfy 主题 URL
     
@@ -269,7 +272,7 @@ graph TD
 3.  **Q: 创建任务或运行时，提示 "Request timed out" 或 "Connection error" 是什么原因？**
     *   **A:** 这通常是网络问题，表示你的服务器无法连接到 `.env` 文件中配置的 `OPENAI_BASE_URL`。请检查：
         *   你的服务器网络是否通畅。
-        *   如果你在中国大陆，访问国外 AI 服务（如 OpenAI, Gemini）可能需要设置网络代理。
+        *   如果你在中国大陆，访问国外 AI 服务（如 OpenAI, Gemini）可能需要设置网络代理。现在你可以直接在 `.env` 文件中配置 `PROXY_URL` 变量来解决此问题。
         *   确认 `OPENAI_BASE_URL` 地址填写正确，并且该服务正在正常运行。
 
 4.  **Q: 我选择的 AI 模型不支持图片分析怎么办？**

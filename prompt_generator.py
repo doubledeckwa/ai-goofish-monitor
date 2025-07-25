@@ -12,6 +12,7 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 BASE_URL = os.getenv("OPENAI_BASE_URL")
 MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
+PROXY_URL = os.getenv("PROXY_URL")
 
 # Check configuration
 if not all([BASE_URL, MODEL_NAME]):
@@ -19,6 +20,13 @@ if not all([BASE_URL, MODEL_NAME]):
 
 # Initialize OpenAI client
 try:
+    if PROXY_URL:
+        print(f"正在为AI请求使用HTTP/S代理: {PROXY_URL}")
+        # httpx 会自动从环境变量中读取代理设置
+        os.environ['HTTP_PROXY'] = PROXY_URL
+        os.environ['HTTPS_PROXY'] = PROXY_URL
+
+    # openai 客户端内部的 httpx 会自动从环境变量中获取代理配置
     client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
 except Exception as e:
     raise RuntimeError(f"初始化 OpenAI 客户端时出错: {e}") from e
