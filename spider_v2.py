@@ -35,6 +35,8 @@ NTFY_TOPIC_URL = os.getenv("NTFY_TOPIC_URL")
 WX_BOT_URL = os.getenv("WX_BOT_URL")
 PCURL_TO_MOBILE = os.getenv("PCURL_TO_MOBILE")
 RUN_HEADLESS = os.getenv("RUN_HEADLESS", "true").lower() != "false"
+LOGIN_IS_EDGE = os.getenv("LOGIN_IS_EDGE", "false").lower() == "true"
+AI_DEBUG_MODE = os.getenv("AI_DEBUG_MODE", "false").lower() == "true"
 
 # 检查配置是否齐全
 if not all([BASE_URL, MODEL_NAME]):
@@ -317,6 +319,10 @@ async def _parse_search_results_json(json_data: dict, source: str) -> list:
         items = await safe_get(json_data, "data", "resultList", default=[])
         if not items:
             print(f"LOG: ({source}) API响应中未找到商品列表 (resultList)。")
+            if AI_DEBUG_MODE:
+                print(f"--- [SEARCH DEBUG] RAW JSON RESPONSE from {source} ---")
+                print(json.dumps(json_data, ensure_ascii=False, indent=2))
+                print("----------------------------------------------------")
             return []
 
         for item in items:
@@ -588,6 +594,14 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
     product_details_json = json.dumps(product_data, ensure_ascii=False, indent=2)
     system_prompt = prompt_text
 
+    if AI_DEBUG_MODE:
+        print("\n--- [AI DEBUG] ---")
+        print("--- PROMPT TEXT (first 500 chars) ---")
+        print(prompt_text[:500] + "...")
+        print("--- PRODUCT DATA (JSON) ---")
+        print(product_details_json)
+        print("-------------------\n")
+
     combined_text_prompt = f"""{system_prompt}
 
 请基于你的专业知识和我的要求，分析以下完整的商品JSON数据：
@@ -613,6 +627,12 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
     )
 
     ai_response_content = response.choices[0].message.content
+
+    if AI_DEBUG_MODE:
+        print("\n--- [AI DEBUG] ---")
+        print("--- RAW AI RESPONSE ---")
+        print(ai_response_content)
+        print("---------------------\n")
 
     try:
         # --- 新增代码：从Markdown代码块中提取JSON ---
@@ -670,7 +690,11 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
         print(f"LOG: 输出文件 {output_filename} 不存在，将创建新文件。")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=RUN_HEADLESS)
+        if LOGIN_IS_EDGE:
+            browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="msedge")
+        else:
+            # 明确指定使用系统安装的 Chrome 浏览器，以绕过 Playwright 的内部浏览器管理问题
+            browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome")
         context = await browser.new_context(storage_state=STATE_FILE, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
         page = await context.new_page()
 
@@ -906,6 +930,15 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                             # --- 修改: 增加单个商品处理后的主要延迟 ---
                             print("   [反爬] 执行一次主要的随机延迟以模拟用户浏览间隔...")
                             await random_sleep(15, 30) # 原来是 (8, 15)，这是最重要的修改之一
+                        else:
+                            print(f"   错误: 获取商品详情API响应失败，状态码: {detail_response.status}")
+                            if AI_DEBUG_MODE:
+                                print(f"--- [DETAIL DEBUG] FAILED RESPONSE from {item_data['商品链接']} ---")
+                                try:
+                                    print(await detail_response.text())
+                                except Exception as e:
+                                    print(f"无法读取响应内容: {e}")
+                                print("----------------------------------------------------")
 
                     except PlaywrightTimeoutError:
                         print(f"   错误: 访问商品详情页或等待API响应超时。")
