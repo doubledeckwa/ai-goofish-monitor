@@ -60,6 +60,22 @@ Windows使用命令行：
     cp .env.example .env
     ```
 
+    `.env` 文件中的所有可用配置项如下：
+
+    | 环境变量 | 说明 | 是否必填 | 注意事项 |
+    | :--- | :--- | :--- | :--- |
+    | `OPENAI_API_KEY` | 你的AI模型服务商提供的API Key。 | 是 | 对于某些本地或特定代理的服务，此项可能为可选。 |
+    | `OPENAI_BASE_URL` | AI模型的API接口地址，必须兼容OpenAI格式。 | 是 | 请填写API的基础路径，例如 `https://api.example.com/v1`。 |
+    | `OPENAI_MODEL_NAME` | 你要使用的具体模型名称。 | 是 | **必须**选择一个支持图片分析的多模态模型，如 `gpt-4o`, `gemini-1.5-pro` 等。 |
+    | `PROXY_URL` | (可选) 为AI请求配置的HTTP/S代理。 | 否 | 支持 `http://` 和 `socks5://` 格式。例如 `http://127.0.0.1:7890`。 |
+    | `NTFY_TOPIC_URL` | (可选) [ntfy.sh](https://ntfy.sh/) 的主题URL，用于发送通知。 | 否 | 如果留空，将不会发送 ntfy 通知。 |
+    | `WX_BOT_URL` | (可选) 企业微信机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
+    | `LOGIN_IS_EDGE` | 是否使用 Edge 浏览器进行登录和爬取。 | 否 | 默认为 `false`，使用 Chrome/Chromium。 |
+    | `PCURL_TO_MOBILE` | 是否在通知中将电脑版商品链接转换为手机版。 | 否 | 默认为 `true`。 |
+    | `RUN_HEADLESS` | 是否以无头模式运行爬虫浏览器。 | 否 | 默认为 `true`。在本地调试遇到验证码时可设为 `false` 手动处理。**Docker部署时必须为 `true`**。 |
+    | `AI_DEBUG_MODE` | 是否开启AI调试模式。 | 否 | 默认为 `false`。开启后会在控制台打印详细的AI请求和响应日志。 |
+    | `SERVER_PORT` | Web UI服务的运行端口。 | 否 | 默认为 `8000`。 |
+
 2. **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，**必须先运行一次登录脚本**以生成会话状态文件。
 
     ```bash
