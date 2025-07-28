@@ -788,9 +788,10 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                 print(f"\n--- 正在处理第 {page_num}/{max_pages} 页 ---")
 
                 if page_num > 1:
-                    next_btn = page.locator("[class*='search-pagination-arrow-right']:not([disabled])")
+                    # 查找未被禁用的“下一页”按钮。闲鱼通过添加 'disabled' 类名来禁用按钮，而不是使用 disabled 属性。
+                    next_btn = page.locator("[class*='search-pagination-arrow-right']:not([class*='disabled'])")
                     if not await next_btn.count():
-                        print("LOG: 未找到可用的“下一页”按钮，停止翻页。")
+                        print("LOG: 已到达最后一页，未找到可用的“下一页”按钮，停止翻页。")
                         break
                     try:
                         async with page.expect_response(lambda r: API_URL_PATTERN in r.url, timeout=20000) as response_info:
@@ -799,7 +800,7 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                             await random_sleep(5, 8) # 原来是 (1.5, 3.5)
                         current_response = await response_info.value
                     except PlaywrightTimeoutError:
-                        print(f"LOG: 翻页到第 {page_num} 页超时。")
+                        print(f"LOG: 翻页到第 {page_num} 页超时，停止翻页。")
                         break
 
                 if not (current_response and current_response.ok):
