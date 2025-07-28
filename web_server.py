@@ -9,7 +9,7 @@ import sys
 from contextlib import asynccontextmanager
 from dotenv import dotenv_values
 from fastapi import FastAPI, Request, HTTPException
-from prompt_generator import generate_criteria, update_config_with_new_task
+from src.prompt_utils import generate_criteria, update_config_with_new_task
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
