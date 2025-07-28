@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.getElementById('main-content');
     const navLinks = document.querySelectorAll('.nav-link');
     let logRefreshInterval = null;
+    let taskRefreshInterval = null;
 
     // --- Templates for each section ---
     const templates = {
@@ -138,6 +139,40 @@ document.addEventListener('DOMContentLoaded', function() {
             return await response.json();
         } catch (error) {
             console.error(`无法通过AI创建任务:`, error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function startSingleTask(taskId) {
+        try {
+            const response = await fetch(`/api/tasks/start/${taskId}`, {
+                method: 'POST',
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '启动任务失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`无法启动任务 ${taskId}:`, error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function stopSingleTask(taskId) {
+        try {
+            const response = await fetch(`/api/tasks/stop/${taskId}`, {
+                method: 'POST',
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '停止任务失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`无法停止任务 ${taskId}:`, error);
             alert(`错误: ${error.message}`);
             return null;
         }
@@ -365,16 +400,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <th>启用</th>
                     <th>任务名称</th>
+                    <th>运行状态</th>
                     <th>关键词</th>
                     <th>价格范围</th>
                     <th>筛选条件</th>
                     <th>最大页数</th>
                     <th>AI 标准</th>
+                    <th>定时规则</th>
                     <th>操作</th>
                 </tr>
             </thead>`;
 
-        const tableBody = tasks.map(task => `
+        const tableBody = tasks.map(task => {
+            const isRunning = task.is_running === true;
+            const statusBadge = isRunning
+                ? `<span class="status-badge status-running">运行中</span>`
+                : `<span class="status-badge status-stopped">已停止</span>`;
+            
+            const actionButton = isRunning
+                ? `<button class="action-btn stop-task-btn" data-task-id="${task.id}">停止</button>`
+                : `<button class="action-btn run-task-btn" data-task-id="${task.id}" ${!task.enabled ? 'disabled title="任务已禁用"' : ''}>运行</button>`;
+
+            return `
             <tr data-task-id="${task.id}" data-task='${JSON.stringify(task)}'>
                 <td>
                     <label class="switch">
@@ -383,16 +430,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     </label>
                 </td>
                 <td>${task.task_name}</td>
+                <td>${statusBadge}</td>
                 <td><span class="tag">${task.keyword}</span></td>
                 <td>${task.min_price || '不限'} - ${task.max_price || '不限'}</td>
                 <td>${task.personal_only ? '<span class="tag personal">个人闲置</span>' : ''}</td>
                 <td>${task.max_pages || 3}</td>
                 <td>${(task.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</td>
+                <td>${task.cron || '未设置'}</td>
                 <td>
+                    ${actionButton}
                     <button class="action-btn edit-btn">编辑</button>
                     <button class="action-btn delete-btn">删除</button>
                 </td>
-            </tr>`).join('');
+            </tr>`}).join('');
 
         return `<table class="tasks-table">${tableHeader}<tbody>${tableBody}</tbody></table>`;
     }
@@ -402,6 +452,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (logRefreshInterval) {
             clearInterval(logRefreshInterval);
             logRefreshInterval = null;
+        }
+        if (taskRefreshInterval) {
+            clearInterval(taskRefreshInterval);
+            taskRefreshInterval = null;
         }
         const sectionId = hash.substring(1) || 'tasks';
 
@@ -424,8 +478,15 @@ document.addEventListener('DOMContentLoaded', function() {
             // --- Load data for the current section ---
             if (sectionId === 'tasks') {
                 const container = document.getElementById('tasks-table-container');
-                const tasks = await fetchTasks();
-                container.innerHTML = renderTasksTable(tasks);
+                const refreshTasks = async () => {
+                    const tasks = await fetchTasks();
+                    // Avoid re-rendering if in edit mode to not lose user input
+                    if (container && !container.querySelector('tr.editing')) {
+                        container.innerHTML = renderTasksTable(tasks);
+                    }
+                };
+                await refreshTasks();
+                taskRefreshInterval = setInterval(refreshTasks, 5000);
             } else if (sectionId === 'results') {
                 await initializeResultsView();
             } else if (sectionId === 'logs') {
@@ -660,6 +721,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = document.getElementById('json-viewer-modal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('visible'), 10);
+        } else if (button.matches('.run-task-btn')) {
+            const taskId = button.dataset.taskId;
+            button.disabled = true;
+            button.textContent = '启动中...';
+            await startSingleTask(taskId);
+            // The auto-refresh will update the UI. For immediate feedback:
+            const tasks = await fetchTasks();
+            document.getElementById('tasks-table-container').innerHTML = renderTasksTable(tasks);
+        } else if (button.matches('.stop-task-btn')) {
+            const taskId = button.dataset.taskId;
+            button.disabled = true;
+            button.textContent = '停止中...';
+            await stopSingleTask(taskId);
+            // The auto-refresh will update the UI. For immediate feedback:
+            const tasks = await fetchTasks();
+            document.getElementById('tasks-table-container').innerHTML = renderTasksTable(tasks);
         } else if (button.matches('.edit-btn')) {
             const taskData = JSON.parse(row.dataset.task);
             
@@ -684,6 +761,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td><input type="number" value="${taskData.max_pages || 3}" data-field="max_pages" style="width: 60px;" min="1"></td>
                 <td>${(taskData.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</td>
+                <td><input type="text" value="${taskData.cron || ''}" placeholder="* * * * *" data-field="cron"></td>
                 <td>
                     <button class="action-btn save-btn">保存</button>
                     <button class="action-btn cancel-btn">取消</button>
@@ -796,6 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 max_price: formData.get('max_price') || null,
                 personal_only: formData.get('personal_only') === 'on',
                 max_pages: parseInt(formData.get('max_pages'), 10) || 3,
+                cron: formData.get('cron') || null,
             };
 
             // Show loading state
@@ -825,79 +904,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // --- Header Controls & Status ---
-    function updateHeaderControls(status) {
-        const statusIndicator = document.getElementById('status-indicator');
-        const statusText = document.getElementById('status-text');
-        const startBtn = document.getElementById('start-all-tasks');
-        const stopBtn = document.getElementById('stop-all-tasks');
-
-        // Reset buttons state
-        startBtn.disabled = false;
-        startBtn.innerHTML = `🚀 全部启动`;
-        stopBtn.disabled = false;
-        stopBtn.innerHTML = `🛑 全部停止`;
-
-        if (status && status.scraper_running) {
-            statusIndicator.className = 'status-running';
-            statusText.textContent = '运行中';
-            startBtn.style.display = 'none';
-            stopBtn.style.display = 'inline-block';
-        } else {
-            statusIndicator.className = 'status-stopped';
-            statusText.textContent = '已停止';
-            startBtn.style.display = 'inline-block';
-            stopBtn.style.display = 'none';
-        }
-    }
-
-    async function refreshSystemStatus() {
-        const status = await fetchSystemStatus();
-        updateHeaderControls(status);
-    }
-
-    document.getElementById('start-all-tasks').addEventListener('click', async () => {
-        const btn = document.getElementById('start-all-tasks');
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner" style="vertical-align: middle;"></span> 启动中...`;
-
-        try {
-            const response = await fetch('/api/tasks/start-all', { method: 'POST' });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || '启动失败');
-            }
-            await response.json();
-            // Give backend a moment to update state before refreshing
-            setTimeout(refreshSystemStatus, 1000);
-        } catch (error) {
-            alert(`启动任务失败: ${error.message}`);
-            await refreshSystemStatus(); // Refresh status to reset button state
-        }
-    });
-
-    document.getElementById('stop-all-tasks').addEventListener('click', async () => {
-        const btn = document.getElementById('stop-all-tasks');
-        btn.disabled = true;
-        btn.innerHTML = `<span class="spinner" style="vertical-align: middle;"></span> 停止中...`;
-
-        try {
-            const response = await fetch('/api/tasks/stop-all', { method: 'POST' });
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.detail || '停止失败');
-            }
-            await response.json();
-            setTimeout(refreshSystemStatus, 1000);
-        } catch (error) {
-            alert(`停止任务失败: ${error.message}`);
-            await refreshSystemStatus(); // Refresh status to reset button state
-        }
-    });
-
     // Initial load
     navigateTo(window.location.hash || '#tasks');
-    refreshSystemStatus();
 
     // --- JSON Viewer Modal Logic ---
     const jsonViewerModal = document.getElementById('json-viewer-modal');

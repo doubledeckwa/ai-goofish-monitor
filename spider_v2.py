@@ -988,6 +988,9 @@ async def main():
   # 运行 config.json 中定义的所有任务
   python spider_v2.py
 
+  # 只运行名为 "Sony A7M4" 的任务 (通常由调度器调用)
+  python spider_v2.py --task-name "Sony A7M4"
+
   # 调试模式: 运行所有任务，但每个任务只处理前3个新发现的商品
   python spider_v2.py --debug-limit 3
 """,
@@ -995,6 +998,7 @@ async def main():
     )
     parser.add_argument("--debug-limit", type=int, default=0, help="调试模式：每个任务仅处理前 N 个新商品（0 表示无限制）")
     parser.add_argument("--config", type=str, default="config.json", help="指定任务配置文件路径（默认为 config.json）")
+    parser.add_argument("--task-name", type=str, help="只运行指定名称的单个任务 (用于定时任务调度)")
     args = parser.parse_args()
 
     if not os.path.exists(STATE_FILE):
@@ -1035,11 +1039,30 @@ async def main():
     print("\n--- 开始执行监控任务 ---")
     if args.debug_limit > 0:
         print(f"** 调试模式已激活，每个任务最多处理 {args.debug_limit} 个新商品 **")
+    
+    if args.task_name:
+        print(f"** 定时任务模式：只执行任务 '{args.task_name}' **")
+
     print("--------------------")
 
-    active_task_configs = [task for task in tasks_config if task.get("enabled", False)]
+    active_task_configs = []
+    if args.task_name:
+        # 如果指定了任务名称，只查找该任务
+        task_found = next((task for task in tasks_config if task.get('task_name') == args.task_name), None)
+        if task_found:
+            if task_found.get("enabled", False):
+                active_task_configs.append(task_found)
+            else:
+                print(f"任务 '{args.task_name}' 已被禁用，跳过执行。")
+        else:
+            print(f"错误：在配置文件中未找到名为 '{args.task_name}' 的任务。")
+            return
+    else:
+        # 否则，按原计划加载所有启用的任务
+        active_task_configs = [task for task in tasks_config if task.get("enabled", False)]
+
     if not active_task_configs:
-        print("配置文件中没有启用的任务，程序退出。")
+        print("没有需要执行的任务，程序退出。")
         return
 
     # 为每个启用的任务创建一个异步执行协程
