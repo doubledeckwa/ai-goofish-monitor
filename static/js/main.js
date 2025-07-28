@@ -368,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <th>关键词</th>
                     <th>价格范围</th>
                     <th>筛选条件</th>
+                    <th>最大页数</th>
                     <th>AI 标准</th>
                     <th>操作</th>
                 </tr>
@@ -385,6 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td><span class="tag">${task.keyword}</span></td>
                 <td>${task.min_price || '不限'} - ${task.max_price || '不限'}</td>
                 <td>${task.personal_only ? '<span class="tag personal">个人闲置</span>' : ''}</td>
+                <td>${task.max_pages || 3}</td>
                 <td>${(task.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</td>
                 <td>
                     <button class="action-btn edit-btn">编辑</button>
@@ -680,6 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="checkbox" ${taskData.personal_only ? 'checked' : ''} data-field="personal_only"> 个人闲置
                     </label>
                 </td>
+                <td><input type="number" value="${taskData.max_pages || 3}" data-field="max_pages" style="width: 60px;" min="1"></td>
                 <td>${(taskData.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</td>
                 <td>
                     <button class="action-btn save-btn">保存</button>
@@ -715,7 +718,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (input.type === 'checkbox') {
                     updatedData[field] = input.checked;
                 } else {
-                    updatedData[field] = input.value.trim() === '' ? null : input.value.trim();
+                    const value = input.value.trim();
+                    if (field === 'max_pages') {
+                        // 确保 max_pages 作为数字发送，如果为空则默认为3
+                        updatedData[field] = value ? parseInt(value, 10) : 3;
+                    } else {
+                        updatedData[field] = value === '' ? null : value;
+                    }
                 }
             });
 
@@ -786,6 +795,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 min_price: formData.get('min_price') || null,
                 max_price: formData.get('max_price') || null,
                 personal_only: formData.get('personal_only') === 'on',
+                max_pages: parseInt(formData.get('max_pages'), 10) || 3,
             };
 
             // Show loading state

@@ -47,6 +47,7 @@ class TaskGenerateRequest(BaseModel):
     personal_only: bool = True
     min_price: Optional[str] = None
     max_price: Optional[str] = None
+    max_pages: int = 3
 
 
 class PromptUpdate(BaseModel):
@@ -132,7 +133,7 @@ async def generate_task(req: TaskGenerateRequest):
         "task_name": req.task_name,
         "enabled": True,
         "keyword": req.keyword,
-        "max_pages": 3, # 默认值
+        "max_pages": req.max_pages,
         "personal_only": req.personal_only,
         "min_price": req.min_price,
         "max_price": req.max_price,
