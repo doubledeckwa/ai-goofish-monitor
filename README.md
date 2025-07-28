@@ -220,15 +220,23 @@ graph TD
 
 ```
 .
-├── .env                # 环境变量，存放API密钥等敏感信息
-├── .gitignore          # Git忽略配置
-├── config.json         # 核心配置文件，定义所有监控任务 (主要通过Web UI管理)
-├── login.py            # 首次运行必须执行，用于获取并保存登录Cookie
-├── spider_v2.py        # 核心爬虫程序 (由Web服务按需启动)
-├── prompt_generator.py # AI分析标准生成脚本 (功能已集成到Web UI)
-├── web_server.py       # Web服务主程序，提供API和Web UI
-├── requirements.txt    # Python依赖库
-├── README.md           # 就是你正在看的这个文件
+├── .env
+├── .gitignore
+├── config.json
+├── login.py
+├── spider_v2.py        # 爬虫任务命令行入口
+├── prompt_generator.py # Prompt生成命令行入口
+├── web_server.py       # Web服务主程序
+├── requirements.txt
+├── README.md
+├── src/                # 核心逻辑模块
+│   ├── __init__.py
+│   ├── ai_handler.py
+│   ├── config.py
+│   ├── parsers.py
+│   ├── prompt_utils.py
+│   ├── scraper.py
+│   └── utils.py
 ├── prompts/            # 存放不同任务的AI分析指令(Prompt)
 │   ├── base_prompt.txt
 │   └── ..._criteria.txt
