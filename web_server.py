@@ -6,6 +6,7 @@ import glob
 import asyncio
 import signal
 import sys
+from contextlib import asynccontextmanager
 from dotenv import dotenv_values
 from fastapi import FastAPI, Request, HTTPException
 from prompt_generator import generate_criteria, update_config_with_new_task
@@ -14,6 +15,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 
 class Task(BaseModel):
@@ -24,8 +27,10 @@ class Task(BaseModel):
     personal_only: bool
     min_price: Optional[str] = None
     max_price: Optional[str] = None
+    cron: Optional[str] = None
     ai_prompt_base_file: str
     ai_prompt_criteria_file: str
+    is_running: Optional[bool] = False
 
 
 class TaskUpdate(BaseModel):
@@ -36,8 +41,10 @@ class TaskUpdate(BaseModel):
     personal_only: Optional[bool] = None
     min_price: Optional[str] = None
     max_price: Optional[str] = None
+    cron: Optional[str] = None
     ai_prompt_base_file: Optional[str] = None
     ai_prompt_criteria_file: Optional[str] = None
+    is_running: Optional[bool] = None
 
 
 class TaskGenerateRequest(BaseModel):
@@ -47,22 +54,169 @@ class TaskGenerateRequest(BaseModel):
     personal_only: bool = True
     min_price: Optional[str] = None
     max_price: Optional[str] = None
+    max_pages: int = 3
+    cron: Optional[str] = None
 
 
 class PromptUpdate(BaseModel):
     content: str
 
 
-app = FastAPI(title="闲鱼智能监控机器人")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    管理应用的生命周期事件。
+    启动时：重置任务状态，加载并启动调度器。
+    关闭时：确保终止所有子进程和调度器。
+    """
+    # Startup
+    await _set_all_tasks_stopped_in_config()
+    await reload_scheduler_jobs()
+    if not scheduler.running:
+        scheduler.start()
+    
+    yield
+    
+    # Shutdown
+    if scheduler.running:
+        print("正在关闭调度器...")
+        scheduler.shutdown()
 
-# --- Globals for process management ---
-scraper_process = None
+    global scraper_processes
+    if scraper_processes:
+        print("Web服务器正在关闭，正在终止所有爬虫进程...")
+        stop_tasks = [stop_task_process(task_id) for task_id in list(scraper_processes.keys())]
+        await asyncio.gather(*stop_tasks)
+        print("所有爬虫进程已终止。")
+
+    await _set_all_tasks_stopped_in_config()
+
+
+app = FastAPI(title="闲鱼智能监控机器人", lifespan=lifespan)
+
+# --- Globals for process and scheduler management ---
+scraper_processes = {}  # 将单个进程变量改为字典，以管理多个任务进程 {task_id: process}
+scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
+
+# --- Scheduler Functions ---
+async def run_single_task(task_id: int, task_name: str):
+    """
+    由调度器调用的函数，用于启动单个爬虫任务。
+    """
+    print(f"定时任务触发: 正在为任务 '{task_name}' 启动爬虫...")
+    log_file_handle = None
+    try:
+        # 更新任务状态为“运行中”
+        await update_task_running_status(task_id, True)
+
+        # 确保日志目录存在，并以追加模式打开日志文件
+        os.makedirs("logs", exist_ok=True)
+        log_file_path = os.path.join("logs", "scraper.log")
+        log_file_handle = open(log_file_path, 'a', encoding='utf-8')
+
+        # 使用与Web服务器相同的Python解释器来运行爬虫脚本
+        # 将 stdout 和 stderr 重定向到日志文件
+        # 在非 Windows 系统上，使用 setsid 创建新进程组，以便能终止整个进程树
+        preexec_fn = os.setsid if sys.platform != "win32" else None
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, "-u", "spider_v2.py", "--task-name", task_name,
+            stdout=log_file_handle,
+            stderr=log_file_handle,
+            preexec_fn=preexec_fn
+        )
+
+        # 等待进程结束
+        await process.wait()
+        if process.returncode == 0:
+            print(f"定时任务 '{task_name}' 执行成功。日志已写入 {log_file_path}")
+        else:
+            print(f"定时任务 '{task_name}' 执行失败。返回码: {process.returncode}。详情请查看 {log_file_path}")
+
+    except Exception as e:
+        print(f"启动定时任务 '{task_name}' 时发生错误: {e}")
+    finally:
+        # 确保文件句柄被关闭
+        if log_file_handle:
+            log_file_handle.close()
+        # 任务结束后，更新状态为“已停止”
+        await update_task_running_status(task_id, False)
+
+
+async def _set_all_tasks_stopped_in_config():
+    """读取配置文件，将所有任务的 is_running 状态设置为 false。"""
+    try:
+        # 使用 aiofiles 异步读写
+        async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            content = await f.read()
+            if not content.strip():
+                return
+            tasks = json.loads(content)
+
+        # 检查是否有任何任务的状态需要被更新
+        needs_update = any(task.get('is_running') for task in tasks)
+
+        if needs_update:
+            for task in tasks:
+                task['is_running'] = False
+            
+            async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
+            print("所有任务状态已在配置文件中重置为“已停止”。")
+
+    except FileNotFoundError:
+        # 配置文件不存在，无需操作
+        pass
+    except Exception as e:
+        print(f"重置任务状态时出错: {e}")
+
+
+async def reload_scheduler_jobs():
+    """
+    重新加载所有定时任务。清空现有任务，并从 config.json 重新创建。
+    """
+    print("正在重新加载定时任务调度器...")
+    scheduler.remove_all_jobs()
+    try:
+        async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            tasks = json.loads(await f.read())
+        
+        for i, task in enumerate(tasks):
+            task_name = task.get("task_name")
+            cron_str = task.get("cron")
+            is_enabled = task.get("enabled", False)
+
+            if task_name and cron_str and is_enabled:
+                try:
+                    # 使用 CronTrigger.from_crontab 更稳健
+                    trigger = CronTrigger.from_crontab(cron_str)
+                    scheduler.add_job(
+                        run_single_task,
+                        trigger=trigger,
+                        args=[i, task_name],
+                        id=f"task_{i}",
+                        name=f"Scheduled: {task_name}",
+                        replace_existing=True
+                    )
+                    print(f"  -> 已为任务 '{task_name}' 添加定时规则: '{cron_str}'")
+                except ValueError as e:
+                    print(f"  -> [警告] 任务 '{task_name}' 的 Cron 表达式 '{cron_str}' 无效，已跳过: {e}")
+
+    except FileNotFoundError:
+        print(f"[警告] 配置文件 {CONFIG_FILE} 未找到，无法加载定时任务。")
+    except Exception as e:
+        print(f"[错误] 重新加载定时任务时发生错误: {e}")
+    
+    print("定时任务加载完成。")
+    if scheduler.get_jobs():
+        print("当前已调度的任务:")
+        scheduler.print_jobs()
+
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -132,12 +286,14 @@ async def generate_task(req: TaskGenerateRequest):
         "task_name": req.task_name,
         "enabled": True,
         "keyword": req.keyword,
-        "max_pages": 3, # 默认值
+        "max_pages": req.max_pages,
         "personal_only": req.personal_only,
         "min_price": req.min_price,
         "max_price": req.max_price,
+        "cron": req.cron,
         "ai_prompt_base_file": "prompts/base_prompt.txt",
-        "ai_prompt_criteria_file": output_filename
+        "ai_prompt_criteria_file": output_filename,
+        "is_running": False
     }
 
     # 5. 将新任务添加到 config.json
@@ -147,6 +303,9 @@ async def generate_task(req: TaskGenerateRequest):
         if os.path.exists(output_filename):
             os.remove(output_filename)
         raise HTTPException(status_code=500, detail="更新配置文件 config.json 失败。")
+
+    # 重新加载调度器以包含新任务
+    await reload_scheduler_jobs()
 
     # 6. 返回成功创建的任务（包含ID）
     async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -169,6 +328,8 @@ async def create_task(task: Task):
         tasks = []
 
     new_task_data = task.dict()
+    if 'is_running' not in new_task_data:
+        new_task_data['is_running'] = False
     tasks.append(new_task_data)
 
     try:
@@ -176,6 +337,7 @@ async def create_task(task: Task):
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
         
         new_task_data['id'] = len(tasks) - 1
+        await reload_scheduler_jobs()
         return {"message": "任务创建成功。", "task": new_task_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
@@ -196,23 +358,26 @@ async def update_task(task_id: int, task_update: TaskUpdate):
         raise HTTPException(status_code=404, detail="任务未找到。")
 
     # 更新数据
-    task_changed = False
     update_data = task_update.dict(exclude_unset=True)
     
-    if update_data:
-        original_task = tasks[task_id].copy()
-        tasks[task_id].update(update_data)
-        if tasks[task_id] != original_task:
-            task_changed = True
-
-    if not task_changed:
+    if not update_data:
         return JSONResponse(content={"message": "数据无变化，未执行更新。"}, status_code=200)
+
+    # 如果任务从“启用”变为“禁用”，且正在运行，则先停止它
+    if 'enabled' in update_data and not update_data['enabled']:
+        if scraper_processes.get(task_id):
+            print(f"任务 '{tasks[task_id]['task_name']}' 已被禁用，正在停止其进程...")
+            await stop_task_process(task_id) # 这会处理进程和is_running状态
+
+    tasks[task_id].update(update_data)
 
     # 异步写回文件
     try:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
         
+        await reload_scheduler_jobs()
+
         updated_task = tasks[task_id]
         updated_task['id'] = task_id
         return {"message": "任务更新成功。", "task": updated_task}
@@ -220,68 +385,104 @@ async def update_task(task_id: int, task_update: TaskUpdate):
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
 
 
-@app.post("/api/tasks/start-all", response_model=dict)
-async def start_all_tasks():
-    """
-    启动所有在 config.json 中启用的任务。
-    """
-    global scraper_process
-    if scraper_process and scraper_process.returncode is None:
-        raise HTTPException(status_code=400, detail="监控任务已在运行中。")
+async def start_task_process(task_id: int, task_name: str):
+    """内部函数：启动一个指定的任务进程。"""
+    global scraper_processes
+    if scraper_processes.get(task_id) and scraper_processes[task_id].returncode is None:
+        print(f"任务 '{task_name}' (ID: {task_id}) 已在运行中。")
+        return
 
     try:
-        # 设置日志目录和文件
         os.makedirs("logs", exist_ok=True)
         log_file_path = os.path.join("logs", "scraper.log")
-        
-        # 以追加模式打开日志文件，如果不存在则创建。
-        # 子进程将继承这个文件句柄。
         log_file_handle = open(log_file_path, 'a', encoding='utf-8')
 
-        # 使用与Web服务器相同的Python解释器来运行爬虫脚本
-        # 增加 -u 参数来禁用I/O缓冲，确保日志实时写入文件
-        # 在非 Windows 系统上，使用 setsid 创建新进程组，以便能终止整个进程树
         preexec_fn = os.setsid if sys.platform != "win32" else None
-        scraper_process = await asyncio.create_subprocess_exec(
-            sys.executable, "-u", "spider_v2.py",
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, "-u", "spider_v2.py", "--task-name", task_name,
             stdout=log_file_handle,
             stderr=log_file_handle,
             preexec_fn=preexec_fn
         )
-        print(f"启动爬虫进程，PID: {scraper_process.pid}，日志输出到 {log_file_path}")
-        return {"message": "所有启用任务已启动。"}
+        scraper_processes[task_id] = process
+        print(f"启动任务 '{task_name}' (PID: {process.pid})，日志输出到 {log_file_path}")
+        
+        # 更新配置文件中的状态
+        await update_task_running_status(task_id, True)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动爬虫进程时出错: {e}")
+        raise HTTPException(status_code=500, detail=f"启动任务 '{task_name}' 进程时出错: {e}")
 
 
-@app.post("/api/tasks/stop-all", response_model=dict)
-async def stop_all_tasks():
-    """
-    停止当前正在运行的监控任务。
-    """
-    global scraper_process
-    if not scraper_process or scraper_process.returncode is not None:
-        raise HTTPException(status_code=400, detail="没有正在运行的监控任务。")
+async def stop_task_process(task_id: int):
+    """内部函数：停止一个指定的任务进程。"""
+    global scraper_processes
+    process = scraper_processes.get(task_id)
+    if not process or process.returncode is not None:
+        print(f"任务ID {task_id} 没有正在运行的进程。")
+        # 确保配置文件状态正确
+        await update_task_running_status(task_id, False)
+        if task_id in scraper_processes:
+            del scraper_processes[task_id]
+        return
 
     try:
         if sys.platform != "win32":
-            # 在非 Windows 系统上，终止整个进程组
-            os.killpg(os.getpgid(scraper_process.pid), signal.SIGTERM)
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         else:
-            # 在 Windows 上，只能终止主进程
-            scraper_process.terminate()
-
-        await scraper_process.wait()
-        print(f"爬虫进程 {scraper_process.pid} 已终止。")
-        scraper_process = None
-        return {"message": "所有任务已停止。"}
+            process.terminate()
+        
+        await process.wait()
+        print(f"任务进程 {process.pid} (ID: {task_id}) 已终止。")
     except ProcessLookupError:
-        # 进程可能已经不存在
-        print(f"试图终止的爬虫进程已不存在。")
-        scraper_process = None
-        return {"message": "任务已经停止。"}
+        print(f"试图终止的任务进程 (ID: {task_id}) 已不存在。")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"停止爬虫进程时出错: {e}")
+        print(f"停止任务进程 (ID: {task_id}) 时出错: {e}")
+    finally:
+        if task_id in scraper_processes:
+            del scraper_processes[task_id]
+        await update_task_running_status(task_id, False)
+
+
+async def update_task_running_status(task_id: int, is_running: bool):
+    """更新 config.json 中指定任务的 is_running 状态。"""
+    try:
+        async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            tasks = json.loads(await f.read())
+        
+        if 0 <= task_id < len(tasks):
+            tasks[task_id]['is_running'] = is_running
+            async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
+    except Exception as e:
+        print(f"更新任务 {task_id} 状态时出错: {e}")
+
+
+@app.post("/api/tasks/start/{task_id}", response_model=dict)
+async def start_single_task(task_id: int):
+    """启动单个任务。"""
+    try:
+        async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            tasks = json.loads(await f.read())
+        if not (0 <= task_id < len(tasks)):
+            raise HTTPException(status_code=404, detail="任务未找到。")
+        
+        task = tasks[task_id]
+        if not task.get("enabled", False):
+            raise HTTPException(status_code=400, detail="任务已被禁用，无法启动。")
+
+        await start_task_process(task_id, task['task_name'])
+        return {"message": f"任务 '{task['task_name']}' 已启动。"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/tasks/stop/{task_id}", response_model=dict)
+async def stop_single_task(task_id: int):
+    """停止单个任务。"""
+    await stop_task_process(task_id)
+    return {"message": f"任务ID {task_id} 已发送停止信号。"}
+
+
 
 
 @app.get("/api/logs")
@@ -355,6 +556,10 @@ async def delete_task(task_id: int):
     if not (0 <= task_id < len(tasks)):
         raise HTTPException(status_code=404, detail="任务未找到。")
 
+    # 如果任务正在运行，先停止它
+    if scraper_processes.get(task_id):
+        await stop_task_process(task_id)
+
     deleted_task = tasks.pop(task_id)
 
     # 尝试删除关联的 criteria 文件
@@ -371,6 +576,8 @@ async def delete_task(task_id: int):
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
         
+        await reload_scheduler_jobs()
+
         return {"message": "任务删除成功。", "task_name": deleted_task.get("task_name")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
@@ -452,21 +659,23 @@ async def get_system_status():
     """
     检查系统关键文件和配置的状态。
     """
-    global scraper_process
+    global scraper_processes
     env_config = dotenv_values(".env")
 
-    # 检查进程是否仍在运行
-    is_running = False
-    if scraper_process:
-        if scraper_process.returncode is None:
-            is_running = True
+    # 检查是否有任何任务进程仍在运行
+    running_pids = []
+    for task_id, process in list(scraper_processes.items()):
+        if process.returncode is None:
+            running_pids.append(process.pid)
         else:
-            # 进程已结束，重置
-            print(f"检测到爬虫进程 {scraper_process.pid} 已结束，返回码: {scraper_process.returncode}。")
-            scraper_process = None
-    
+            # 进程已结束，从字典中清理
+            print(f"检测到任务进程 {process.pid} (ID: {task_id}) 已结束，返回码: {process.returncode}。")
+            del scraper_processes[task_id]
+            # 异步更新配置文件状态
+            asyncio.create_task(update_task_running_status(task_id, False))
+
     status = {
-        "scraper_running": is_running,
+        "scraper_running": len(running_pids) > 0,
         "login_state_file": {
             "exists": os.path.exists("xianyu_state.json"),
             "path": "xianyu_state.json"
@@ -531,35 +740,6 @@ async def update_prompt_content(filename: str, prompt_update: PromptUpdate):
         raise HTTPException(status_code=500, detail=f"写入 Prompt 文件时出错: {e}")
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-    应用退出时，确保终止所有子进程。
-    """
-    global scraper_process
-    if scraper_process and scraper_process.returncode is None:
-        print(f"Web服务器正在关闭，正在终止爬虫进程 {scraper_process.pid}...")
-        try:
-            if sys.platform != "win32":
-                os.killpg(os.getpgid(scraper_process.pid), signal.SIGTERM)
-            else:
-                scraper_process.terminate()
-
-            await asyncio.wait_for(scraper_process.wait(), timeout=5.0)
-            print("爬虫进程已成功终止。")
-        except ProcessLookupError:
-            print("试图终止的爬虫进程已不存在。")
-        except asyncio.TimeoutError:
-            print("等待爬虫进程终止超时，将强制终止。")
-            try:
-                if sys.platform != "win32":
-                    os.killpg(os.getpgid(scraper_process.pid), signal.SIGKILL)
-                else:
-                    scraper_process.kill()
-            except ProcessLookupError:
-                print("试图强制终止的爬虫进程已不存在。")
-        finally:
-            scraper_process = None
 
 
 if __name__ == "__main__":
