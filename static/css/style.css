@@ -49,9 +49,17 @@ header h1 {
     transition: background-color 0.3s;
 }
 
-.status-stopped { background-color: #f5222d; }
-.status-running { background-color: #52c41a; }
-.status-loading { background-color: #faad14; }
+.status-stopped {
+    background-color: #f5222d;
+}
+
+.status-running {
+    background-color: #52c41a;
+}
+
+.status-loading {
+    background-color: #faad14;
+}
 
 
 .control-button {
@@ -74,6 +82,7 @@ header h1 {
     color: #fff;
     border-color: #1890ff;
 }
+
 #start-all-tasks:hover {
     background-color: #40a9ff;
     border-color: #40a9ff;
@@ -84,6 +93,7 @@ header h1 {
     color: white;
     border-color: #ff4d4f;
 }
+
 #stop-all-tasks:hover {
     background-color: #ff7875;
     border-color: #ff7875;
@@ -157,7 +167,7 @@ main {
     background-color: #fff;
     padding: 24px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
 }
 
 .content-section.active {
@@ -165,8 +175,14 @@ main {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 h2 {
@@ -198,6 +214,7 @@ h2 {
     color: #fff;
     border-color: #1890ff;
 }
+
 .primary-btn:hover {
     background-color: #40a9ff;
     border-color: #40a9ff;
@@ -253,67 +270,69 @@ h2 {
     font-size: 14px;
     text-decoration: none;
 }
+
 .action-btn:hover {
     text-decoration: underline;
 }
+
 .action-btn.delete-btn {
     color: #ff4d4f;
 }
 
 /* Toggle Switch */
 .switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
 }
 
 .switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
 .slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
 }
 
 .slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .4s;
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
 }
 
 input:checked + .slider {
-  background-color: #52c41a;
+    background-color: #52c41a;
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px #52c41a;
+    box-shadow: 0 0 1px #52c41a;
 }
 
 input:checked + .slider:before {
-  transform: translateX(20px);
+    transform: translateX(20px);
 }
 
 .slider.round {
-  border-radius: 34px;
+    border-radius: 34px;
 }
 
 .slider.round:before {
-  border-radius: 50%;
+    border-radius: 50%;
 }
 
 /* Styles for inline editing in tasks table */
@@ -359,6 +378,7 @@ input:checked + .slider:before {
 .tasks-table .save-btn {
     color: #52c41a;
 }
+
 .tasks-table .save-btn:hover {
     text-decoration: underline;
     color: #52c41a;
@@ -367,6 +387,7 @@ input:checked + .slider:before {
 .tasks-table .cancel-btn {
     color: #faad14;
 }
+
 .tasks-table .cancel-btn:hover {
     text-decoration: underline;
     color: #faad14;
@@ -397,7 +418,7 @@ input:checked + .slider:before {
 .modal-content {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     width: 90%;
     max-width: 680px;
     display: flex;
@@ -434,6 +455,7 @@ input:checked + .slider:before {
     color: #888;
     line-height: 1;
 }
+
 .close-button:hover {
     color: #333;
 }
@@ -484,9 +506,11 @@ input:checked + .slider:before {
     align-items: flex-end;
     gap: 16px;
 }
+
 .form-group-inline > div {
     flex-grow: 1;
 }
+
 .form-group-inline > span {
     padding-bottom: 10px;
 }
@@ -534,10 +558,15 @@ input:checked + .slider:before {
 }
 
 @keyframes spin {
-    to { -webkit-transform: rotate(360deg); }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
 }
+
 @-webkit-keyframes spin {
-    to { -webkit-transform: rotate(360deg); }
+    to {
+        -webkit-transform: rotate(360deg);
+    }
 }
 
 /* Results View Styles */
@@ -582,7 +611,7 @@ input:checked + .slider:before {
 .result-card {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -591,7 +620,7 @@ input:checked + .slider:before {
 
 .result-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .card-image {
@@ -607,6 +636,7 @@ input:checked + .slider:before {
     object-fit: cover;
     transition: transform 0.3s ease;
 }
+
 .result-card:hover .card-image img {
     transform: scale(1.05);
 }
@@ -631,10 +661,12 @@ input:checked + .slider:before {
     text-overflow: ellipsis;
     min-height: 44.8px; /* 16px * 1.4 * 2 */
 }
+
 .card-title a {
     color: inherit;
     text-decoration: none;
 }
+
 .card-title a:hover {
     color: #1890ff;
 }
@@ -666,6 +698,7 @@ input:checked + .slider:before {
     margin-bottom: 4px;
     color: #389e0d;
 }
+
 .card-ai-summary.not-recommended strong {
     color: #cf1322;
 }
@@ -740,7 +773,7 @@ input:checked + .slider:before {
 .settings-card {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
     padding: 24px;
     margin-bottom: 24px;
 }
@@ -767,6 +800,7 @@ input:checked + .slider:before {
     padding: 10px 0;
     border-bottom: 1px solid #f5f5f5;
 }
+
 .status-item:last-child {
     border-bottom: none;
 }

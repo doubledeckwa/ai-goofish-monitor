@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const mainContent = document.getElementById('main-content');
     const navLinks = document.querySelectorAll('.nav-link');
     let logRefreshInterval = null;
@@ -107,8 +107,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const response = await fetch(`/api/prompts/${filename}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content }),
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({content: content}),
             });
             if (!response.ok) {
                 const errorData = await response.json();
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function clearLogs() {
         try {
-            const response = await fetch('/api/logs', { method: 'DELETE' });
+            const response = await fetch('/api/logs', {method: 'DELETE'});
             if (!response.ok) {
                 const err = await response.json();
                 throw new Error(err.detail || '清空日志失败');
@@ -284,6 +284,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return await response.json();
         } catch (error) {
             console.error("无法清空日志:", error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function deleteLoginState() {
+        try {
+            const response = await fetch('/api/login-state', {method: 'DELETE'});
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.detail || '删除登录凭证失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error("无法删除登录凭证:", error);
             alert(`错误: ${error.message}`);
             return null;
         }
@@ -298,26 +313,56 @@ document.addEventListener('DOMContentLoaded', function() {
             return await response.json();
         } catch (error) {
             console.error("无法获取日志:", error);
-            return { new_content: `\n加载日志失败: ${error.message}`, new_pos: fromPos };
+            return {new_content: `\n加载日志失败: ${error.message}`, new_pos: fromPos};
         }
     }
 
     // --- Render Functions ---
+    function renderLoginStatusWidget(status) {
+        const container = document.getElementById('login-status-widget-container');
+        if (!container) return;
+
+        const loginState = status.login_state_file;
+        let content = '';
+
+        if (loginState && loginState.exists) {
+            content = `
+                <div class="login-status-widget">
+                    <span class="status-text status-ok">✓ 已登录</span>
+                    <div class="dropdown-menu">
+                        <a href="#" class="dropdown-item" id="update-login-state-btn-widget">手动更新</a>
+                        <a href="#" class="dropdown-item delete" id="delete-login-state-btn-widget">删除凭证</a>
+                    </div>
+                </div>
+            `;
+        } else {
+            content = `
+                <div class="login-status-widget">
+                    <span class="status-text status-error" id="update-login-state-btn-widget">! 闲鱼未登录 (点击设置)</span>
+                </div>
+            `;
+        }
+        container.innerHTML = content;
+    }
+
+    async function refreshLoginStatusWidget() {
+        const status = await fetchSystemStatus();
+        if (status) {
+            renderLoginStatusWidget(status);
+        }
+    }
+
     function renderSystemStatus(status) {
         if (!status) return '<p>无法加载系统状态。</p>';
 
-        const renderStatusTag = (isOk) => isOk 
-            ? `<span class="tag status-ok">正常</span>` 
+        const renderStatusTag = (isOk) => isOk
+            ? `<span class="tag status-ok">正常</span>`
             : `<span class="tag status-error">异常</span>`;
 
         const env = status.env_file || {};
 
         return `
             <ul class="status-list">
-                <li class="status-item">
-                    <span class="label">登录状态文件 (xianyu_state.json)</span>
-                    <span class="value">${renderStatusTag(status.login_state_file && status.login_state_file.exists)}</span>
-                </li>
                 <li class="status-item">
                     <span class="label">环境变量文件 (.env)</span>
                     <span class="value">${renderStatusTag(env.exists)}</span>
@@ -355,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isRecommended = ai.is_recommended === true;
             const recommendationClass = isRecommended ? 'recommended' : 'not-recommended';
             const recommendationText = isRecommended ? '推荐' : (ai.is_recommended === false ? '不推荐' : '待定');
-            
+
             const imageUrl = (info.商品图片列表 && info.商品图片列表[0]) ? info.商品图片列表[0] : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
             const crawlTime = item.爬取时间 ? new Date(item.爬取时间).toLocaleString('sv-SE').slice(0, 16) : '未知';
             const publishTime = info.发布时间 || '未知';
@@ -416,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const statusBadge = isRunning
                 ? `<span class="status-badge status-running">运行中</span>`
                 : `<span class="status-badge status-stopped">已停止</span>`;
-            
+
             const actionButton = isRunning
                 ? `<button class="action-btn stop-task-btn" data-task-id="${task.id}">停止</button>`
                 : `<button class="action-btn run-task-btn" data-task-id="${task.id}" ${!task.enabled ? 'disabled title="任务已禁用"' : ''}>运行</button>`;
@@ -442,7 +487,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="action-btn edit-btn">编辑</button>
                     <button class="action-btn delete-btn">删除</button>
                 </td>
-            </tr>`}).join('');
+            </tr>`
+        }).join('');
 
         return `<table class="tasks-table">${tableHeader}<tbody>${tableBody}</tbody></table>`;
     }
@@ -515,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentLogSize = 0;
                 logContainer.textContent = '正在加载...';
             }
-            
+
             const logData = await fetchLogs(currentLogSize);
 
             if (isFullRefresh) {
@@ -530,9 +576,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             currentLogSize = logData.new_pos;
-            
+
             // Scroll to bottom if it was a full refresh or if the user was already at the bottom.
-            if(shouldAutoScroll) {
+            if (shouldAutoScroll) {
                 logContainer.scrollTop = logContainer.scrollHeight;
             }
         };
@@ -681,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(result.message || "保存成功！");
             }
             // No need to show alert on failure, as updatePrompt already does.
-            
+
             savePromptBtn.disabled = false;
             savePromptBtn.textContent = '保存更改';
         });
@@ -689,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle navigation clicks
     navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
             const hash = this.getAttribute('href');
             if (window.location.hash !== hash) {
@@ -717,7 +763,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const itemData = JSON.parse(card.dataset.item);
             const jsonContent = document.getElementById('json-viewer-content');
             jsonContent.textContent = JSON.stringify(itemData, null, 2);
-            
+
             const modal = document.getElementById('json-viewer-modal');
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('visible'), 10);
@@ -739,7 +785,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tasks-table-container').innerHTML = renderTasksTable(tasks);
         } else if (button.matches('.edit-btn')) {
             const taskData = JSON.parse(row.dataset.task);
-            
+
             row.classList.add('editing');
             row.innerHTML = `
                 <td>
@@ -828,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isEnabled = target.checked;
 
             if (taskId) {
-                await updateTask(taskId, { enabled: isEnabled });
+                await updateTask(taskId, {enabled: isEnabled});
                 // The visual state is already updated by the checkbox itself.
             }
         }
@@ -905,13 +951,84 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // Initial load
+    refreshLoginStatusWidget();
     navigateTo(window.location.hash || '#tasks');
+
+    // --- Global Event Listener for header/modals ---
+    document.body.addEventListener('click', async (event) => {
+        const target = event.target;
+        const widgetUpdateBtn = target.closest('#update-login-state-btn-widget');
+        const widgetDeleteBtn = target.closest('#delete-login-state-btn-widget');
+        const copyCodeBtn = target.closest('#copy-login-script-btn');
+
+        if (copyCodeBtn) {
+            event.preventDefault();
+            const codeToCopy = document.getElementById('login-script-code').textContent.trim();
+
+            // 在安全上下文中使用现代剪贴板API，否则使用备用方法
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    copyCodeBtn.textContent = '已复制!';
+                    setTimeout(() => {
+                        copyCodeBtn.textContent = '复制脚本';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('无法使用剪贴板API复制文本: ', err);
+                    alert('复制失败，请手动复制。');
+                });
+            } else {
+                // 针对非安全上下文 (如HTTP) 或旧版浏览器的备用方案
+                const textArea = document.createElement("textarea");
+                textArea.value = codeToCopy;
+                // 使文本区域不可见
+                textArea.style.position = "fixed";
+                textArea.style.top = "-9999px";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    copyCodeBtn.textContent = '已复制!';
+                    setTimeout(() => {
+                        copyCodeBtn.textContent = '复制脚本';
+                    }, 2000);
+                } catch (err) {
+                    console.error('备用方案: 无法复制文本', err);
+                    alert('复制失败，请手动复制。');
+                }
+                document.body.removeChild(textArea);
+            }
+        } else if (widgetUpdateBtn) {
+            event.preventDefault();
+            const modal = document.getElementById('login-state-modal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
+        } else if (widgetDeleteBtn) {
+            event.preventDefault();
+            if (confirm('你确定要删除登录凭证 (xianyu_state.json) 吗？删除后需要重新设置才能运行任务。')) {
+                const result = await deleteLoginState();
+                if (result) {
+                    alert(result.message);
+                    await refreshLoginStatusWidget(); // Refresh the widget UI
+                    // Also refresh settings view if it's currently active
+                    if (window.location.hash === '#settings' || window.location.hash === '') {
+                        const statusContainer = document.getElementById('system-status-container');
+                        if (statusContainer) {
+                            const status = await fetchSystemStatus();
+                            statusContainer.innerHTML = renderSystemStatus(status);
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     // --- JSON Viewer Modal Logic ---
     const jsonViewerModal = document.getElementById('json-viewer-modal');
     if (jsonViewerModal) {
         const closeBtn = document.getElementById('close-json-viewer-btn');
-        
+
         const closeModal = () => {
             jsonViewerModal.classList.remove('visible');
             setTimeout(() => {
@@ -925,5 +1042,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeModal();
             }
         });
+    }
+
+    // --- Login State Modal Logic ---
+    const loginStateModal = document.getElementById('login-state-modal');
+    if (loginStateModal) {
+        const closeBtn = document.getElementById('close-login-state-modal-btn');
+        const cancelBtn = document.getElementById('cancel-login-state-btn');
+        const saveBtn = document.getElementById('save-login-state-btn');
+        const form = document.getElementById('login-state-form');
+        const contentTextarea = document.getElementById('login-state-content');
+
+        const closeModal = () => {
+            loginStateModal.classList.remove('visible');
+            setTimeout(() => {
+                loginStateModal.style.display = 'none';
+                form.reset();
+            }, 300);
+        };
+
+        async function updateLoginState(content) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = '保存中...';
+            try {
+                const response = await fetch('/api/login-state', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: content}),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '更新登录状态失败');
+                }
+                alert('登录状态更新成功！');
+                closeModal();
+                await refreshLoginStatusWidget(); // Refresh the widget UI
+                // Also refresh settings view if it's currently active
+                if (window.location.hash === '#settings') {
+                    await initializeSettingsView();
+                }
+            } catch (error) {
+                console.error('更新登录状态时出错:', error);
+                alert(`更新失败: ${error.message}`);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '保存';
+            }
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        loginStateModal.addEventListener('click', (event) => {
+            if (event.target === loginStateModal) {
+                closeModal();
+            }
+        });
+
+        saveBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const content = contentTextarea.value.trim();
+            if (!content) {
+                alert('请粘贴从浏览器获取的JSON内容。');
+                return;
+            }
+            await updateLoginState(content);
+        });
+
     }
 });
