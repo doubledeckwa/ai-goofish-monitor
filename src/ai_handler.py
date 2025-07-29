@@ -3,6 +3,7 @@ import base64
 import json
 import os
 import re
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 import requests
 
@@ -17,6 +18,12 @@ from src.config import (
     BARK_URL,
     PCURL_TO_MOBILE,
     WX_BOT_URL,
+    WEBHOOK_URL,
+    WEBHOOK_METHOD,
+    WEBHOOK_HEADERS,
+    WEBHOOK_CONTENT_TYPE,
+    WEBHOOK_QUERY_PARAMETERS,
+    WEBHOOK_BODY,
     client,
 )
 from src.utils import convert_goofish_link, retry_on_failure
@@ -90,8 +97,8 @@ def encode_image_to_base64(image_path):
 @retry_on_failure(retries=3, delay=5)
 async def send_ntfy_notification(product_data, reason):
     """当发现推荐商品时，异步发送一个高优先级的 ntfy.sh 通知。"""
-    if not NTFY_TOPIC_URL and not WX_BOT_URL and not (GOTIFY_URL and GOTIFY_TOKEN) and not BARK_URL:
-        print("警告：未在 .env 文件中配置任何通知服务 (NTFY_TOPIC_URL, WX_BOT_URL, GOTIFY_URL/TOKEN, BARK_URL)，跳过通知。")
+    if not NTFY_TOPIC_URL and not WX_BOT_URL and not (GOTIFY_URL and GOTIFY_TOKEN) and not BARK_URL and not WEBHOOK_URL:
+        print("警告：未在 .env 文件中配置任何通知服务 (NTFY_TOPIC_URL, WX_BOT_URL, GOTIFY_URL/TOKEN, BARK_URL, WEBHOOK_URL)，跳过通知。")
         return
 
     title = product_data.get('商品标题', 'N/A')
@@ -229,6 +236,86 @@ async def send_ntfy_notification(product_data, reason):
             print(f"   -> 发送企业微信通知失败: {e}")
         except Exception as e:
             print(f"   -> 发送企业微信通知时发生未知错误: {e}")
+
+    # --- 发送通用 Webhook 通知 ---
+    if WEBHOOK_URL:
+        try:
+            print(f"   -> 正在发送通用 Webhook 通知到: {WEBHOOK_URL}")
+
+            # 替换占位符
+            def replace_placeholders(template_str):
+                if not template_str:
+                    return ""
+                return template_str.replace("${title}", notification_title).replace("${content}", message)
+
+            # 准备请求头
+            headers = {}
+            if WEBHOOK_HEADERS:
+                try:
+                    headers = json.loads(WEBHOOK_HEADERS)
+                except json.JSONDecodeError:
+                    print(f"   -> [警告] Webhook 请求头格式错误，请检查 .env 中的 WEBHOOK_HEADERS。")
+
+            loop = asyncio.get_running_loop()
+
+            if WEBHOOK_METHOD == "GET":
+                # 准备查询参数
+                final_url = WEBHOOK_URL
+                if WEBHOOK_QUERY_PARAMETERS:
+                    try:
+                        params_str = replace_placeholders(WEBHOOK_QUERY_PARAMETERS)
+                        params = json.loads(params_str)
+
+                        # 解析原始URL并追加新参数
+                        url_parts = list(urlparse(final_url))
+                        query = dict(parse_qsl(url_parts[4]))
+                        query.update(params)
+                        url_parts[4] = urlencode(query)
+                        final_url = urlunparse(url_parts)
+                    except json.JSONDecodeError:
+                        print(f"   -> [警告] Webhook 查询参数格式错误，请检查 .env 中的 WEBHOOK_QUERY_PARAMETERS。")
+
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: requests.get(final_url, headers=headers, timeout=15)
+                )
+
+            elif WEBHOOK_METHOD == "POST":
+                # 准备请求体
+                data = None
+                json_payload = None
+
+                if WEBHOOK_BODY:
+                    body_str = replace_placeholders(WEBHOOK_BODY)
+                    try:
+                        if WEBHOOK_CONTENT_TYPE == "JSON":
+                            json_payload = json.loads(body_str)
+                            if 'Content-Type' not in headers and 'content-type' not in headers:
+                                headers['Content-Type'] = 'application/json; charset=utf-8'
+                        elif WEBHOOK_CONTENT_TYPE == "FORM":
+                            data = json.loads(body_str)  # requests会处理url-encoding
+                            if 'Content-Type' not in headers and 'content-type' not in headers:
+                                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                        else:
+                            print(f"   -> [警告] 不支持的 WEBHOOK_CONTENT_TYPE: {WEBHOOK_CONTENT_TYPE}。")
+                    except json.JSONDecodeError:
+                        print(f"   -> [警告] Webhook 请求体格式错误，请检查 .env 中的 WEBHOOK_BODY。")
+
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: requests.post(WEBHOOK_URL, headers=headers, json=json_payload, data=data, timeout=15)
+                )
+            else:
+                print(f"   -> [警告] 不支持的 WEBHOOK_METHOD: {WEBHOOK_METHOD}。")
+                return
+
+            response.raise_for_status()
+            print(f"   -> Webhook 通知发送成功。状态码: {response.status_code}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"   -> 发送 Webhook 通知失败: {e}")
+        except Exception as e:
+            print(f"   -> 发送 Webhook 通知时发生未知错误: {e}")
 
 
 @retry_on_failure(retries=5, delay=10)
