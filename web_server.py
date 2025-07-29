@@ -686,6 +686,9 @@ async def get_system_status():
             "openai_base_url_set": bool(env_config.get("OPENAI_BASE_URL")),
             "openai_model_name_set": bool(env_config.get("OPENAI_MODEL_NAME")),
             "ntfy_topic_url_set": bool(env_config.get("NTFY_TOPIC_URL")),
+            "gotify_url_set": bool(env_config.get("GOTIFY_URL")),
+            "gotify_token_set": bool(env_config.get("GOTIFY_TOKEN")),
+            "bark_url_set": bool(env_config.get("BARK_URL")),
         }
     }
     return status

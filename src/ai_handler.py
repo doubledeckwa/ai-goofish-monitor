@@ -12,6 +12,9 @@ from src.config import (
     IMAGE_SAVE_DIR,
     MODEL_NAME,
     NTFY_TOPIC_URL,
+    GOTIFY_URL,
+    GOTIFY_TOKEN,
+    BARK_URL,
     PCURL_TO_MOBILE,
     WX_BOT_URL,
     client,
@@ -87,8 +90,8 @@ def encode_image_to_base64(image_path):
 @retry_on_failure(retries=3, delay=5)
 async def send_ntfy_notification(product_data, reason):
     """当发现推荐商品时，异步发送一个高优先级的 ntfy.sh 通知。"""
-    if not NTFY_TOPIC_URL and not WX_BOT_URL:
-        print("警告：未在 .env 文件中配置 NTFY_TOPIC_URL 或 WX_BOT_URL，跳过通知。")
+    if not NTFY_TOPIC_URL and not WX_BOT_URL and not (GOTIFY_URL and GOTIFY_TOKEN) and not BARK_URL:
+        print("警告：未在 .env 文件中配置任何通知服务 (NTFY_TOPIC_URL, WX_BOT_URL, GOTIFY_URL/TOKEN, BARK_URL)，跳过通知。")
         return
 
     title = product_data.get('商品标题', 'N/A')
@@ -123,6 +126,79 @@ async def send_ntfy_notification(product_data, reason):
             print("   -> ntfy 通知发送成功。")
         except Exception as e:
             print(f"   -> 发送 ntfy 通知失败: {e}")
+
+    # --- 发送 Gotify 通知 ---
+    if GOTIFY_URL and GOTIFY_TOKEN:
+        try:
+            print(f"   -> 正在发送 Gotify 通知到: {GOTIFY_URL}")
+            # Gotify uses multipart/form-data
+            payload = {
+                'title': (None, notification_title),
+                'message': (None, message),
+                'priority': (None, '5')
+            }
+            
+            gotify_url_with_token = f"{GOTIFY_URL}/message?token={GOTIFY_TOKEN}"
+
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: requests.post(
+                    gotify_url_with_token,
+                    files=payload,
+                    timeout=10
+                )
+            )
+            response.raise_for_status()
+            print("   -> Gotify 通知发送成功。")
+        except requests.exceptions.RequestException as e:
+            print(f"   -> 发送 Gotify 通知失败: {e}")
+        except Exception as e:
+            print(f"   -> 发送 Gotify 通知时发生未知错误: {e}")
+
+    # --- 发送 Bark 通知 ---
+    if BARK_URL:
+        try:
+            print(f"   -> 正在发送 Bark 通知...")
+            
+            bark_payload = {
+                "title": notification_title,
+                "body": message,
+                "level": "timeSensitive",
+                "group": "闲鱼监控"
+            }
+            
+            link_to_use = convert_goofish_link(link) if PCURL_TO_MOBILE else link
+            bark_payload["url"] = link_to_use
+
+            # Add icon if available
+            main_image = product_data.get('商品主图链接')
+            if not main_image:
+                # Fallback to image list if main image not present
+                image_list = product_data.get('商品图片列表', [])
+                if image_list:
+                    main_image = image_list[0]
+            
+            if main_image:
+                bark_payload['icon'] = main_image
+
+            headers = { "Content-Type": "application/json; charset=utf-8" }
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(
+                None,
+                lambda: requests.post(
+                    BARK_URL,
+                    json=bark_payload,
+                    headers=headers,
+                    timeout=10
+                )
+            )
+            response.raise_for_status()
+            print("   -> Bark 通知发送成功。")
+        except requests.exceptions.RequestException as e:
+            print(f"   -> 发送 Bark 通知失败: {e}")
+        except Exception as e:
+            print(f"   -> 发送 Bark 通知时发生未知错误: {e}")
 
     # --- 发送企业微信机器人通知 ---
     if WX_BOT_URL:

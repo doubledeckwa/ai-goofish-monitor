@@ -10,7 +10,7 @@
 - **实时流式处理**: 发现新商品后，立即进入分析流程，告别批处理延迟。
 - **深度AI分析**: 集成多模态大语言模型（如 GPT-4o），结合商品图文和卖家画像进行深度分析，精准筛选。
 - **高度可定制**: 每个监控任务均可配置独立的关键词、价格范围、筛选条件和AI分析指令 (Prompt)。
-- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/) 和企业微信机器人，将符合AI推荐的商品立即推送到你的手机或桌面。
+- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/)、企业微信机器人和 [Bark](https://bark.day.app/)，将符合AI推荐的商品立即推送到你的手机或桌面。
 - **定时任务调度**: 支持 Cron 表达式，可为每个任务设置独立的定时执行计划。
 - **Docker 一键部署**: 提供 `docker-compose` 配置，实现快速、标准化的容器化部署。
 - **健壮的反爬策略**: 模拟真人操作，包含多种随机延迟和用户行为，提高稳定性。
@@ -69,6 +69,9 @@ Windows使用命令行：
     | `OPENAI_MODEL_NAME` | 你要使用的具体模型名称。 | 是 | **必须**选择一个支持图片分析的多模态模型，如 `gpt-4o`, `gemini-1.5-pro` 等。 |
     | `PROXY_URL` | (可选) 为AI请求配置的HTTP/S代理。 | 否 | 支持 `http://` 和 `socks5://` 格式。例如 `http://127.0.0.1:7890`。 |
     | `NTFY_TOPIC_URL` | (可选) [ntfy.sh](https://ntfy.sh/) 的主题URL，用于发送通知。 | 否 | 如果留空，将不会发送 ntfy 通知。 |
+    | `GOTIFY_URL` | (可选) Gotify 服务地址。 | 否 | 例如 `https://push.example.de`。 |
+    | `GOTIFY_TOKEN` | (可选) Gotify 应用的 Token。 | 否 | |
+    | `BARK_URL` | (可选) [Bark](https://bark.day.app/) 的推送地址。 | 否 | 例如 `https://api.day.app/your_key`。如果留空，将不发送 Bark 通知。 |
     | `WX_BOT_URL` | (可选) 企业微信机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
     | `LOGIN_IS_EDGE` | 是否使用 Edge 浏览器进行登录和爬取。 | 否 | 默认为 `false`，使用 Chrome/Chromium。 |
     | `PCURL_TO_MOBILE` | 是否在通知中将电脑版商品链接转换为手机版。 | 否 | 默认为 `true`。 |
