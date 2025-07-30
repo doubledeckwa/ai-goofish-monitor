@@ -21,6 +21,7 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@beta
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Tag mode (default) behavior:
           # - Scans for @claude mentions in comments, issues, and PRs
@@ -41,6 +42,7 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@beta
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           mode: agent
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_env: |
