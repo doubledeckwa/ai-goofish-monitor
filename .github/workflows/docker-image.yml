@@ -1,24 +1,29 @@
-name: Docker Image CI
+name: Docker Image CI on merge to master
 
+# 触发器：当一个从 dev 指向 master 的 Pull Request 被关闭并合并时触发
 on:
-  push:
-    branches: [ "master" ]
   pull_request:
-    branches: [ "master" ]
+    types: [closed] # 当PR被关闭时触发
+    branches: [ "master" ] # 目标分支是 master
 
 jobs:
-  build:
+  build-and-push:
+    # 条件：仅当PR被合并（而不是仅仅关闭）
+    if: github.event.pull_request.merged == true
+    
     runs-on: ubuntu-latest
 
-    # Add this permissions block
     permissions:
       contents: read
       packages: write
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout master branch code (with dev merged)
+      # 当PR合并后，默认会检出 master 分支的最新代码
+      uses: actions/checkout@v4
     
     - name: Build the Docker image
+      # 使用 master 分支最新的代码进行构建
       run: docker build . --file Dockerfile --tag ai-goofish:latest
       
     - name: Log in to GitHub Container Registry
@@ -30,5 +35,18 @@ jobs:
 
     - name: Push Docker image
       run: |
+        # 准备推送到 GHCR 的镜像标签
         docker tag ai-goofish:latest ghcr.io/${{ github.repository_owner }}/ai-goofish:latest
-        docker push ghcr.io/${{ github.repository_owner }}/ai-goofish:latest
+        
+        # 为了更好地进行版本管理，建议也打一个基于 commit SHA 的标签
+        IMAGE_ID=ghcr.io/${{ github.repository_owner }}/ai-goofish
+        # 将 IMAGE_ID 转换为小写，以符合 Docker 镜像命名规范
+        IMAGE_ID=$(echo $IMAGE_ID | tr '[:upper:]' '[:lower:]')
+        VERSION=$(echo "${{ github.sha }}" | cut -c1-7)
+        
+        echo "Pushing image: ${IMAGE_ID}:latest"
+        docker push ${IMAGE_ID}:latest
+        
+        echo "Pushing image with SHA tag: ${IMAGE_ID}:${VERSION}"
+        docker tag ai-goofish:latest ${IMAGE_ID}:${VERSION}
+        docker push ${IMAGE_ID}:${VERSION}
