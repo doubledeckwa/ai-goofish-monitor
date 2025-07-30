@@ -47,8 +47,9 @@ pip install -r requirements.txt
 
 ### 第 2 步: 基础配置
 
-1. **配置环境变量**: 复制`.env.example`文件并命名为`.env`，并修改里面的内容。
-Windows使用命令行：
+1. **配置环境变量**: 复制`.env.example`文件并命名为`.env`，并修改里面的内容。  
+
+    Windows使用命令行：
 
     ```cmd
     copy .env.example .env
@@ -85,21 +86,23 @@ Windows使用命令行：
     | `AI_DEBUG_MODE` | 是否开启AI调试模式。 | 否 | 默认为 `false`。开启后会在控制台打印详细的AI请求和响应日志。 |
     | `SERVER_PORT` | Web UI服务的运行端口。 | 否 | 默认为 `8000`。 |
 
-2.  **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，必须先提供有效的登录凭证。我们推荐使用Web UI来完成此操作：
+2. **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，必须先提供有效的登录凭证。我们推荐使用Web UI来完成此操作：
 
     **推荐方式：通过 Web UI 更新**
-    1.  先跳过此步骤，直接执行第3步启动Web服务。
-    2.  打开Web UI后，进入 **“系统设置”** 页面。
-    3.  找到 “登录状态文件”，点击 **“手动更新”** 按钮。
-    4.  按照弹窗内的详细指引，在您自己的电脑上登录闲鱼，并复制所需的登录信息粘贴到Web UI中即可。
-    
+    1. 先跳过此步骤，直接执行第3步启动Web服务。
+    2. 打开Web UI后，进入 **“系统设置”** 页面。
+    3. 找到 “登录状态文件”，点击 **“手动更新”** 按钮。
+    4. 按照弹窗内的详细指引，在您自己的电脑上登录闲鱼，并复制所需的登录信息粘贴到Web UI中即可。
+
     这种方式无需在服务器上运行带图形界面的程序，最为便捷。
 
     **备用方式：运行登录脚本**
     如果您可以在本地或带桌面的服务器上运行程序，也可以使用传统的脚本方式：
+
     ```bash
     python login.py
     ```
+
     运行后会弹出一个浏览器窗口，请使用**手机闲鱼App扫描二维码**完成登录。成功后，程序会自动关闭，并在项目根目录生成一个 `xianyu_state.json` 文件。
 
 ### 第 3 步: 启动 Web 服务
@@ -136,11 +139,11 @@ python web_server.py
 
 3. **创建 `.env` 文件**: 参考 **[快速开始](#-快速开始-web-ui-推荐)** 部分的说明，在项目根目录创建并填写 `.env` 文件。
 
-4.  **获取登录状态 (关键步骤!)**: Docker容器内无法进行扫码登录。请在**启动容器后**，通过访问Web UI来设置登录状态：
-    1.  （在宿主机上）执行 `docker-compose up -d` 启动服务。
-    2.  在浏览器中打开 `http://127.0.0.1:8000` 访问Web UI。
-    3.  进入 **“系统设置”** 页面，点击 **“手动更新”** 按钮。
-    4.  按照弹窗内的指引，在你的**本地电脑浏览器**中获取登录信息，并粘贴到Web UI中保存。`xianyu_state.json` 文件会被自动创建在Docker容器内正确的共享卷位置。
+4. **获取登录状态 (关键步骤!)**: Docker容器内无法进行扫码登录。请在**启动容器后**，通过访问Web UI来设置登录状态：
+    1. （在宿主机上）执行 `docker-compose up -d` 启动服务。
+    2. 在浏览器中打开 `http://127.0.0.1:8000` 访问Web UI。
+    3. 进入 **“系统设置”** 页面，点击 **“手动更新”** 按钮。
+    4. 按照弹窗内的指引，在你的**本地电脑浏览器**中获取登录信息，并粘贴到Web UI中保存。`xianyu_state.json` 文件会被自动创建在Docker容器内正确的共享卷位置。
 
 ### 第 2 步: 运行 Docker 容器
 
@@ -244,18 +247,48 @@ graph TD
         2. 将整个项目文件夹（包含 `.env` 和 `xianyu_state.json`）上传到群晖的某个目录下。
         3. 在群晖的 Container Manager (或旧版 Docker) 中，使用 `docker-compose up -d` 命令（通过 SSH 或任务计划）来启动项目。确保 `docker-compose.yaml` 中的 volume 映射路径正确指向你在群晖上的项目文件夹。
 
-6  **Q: 如何配置使用 Gemini / Qwen / Grok 或其他非 OpenAI 的大语言模型？**
+6. **Q: 如何配置使用 Gemini / Qwen / Grok 或其他非 OpenAI 的大语言模型？**
     ***A:** 本项目理论上支持任何提供 OpenAI 兼容 API 接口的模型。关键在于正确配置 `.env` 文件中的三个变量：
         *   `OPENAI_API_KEY`: 你的模型服务商提供的 API Key。
         *`OPENAI_BASE_URL`: 模型服务商提供的 API-Compatible Endpoint 地址。请务必查阅你所使用模型的官方文档，通常格式为 `https://api.your-provider.com/v1` (注意，末尾不需要 `/chat/completions`)。
         *   `OPENAI_MODEL_NAME`: 你要使用的具体模型名称，需要模型支持图片识别，例如 `gemini-2.5-flash`。
-    *   **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
+    - **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
 
-7  **Q: 运行一段时间后被闲鱼检测到，提示“异常流量”或需要滑动验证？**
+7. **Q: 运行一段时间后被闲鱼检测到，提示“异常流量”或需要滑动验证？**
     ***A:** 这是闲鱼的反爬虫机制。为了降低被检测的风险，可以尝试以下方法：
         *   **关闭无头模式:** 在 `.env` 文件中设置 `RUN_HEADLESS=false`。这样浏览器会以有界面的方式运行，当出现滑动验证码时，你可以手动完成验证，程序会继续执行。
         ***降低监控频率:** 避免同时运行大量监控任务。
         *   **使用干净的网络环境:** 频繁爬取可能导致 IP 被临时标记。
+8. **Q: pyzbar 在 Windows 上安装失败怎么办？**
+    - **A:** pyzbar 在 Windows 上需要额外的 zbar 动态链接库支持。
+    - **解决方案 (Windows):**
+        - **方法1 (推荐):** 使用 Chocolatey 安装：
+
+            ```cmd
+            choco install zbar
+            ```
+
+        - **方法2:** 手动下载并添加到 PATH：
+            1. 从 [zbar releases](https://github.com/NaturalHistoryMuseum/pyzbar/releases) 下载对应版本的 `libzbar-64.dll`
+            2. 将文件放到 Python 安装目录或添加到系统 PATH
+        - **方法3:** 使用 conda 安装：
+
+            ```cmd
+            conda install -c conda-forge zbar
+            ```
+
+    - **Linux 用户:** 直接安装系统包即可：
+
+        ```bash
+        # Ubuntu/Debian
+        sudo apt-get install libzbar0
+        
+        # CentOS/RHEL
+        sudo yum install zbar
+        
+        # Arch Linux
+        sudo pacman -S zbar
+        ```
 
 ## 致谢
 
@@ -270,6 +303,7 @@ graph TD
 以及感谢Aider和Gemini 解放双手，代码写起来飞一般的感觉～
 
 ## Support & Sponsoring
+
 如果该项目对您有帮助，请考虑 buy a coffe for me , 非常感谢您的支持！
 
 <table>
@@ -278,7 +312,6 @@ graph TD
     <td><img src="static/wx_support.png" width="200" alt="WeChat Pay" /></td>
   </tr>
 </table>
-
 
 ## ⚠️ 注意事项
 
