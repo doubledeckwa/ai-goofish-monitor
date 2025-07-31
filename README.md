@@ -68,9 +68,9 @@ pip install -r requirements.txt
     | 环境变量 | 说明 | 是否必填 | 注意事项 |
     | :--- | :--- | :--- | :--- |
     | `OPENAI_API_KEY` | 你的AI模型服务商提供的API Key。 | 是 | 对于某些本地或特定代理的服务，此项可能为可选。 |
-    | `OPENAI_BASE_URL` | AI模型的API接口地址，必须兼容OpenAI格式。 | 是 | 请填写API的基础路径，例如 `https://api.example.com/v1`。 |
-    | `OPENAI_MODEL_NAME` | 你要使用的具体模型名称。 | 是 | **必须**选择一个支持图片分析的多模态模型，如 `gpt-4o`, `gemini-1.5-pro` 等。 |
-    | `PROXY_URL` | (可选) 为AI请求配置的HTTP/S代理。 | 否 | 支持 `http://` 和 `socks5://` 格式。例如 `http://127.0.0.1:7890`。 |
+    | `OPENAI_BASE_URL` | AI模型的API接口地址，必须兼容OpenAI格式。 | 是 | 请填写API的基础路径，例如 `https://ark.cn-beijing.volces.com/api/v3/`。 |
+    | `OPENAI_MODEL_NAME` | 你要使用的具体模型名称。 | 是 | **必须**选择一个支持图片分析的多模态模型，如 `doubao-seed-1-6-250615`, `gemini-2.5-pro` 等。 |
+    | `PROXY_URL` | (可选) 需要翻墙时配置的HTTP/S代理。 | 否 | 支持 `http://` 和 `socks5://` 格式。例如 `http://127.0.0.1:7890`。 |
     | `NTFY_TOPIC_URL` | (可选) [ntfy.sh](https://ntfy.sh/) 的主题URL，用于发送通知。 | 否 | 如果留空，将不会发送 ntfy 通知。 |
     | `GOTIFY_URL` | (可选) Gotify 服务地址。 | 否 | 例如 `https://push.example.de`。 |
     | `GOTIFY_TOKEN` | (可选) Gotify 应用的 Token。 | 否 | |
@@ -88,7 +88,7 @@ pip install -r requirements.txt
     | `AI_DEBUG_MODE` | 是否开启AI调试模式。 | 否 | 默认为 `false`。开启后会在控制台打印详细的AI请求和响应日志。 |
     | `SERVER_PORT` | Web UI服务的运行端口。 | 否 | 默认为 `8000`。 |
 
-    > 💡 **调试建议**: 如果在配置AI API时遇到404错误，建议先使用阿里云提供的API进行调试，确保基础功能正常后再尝试其他API提供商。某些API提供商可能存在兼容性问题或需要特殊的配置。
+    > 💡 **调试建议**: 如果在配置AI API时遇到404错误，建议先使用阿里云或火山提供的API进行调试，确保基础功能正常后再尝试其他API提供商。某些API提供商可能存在兼容性问题或需要特殊的配置。
 
 2. **获取登录状态 (重要!)**: 为了让爬虫能够以登录状态访问闲鱼，必须先提供有效的登录凭证。我们推荐使用Web UI来完成此操作：
 
@@ -96,7 +96,7 @@ pip install -r requirements.txt
     1. 先跳过此步骤，直接执行第3步启动Web服务。
     2. 打开Web UI后，进入 **“系统设置”** 页面。
     3. 找到 “登录状态文件”，点击 **“手动更新”** 按钮。
-    4. 按照弹窗内的详细指引，在您自己的电脑上登录闲鱼，并复制所需的登录信息粘贴到Web UI中即可。
+    4. 按照弹窗内的详细指引，在您自己的电脑上登录闲鱼后，并通过粘贴js代码获取登录json信息并复制粘贴到Web UI中保存即可。
 
     这种方式无需在服务器上运行带图形界面的程序，最为便捷。
 
