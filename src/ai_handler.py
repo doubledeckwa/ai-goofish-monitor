@@ -246,7 +246,11 @@ async def send_ntfy_notification(product_data, reason):
             def replace_placeholders(template_str):
                 if not template_str:
                     return ""
-                return template_str.replace("${title}", notification_title).replace("${content}", message)
+                # 对内容进行JSON转义，避免换行符和特殊字符破坏JSON格式
+                safe_title = json.dumps(notification_title, ensure_ascii=False)[1:-1]  # 去掉外层引号
+                safe_content = json.dumps(message, ensure_ascii=False)[1:-1]  # 去掉外层引号
+                # 同时支持旧的${title}${content}和新的{{title}}{{content}}格式
+                return template_str.replace("${title}", safe_title).replace("${content}", safe_content).replace("{{title}}", safe_title).replace("{{content}}", safe_content)
 
             # 准备请求头
             headers = {}
