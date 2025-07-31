@@ -257,29 +257,28 @@
         </div>
         <div class="modal-body">
             <form id="login-state-form" onsubmit="return false;">
+
+                <!-- Chrome Extension Method -->
+                <h3 style="margin-top: 20px; margin-bottom: 10px;">使用Chrome扩展（推荐）</h3>
                 <p>此方法用于在无法运行图形化浏览器的服务器上更新闲鱼登录凭证。</p>
+                <p>目前chrome插件还在上架审核中，暂时使用开发者模式加载的方式。</p>
                 <ol class="instructions">
-                    <li>在您的<strong>个人电脑</strong>上，使用Chrome或Edge浏览器打开并登录 <a
-                            href="https://www.goofish.com" target="_blank" rel="noopener noreferrer">闲鱼官网</a>。
+                    <li>使用Chrome浏览器打开 <a href="chrome://extensions/" target="_blank" rel="noopener noreferrer">扩展程序</a>
+                        并打开<b>[开发者模式] </b>
                     </li>
-                    <li>登录成功后，按 <strong>F12</strong> 键打开开发者工具。</li>
-                    <li>切换到 <strong>"Console" (控制台)</strong> 标签页。</li>
-                    <li>点击下面的按钮复制JavaScript代码，然后粘贴到控制台中并按回车执行。(如果提示需要输入 "allow
-                        pasting"，请输入后回车再粘贴)
+                    <li> 点击<b>[加载未打包的扩展程序]</b> -> 选择项目下的<b><code>chrome-extension</code></b>目录</li>
+                    <li>打开并登录 <a href="https://www.goofish.com" target="_blank"
+                                      rel="noopener noreferrer">闲鱼官网</a>。
                     </li>
-                    <div class="code-block">
-                        <pre><code id="login-script-code">const lsKey = '_lib_auto_login_havana_storage_arms_api_key_'; const lsValue = localStorage.getItem(lsKey); const cookies = document.cookie.split('; ').filter(cookie => cookie.trim() !== '').map(cookie => { const [name, value] = cookie.split('=').map(decodeURIComponent); return { name, value, domain: '.goofish.com', path: '/' }; }); const output = { cookies, origins: [ { origin: "https://www.goofish.com", localStorage: [{ name: lsKey, value: lsValue || '' }] } ] }; console.log(JSON.stringify(output, null, 2));</code></pre>
-                        <button type="button" id="copy-login-script-btn" class="control-button copy-btn">复制脚本
-                        </button>
-                    </div>
-                    <li>复制控制台输出的<strong>全部JSON内容</strong> (以 <code>{</code> 开始，以 <code>}</code> 结束)。
-                    </li>
-                    <li>将复制的内容粘贴到下方的文本框中，然后点击“保存”。</li>
+                    <li>登录成功后，点击浏览器工具栏中的该扩展图标。</li>
+                    <li>点击"提取登录状态"按钮获取登录信息。</li>
+                    <li>点击"复制到剪贴板"按钮。</li>
+                    <li>将复制的内容粘贴到下方的文本框中，然后点击"保存"。</li>
                 </ol>
                 <div class="form-group">
                     <label for="login-state-content">粘贴JSON内容:</label>
                     <textarea id="login-state-content" name="content" rows="8"
-                              placeholder="请在此处粘贴从浏览器控制台复制的JSON文本..."></textarea>
+                              placeholder="请在此处粘贴从浏览器扩展复制的JSON文本..."></textarea>
                 </div>
             </form>
         </div>
