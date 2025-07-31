@@ -32,6 +32,8 @@
 
 ### 第 1 步: 环境准备
 
+> ⚠️ **Python版本要求**: 本地部署调试时建议使用 Python 3.10 或更高版本。较低版本的Python可能会导致依赖包安装失败或运行时错误（如 `ModuleNotFoundError: No module named 'PIL'`）。
+
 克隆本项目到本地:
 
 ```bash
@@ -144,6 +146,8 @@ python web_server.py
     2. 在浏览器中打开 `http://127.0.0.1:8000` 访问Web UI。
     3. 进入 **“系统设置”** 页面，点击 **“手动更新”** 按钮。
     4. 按照弹窗内的指引，在你的**本地电脑浏览器**中获取登录信息，并粘贴到Web UI中保存。`xianyu_state.json` 文件会被自动创建在Docker容器内正确的共享卷位置。
+
+> ℹ️ **关于Python版本**: 使用Docker部署时，项目使用的是Dockerfile中指定的Python 3.11版本，无需担心本地Python版本兼容性问题。
 
 ### 第 2 步: 运行 Docker 容器
 
@@ -289,6 +293,22 @@ graph TD
         # Arch Linux
         sudo pacman -S zbar
         ```
+
+9. **Q: 运行 `login.py` 时提示 `ModuleNotFoundError: No module named 'PIL'` 是什么原因？**
+    - **A:** 这个错误通常是因为Python版本过低或者依赖包安装不完整导致的。本项目推荐使用 Python 3.10 或更高版本。
+    - **解决方案:**
+        - 确保使用 Python 3.10+ 版本运行项目
+        - 重新安装依赖包：
+
+            ```bash
+            pip install -r requirements.txt
+            ```
+
+        - 如果问题依旧，可以尝试单独安装 Pillow 包：
+
+            ```bash
+            pip install Pillow
+            ```
 
 ## 致谢
 
