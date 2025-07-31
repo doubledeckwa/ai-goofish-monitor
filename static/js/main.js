@@ -467,13 +467,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 <div class="form-group">
                     <label for="webhook-query-parameters">Webhook 查询参数 (JSON)</label>
                     <textarea id="webhook-query-parameters" name="WEBHOOK_QUERY_PARAMETERS" rows="3" placeholder='例如: {"param1": "value1"}'>${settings.WEBHOOK_QUERY_PARAMETERS || ''}</textarea>
-                    <p class="form-hint">GET 请求的查询参数，支持 ${title} 和 ${content} 占位符</p>
+                    <p class="form-hint">GET 请求的查询参数，支持 \${title} 和 \${content} 占位符</p>
                 </div>
                 
                 <div class="form-group">
                     <label for="webhook-body">Webhook 请求体 (JSON)</label>
-                    <textarea id="webhook-body" name="WEBHOOK_BODY" rows="3" placeholder='例如: {"message": "${content}"}'>${settings.WEBHOOK_BODY || ''}</textarea>
-                    <p class="form-hint">POST 请求的请求体，支持 ${title} 和 ${content} 占位符</p>
+                    <textarea id="webhook-body" name="WEBHOOK_BODY" rows="3" placeholder='例如: {"message": "\${content}"}'>${settings.WEBHOOK_BODY || ''}</textarea>
+                    <p class="form-hint">POST 请求的请求体，支持 \${title} 和 \${content} 占位符</p>
                 </div>
                 
                 <div class="form-group">
@@ -811,9 +811,12 @@ document.addEventListener('DOMContentLoaded', function () {
             refreshBtn.addEventListener('click', fetchAndRenderResults);
             
             // Enable delete button when a file is selected
-            selector.addEventListener('change', () => {
+            const updateDeleteButtonState = () => {
                 deleteBtn.disabled = !selector.value;
-            });
+            };
+            selector.addEventListener('change', updateDeleteButtonState);
+            // 初始化时也更新一次删除按钮状态
+            updateDeleteButtonState();
             
             // Delete button functionality
             deleteBtn.addEventListener('click', async () => {
@@ -850,7 +853,11 @@ document.addEventListener('DOMContentLoaded', function () {
         // 2. Render Notification Settings
         const notificationContainer = document.getElementById('notification-settings-container');
         const notificationSettings = await fetchNotificationSettings();
-        notificationContainer.innerHTML = renderNotificationSettings(notificationSettings);
+        if (notificationSettings !== null) {
+            notificationContainer.innerHTML = renderNotificationSettings(notificationSettings);
+        } else {
+            notificationContainer.innerHTML = '<p>加载通知配置失败。请检查服务器是否正常运行。</p>';
+        }
 
         // 3. Setup Prompt Editor
         const promptSelector = document.getElementById('prompt-selector');
@@ -860,8 +867,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const prompts = await fetchPrompts();
         if (prompts && prompts.length > 0) {
             promptSelector.innerHTML = '<option value="">-- 请选择 --</option>' + prompts.map(p => `<option value="${p}">${p}</option>`).join('');
-        } else {
+        } else if (prompts && prompts.length === 0) {
             promptSelector.innerHTML = '<option value="">没有找到Prompt文件</option>';
+        } else {
+            // prompts is null or undefined, which means fetch failed
+            promptSelector.innerHTML = '<option value="">加载Prompt文件列表失败</option>';
         }
 
         promptSelector.addEventListener('change', async () => {
