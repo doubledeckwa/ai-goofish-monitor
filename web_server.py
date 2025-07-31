@@ -617,7 +617,7 @@ async def clear_logs():
 
     try:
         # 使用 'w' 模式打开文件会清空内容
-        async with aiofiles.open(log_file_path, 'w') as f:
+        async with aiofiles.open(log_file_path, 'w', encoding='utf-8') as f:
             await f.write("")
         return {"message": "日志已成功清空。"}
     except Exception as e:
