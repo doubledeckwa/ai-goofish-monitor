@@ -66,6 +66,21 @@ class LoginStateUpdate(BaseModel):
     content: str
 
 
+class NotificationSettings(BaseModel):
+    NTFY_TOPIC_URL: Optional[str] = None
+    GOTIFY_URL: Optional[str] = None
+    GOTIFY_TOKEN: Optional[str] = None
+    BARK_URL: Optional[str] = None
+    WX_BOT_URL: Optional[str] = None
+    WEBHOOK_URL: Optional[str] = None
+    WEBHOOK_METHOD: Optional[str] = "POST"
+    WEBHOOK_HEADERS: Optional[str] = None
+    WEBHOOK_CONTENT_TYPE: Optional[str] = "JSON"
+    WEBHOOK_QUERY_PARAMETERS: Optional[str] = None
+    WEBHOOK_BODY: Optional[str] = None
+    PCURL_TO_MOBILE: Optional[bool] = True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -94,6 +109,69 @@ async def lifespan(app: FastAPI):
         print("所有爬虫进程已终止。")
 
     await _set_all_tasks_stopped_in_config()
+
+
+def load_notification_settings():
+    """Load notification settings from .env file"""
+    from dotenv import dotenv_values
+    config = dotenv_values(".env")
+    
+    return {
+        "NTFY_TOPIC_URL": config.get("NTFY_TOPIC_URL", ""),
+        "GOTIFY_URL": config.get("GOTIFY_URL", ""),
+        "GOTIFY_TOKEN": config.get("GOTIFY_TOKEN", ""),
+        "BARK_URL": config.get("BARK_URL", ""),
+        "WX_BOT_URL": config.get("WX_BOT_URL", ""),
+        "WEBHOOK_URL": config.get("WEBHOOK_URL", ""),
+        "WEBHOOK_METHOD": config.get("WEBHOOK_METHOD", "POST"),
+        "WEBHOOK_HEADERS": config.get("WEBHOOK_HEADERS", ""),
+        "WEBHOOK_CONTENT_TYPE": config.get("WEBHOOK_CONTENT_TYPE", "JSON"),
+        "WEBHOOK_QUERY_PARAMETERS": config.get("WEBHOOK_QUERY_PARAMETERS", ""),
+        "WEBHOOK_BODY": config.get("WEBHOOK_BODY", ""),
+        "PCURL_TO_MOBILE": config.get("PCURL_TO_MOBILE", "true").lower() == "true"
+    }
+
+
+def save_notification_settings(settings: dict):
+    """Save notification settings to .env file"""
+    env_file = ".env"
+    env_lines = []
+    
+    # Read existing .env file
+    if os.path.exists(env_file):
+        with open(env_file, 'r', encoding='utf-8') as f:
+            env_lines = f.readlines()
+    
+    # Update or add notification settings
+    setting_keys = [
+        "NTFY_TOPIC_URL", "GOTIFY_URL", "GOTIFY_TOKEN", "BARK_URL", 
+        "WX_BOT_URL", "WEBHOOK_URL", "WEBHOOK_METHOD", "WEBHOOK_HEADERS",
+        "WEBHOOK_CONTENT_TYPE", "WEBHOOK_QUERY_PARAMETERS", "WEBHOOK_BODY", "PCURL_TO_MOBILE"
+    ]
+    
+    # Create a dictionary of existing settings
+    existing_settings = {}
+    for line in env_lines:
+        if '=' in line and not line.strip().startswith('#'):
+            key, value = line.split('=', 1)
+            existing_settings[key.strip()] = value.strip()
+    
+    # Update with new settings
+    existing_settings.update(settings)
+    
+    # Write back to file
+    with open(env_file, 'w', encoding='utf-8') as f:
+        for key in setting_keys:
+            value = existing_settings.get(key, "")
+            if key == "PCURL_TO_MOBILE":
+                f.write(f"{key}={str(value).lower()}\n")
+            else:
+                f.write(f"{key}={value}\n")
+        
+        # Write any other existing settings that are not notification settings
+        for key, value in existing_settings.items():
+            if key not in setting_keys:
+                f.write(f"{key}={value}\n")
 
 
 app = FastAPI(title="闲鱼智能监控机器人", lifespan=lifespan)
@@ -599,6 +677,25 @@ async def list_result_files():
     return {"files": files}
 
 
+@app.delete("/api/results/files/{filename}", response_model=dict)
+async def delete_result_file(filename: str):
+    """
+    删除指定的结果文件。
+    """
+    if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="无效的文件名。")
+    
+    filepath = os.path.join("jsonl", filename)
+    if not os.path.exists(filepath):
+        raise HTTPException(status_code=404, detail="结果文件未找到。")
+    
+    try:
+        os.remove(filepath)
+        return {"message": f"结果文件 '{filename}' 已成功删除。"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"删除结果文件时出错: {e}")
+
+
 @app.get("/api/results/{filename}")
 async def get_result_file_content(filename: str, page: int = 1, limit: int = 20, recommended_only: bool = False, sort_by: str = "crawl_time", sort_order: str = "desc"):
     """
@@ -780,6 +877,28 @@ async def delete_login_state():
         except OSError as e:
             raise HTTPException(status_code=500, detail=f"删除登录状态文件时出错: {e}")
     return {"message": "登录状态文件不存在，无需删除。"}
+
+
+@app.get("/api/settings/notifications", response_model=dict)
+async def get_notification_settings():
+    """
+    获取通知设置。
+    """
+    return load_notification_settings()
+
+
+@app.put("/api/settings/notifications", response_model=dict)
+async def update_notification_settings(settings: NotificationSettings):
+    """
+    更新通知设置。
+    """
+    try:
+        # Convert Pydantic model to dict, excluding None values
+        settings_dict = settings.dict(exclude_none=True)
+        save_notification_settings(settings_dict)
+        return {"message": "通知设置已成功更新。"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"更新通知设置时出错: {e}")
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <option value="asc">升序</option>
                     </select>
                     <button id="refresh-results-btn" class="control-button">🔄 刷新</button>
+                    <button id="delete-results-btn" class="control-button danger-btn" disabled>🗑️ 删除结果</button>
                 </div>
                 <div id="results-grid-container">
                     <p>请先选择一个结果文件。</p>
@@ -65,6 +66,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div id="system-status-container"><p>正在加载状态...</p></div>
                 </div>
                 <div class="settings-card">
+                    <h3>通知配置</h3>
+                    <div id="notification-settings-container">
+                        <p>正在加载通知配置...</p>
+                    </div>
+                </div>
+                <div class="settings-card">
                     <h3>Prompt 管理</h3>
                     <div class="prompt-manager">
                         <div class="prompt-list-container">
@@ -81,6 +88,36 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // --- API Functions ---
+    async function fetchNotificationSettings() {
+        try {
+            const response = await fetch('/api/settings/notifications');
+            if (!response.ok) throw new Error('无法获取通知设置');
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
+    async function updateNotificationSettings(settings) {
+        try {
+            const response = await fetch('/api/settings/notifications', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(settings),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '更新通知设置失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('无法更新通知设置:', error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
     async function fetchPrompts() {
         try {
             const response = await fetch('/api/prompts');
@@ -243,6 +280,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function deleteResultFile(filename) {
+        try {
+            const response = await fetch(`/api/results/files/${filename}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '删除结果文件失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`无法删除结果文件 ${filename}:`, error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
     async function fetchResultContent(filename, recommendedOnly, sortBy, sortOrder) {
         try {
             const params = new URLSearchParams({
@@ -343,6 +397,96 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
         }
         container.innerHTML = content;
+    }
+
+    function renderNotificationSettings(settings) {
+        if (!settings) return '<p>无法加载通知设置。</p>';
+
+        return `
+            <form id="notification-settings-form">
+                <div class="form-group">
+                    <label for="ntfy-topic-url">Ntfy Topic URL</label>
+                    <input type="text" id="ntfy-topic-url" name="NTFY_TOPIC_URL" value="${settings.NTFY_TOPIC_URL || ''}" placeholder="例如: https://ntfy.sh/your_topic">
+                    <p class="form-hint">用于发送通知到 ntfy.sh 服务</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gotify-url">Gotify URL</label>
+                    <input type="text" id="gotify-url" name="GOTIFY_URL" value="${settings.GOTIFY_URL || ''}" placeholder="例如: https://push.example.de">
+                    <p class="form-hint">Gotify 服务地址</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gotify-token">Gotify Token</label>
+                    <input type="text" id="gotify-token" name="GOTIFY_TOKEN" value="${settings.GOTIFY_TOKEN || ''}" placeholder="例如: your_gotify_token">
+                    <p class="form-hint">Gotify 应用的 Token</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bark-url">Bark URL</label>
+                    <input type="text" id="bark-url" name="BARK_URL" value="${settings.BARK_URL || ''}" placeholder="例如: https://api.day.app/your_key">
+                    <p class="form-hint">Bark 推送地址</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="wx-bot-url">企业微信机器人 URL</label>
+                    <input type="text" id="wx-bot-url" name="WX_BOT_URL" value="${settings.WX_BOT_URL || ''}" placeholder="例如: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=your_key">
+                    <p class="form-hint">企业微信机器人的 Webhook 地址</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-url">通用 Webhook URL</label>
+                    <input type="text" id="webhook-url" name="WEBHOOK_URL" value="${settings.WEBHOOK_URL || ''}" placeholder="例如: https://your-webhook-url.com/endpoint">
+                    <p class="form-hint">通用 Webhook 的 URL 地址</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-method">Webhook 方法</label>
+                    <select id="webhook-method" name="WEBHOOK_METHOD">
+                        <option value="POST" ${settings.WEBHOOK_METHOD === 'POST' ? 'selected' : ''}>POST</option>
+                        <option value="GET" ${settings.WEBHOOK_METHOD === 'GET' ? 'selected' : ''}>GET</option>
+                    </select>
+                    <p class="form-hint">Webhook 请求方法</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-headers">Webhook 请求头 (JSON)</label>
+                    <textarea id="webhook-headers" name="WEBHOOK_HEADERS" rows="3" placeholder='例如: {"Authorization": "Bearer token"}'>${settings.WEBHOOK_HEADERS || ''}</textarea>
+                    <p class="form-hint">必须是有效的 JSON 字符串</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-content-type">Webhook 内容类型</label>
+                    <select id="webhook-content-type" name="WEBHOOK_CONTENT_TYPE">
+                        <option value="JSON" ${settings.WEBHOOK_CONTENT_TYPE === 'JSON' ? 'selected' : ''}>JSON</option>
+                        <option value="FORM" ${settings.WEBHOOK_CONTENT_TYPE === 'FORM' ? 'selected' : ''}>FORM</option>
+                    </select>
+                    <p class="form-hint">POST 请求的内容类型</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-query-parameters">Webhook 查询参数 (JSON)</label>
+                    <textarea id="webhook-query-parameters" name="WEBHOOK_QUERY_PARAMETERS" rows="3" placeholder='例如: {"param1": "value1"}'>${settings.WEBHOOK_QUERY_PARAMETERS || ''}</textarea>
+                    <p class="form-hint">GET 请求的查询参数，支持 \${title} 和 \${content} 占位符</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="webhook-body">Webhook 请求体 (JSON)</label>
+                    <textarea id="webhook-body" name="WEBHOOK_BODY" rows="3" placeholder='例如: {"message": "\${content}"}'>${settings.WEBHOOK_BODY || ''}</textarea>
+                    <p class="form-hint">POST 请求的请求体，支持 \${title} 和 \${content} 占位符</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pcurl-to-mobile" name="PCURL_TO_MOBILE" ${settings.PCURL_TO_MOBILE ? 'checked' : ''}>
+                        将电脑版链接转换为手机版
+                    </label>
+                    <p class="form-hint">在通知中将电脑版商品链接转换为手机版</p>
+                </div>
+                
+                <button type="submit" class="control-button primary-btn">保存通知设置</button>
+            </form>
+        `;
     }
 
     async function refreshLoginStatusWidget() {
@@ -640,6 +784,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const selector = document.getElementById('result-file-selector');
         const checkbox = document.getElementById('recommended-only-checkbox');
         const refreshBtn = document.getElementById('refresh-results-btn');
+        const deleteBtn = document.getElementById('delete-results-btn');
         const sortBySelector = document.getElementById('sort-by-selector');
         const sortOrderSelector = document.getElementById('sort-order-selector');
 
@@ -664,6 +809,33 @@ document.addEventListener('DOMContentLoaded', function () {
             sortBySelector.addEventListener('change', fetchAndRenderResults);
             sortOrderSelector.addEventListener('change', fetchAndRenderResults);
             refreshBtn.addEventListener('click', fetchAndRenderResults);
+            
+            // Enable delete button when a file is selected
+            const updateDeleteButtonState = () => {
+                deleteBtn.disabled = !selector.value;
+            };
+            selector.addEventListener('change', updateDeleteButtonState);
+            // 初始化时也更新一次删除按钮状态
+            updateDeleteButtonState();
+            
+            // Delete button functionality
+            deleteBtn.addEventListener('click', async () => {
+                const selectedFile = selector.value;
+                if (!selectedFile) {
+                    alert('请先选择一个结果文件。');
+                    return;
+                }
+                
+                if (confirm(`你确定要删除结果文件 "${selectedFile}" 吗？此操作不可恢复。`)) {
+                    const result = await deleteResultFile(selectedFile);
+                    if (result) {
+                        alert(result.message);
+                        // Refresh the file list
+                        await initializeResultsView();
+                    }
+                }
+            });
+            
             // Initial load
             await fetchAndRenderResults();
         } else {
@@ -678,7 +850,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const status = await fetchSystemStatus();
         statusContainer.innerHTML = renderSystemStatus(status);
 
-        // 2. Setup Prompt Editor
+        // 2. Render Notification Settings
+        const notificationContainer = document.getElementById('notification-settings-container');
+        const notificationSettings = await fetchNotificationSettings();
+        if (notificationSettings !== null) {
+            notificationContainer.innerHTML = renderNotificationSettings(notificationSettings);
+        } else {
+            notificationContainer.innerHTML = '<p>加载通知配置失败。请检查服务器是否正常运行。</p>';
+        }
+
+        // 3. Setup Prompt Editor
         const promptSelector = document.getElementById('prompt-selector');
         const promptEditor = document.getElementById('prompt-editor');
         const savePromptBtn = document.getElementById('save-prompt-btn');
@@ -686,8 +867,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const prompts = await fetchPrompts();
         if (prompts && prompts.length > 0) {
             promptSelector.innerHTML = '<option value="">-- 请选择 --</option>' + prompts.map(p => `<option value="${p}">${p}</option>`).join('');
-        } else {
+        } else if (prompts && prompts.length === 0) {
             promptSelector.innerHTML = '<option value="">没有找到Prompt文件</option>';
+        } else {
+            // prompts is null or undefined, which means fetch failed
+            promptSelector.innerHTML = '<option value="">加载Prompt文件列表失败</option>';
         }
 
         promptSelector.addEventListener('change', async () => {
@@ -731,6 +915,47 @@ document.addEventListener('DOMContentLoaded', function () {
             savePromptBtn.disabled = false;
             savePromptBtn.textContent = '保存更改';
         });
+
+        // 4. Add event listener for notification settings form
+        const notificationForm = document.getElementById('notification-settings-form');
+        if (notificationForm) {
+            notificationForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Collect form data
+                const formData = new FormData(notificationForm);
+                const settings = {};
+                
+                // Handle regular inputs
+                for (let [key, value] of formData.entries()) {
+                    if (key === 'PCURL_TO_MOBILE') {
+                        settings[key] = value === 'on';
+                    } else {
+                        settings[key] = value || '';
+                    }
+                }
+                
+                // Handle unchecked checkboxes (they don't appear in FormData)
+                const pcurlCheckbox = document.getElementById('pcurl-to-mobile');
+                if (pcurlCheckbox && !pcurlCheckbox.checked) {
+                    settings.PCURL_TO_MOBILE = false;
+                }
+                
+                // Save settings
+                const saveBtn = notificationForm.querySelector('button[type="submit"]');
+                const originalText = saveBtn.textContent;
+                saveBtn.disabled = true;
+                saveBtn.textContent = '保存中...';
+                
+                const result = await updateNotificationSettings(settings);
+                if (result) {
+                    alert(result.message || "通知设置已保存！");
+                }
+                
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            });
+        }
     }
 
     // Handle navigation clicks
