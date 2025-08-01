@@ -177,6 +177,8 @@ docker-compose up --build -d
 
 如果容器内遇到网络问题，请自行排查或使用代理。
 
+> ⚠️ **OpenWrt 环境部署注意事项**: 如果您在 OpenWrt 路由器上部署此应用，可能会遇到 DNS 解析问题。这是因为 Docker Compose 创建的默认网络可能无法正确继承 OpenWrt 的 DNS 设置。如果遇到 `ERR_CONNECTION_REFUSED` 错误，请检查您的容器网络配置，可能需要手动配置 DNS 或调整网络模式以确保容器可以正常访问外部网络。
+
 ### 第 3 步: 访问和管理
 
 - **访问 Web UI**: 在浏览器中打开 `http://127.0.0.1:8000`。
