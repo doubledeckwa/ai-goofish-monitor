@@ -549,27 +549,38 @@ document.addEventListener('DOMContentLoaded', function () {
             const crawlTime = item.爬取时间 ? new Date(item.爬取时间).toLocaleString('sv-SE').slice(0, 16) : '未知';
             const publishTime = info.发布时间 || '未知';
 
+            // Escape HTML to prevent XSS
+            const escapeHtml = (unsafe) => {
+                if (typeof unsafe !== 'string') return unsafe;
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            };
+
             return `
-            <div class="result-card" data-item='${JSON.stringify(item)}'>
+            <div class="result-card" data-item='${escapeHtml(JSON.stringify(item))}'>
                 <div class="card-image">
-                    <a href="${info.商品链接 || '#'}" target="_blank"><img src="${imageUrl}" alt="${info.商品标题 || '商品图片'}" loading="lazy"></a>
+                    <a href="${escapeHtml(info.商品链接) || '#'}" target="_blank"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(info.商品标题) || '商品图片'}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJhzwvdGV4dD48L3N2Zz4=';"></a>
                 </div>
                 <div class="card-content">
-                    <h3 class="card-title"><a href="${info.商品链接 || '#'}" target="_blank" title="${info.商品标题 || ''}">${info.商品标题 || '无标题'}</a></h3>
-                    <p class="card-price">${info.当前售价 || '价格未知'}</p>
+                    <h3 class="card-title"><a href="${escapeHtml(info.商品链接) || '#'}" target="_blank" title="${escapeHtml(info.商品标题) || ''}">${escapeHtml(info.商品标题) || '无标题'}</a></h3>
+                    <p class="card-price">${escapeHtml(info.当前售价) || '价格未知'}</p>
                     <div class="card-ai-summary ${recommendationClass}">
-                        <strong>AI建议: ${recommendationText}</strong>
-                        <p title="${ai.reason || ''}">原因: ${ai.reason || '无分析'}</p>
+                        <strong>AI建议: ${escapeHtml(recommendationText)}</strong>
+                        <p title="${escapeHtml(ai.reason) || ''}">原因: ${escapeHtml(ai.reason) || '无分析'}</p>
                     </div>
                     <div class="card-footer">
                         <div>
-                            <span class="seller-info" title="${info.卖家昵称 || seller.卖家昵称 || '未知'}">卖家: ${info.卖家昵称 || seller.卖家昵称 || '未知'}</span>
+                            <span class="seller-info" title="${escapeHtml(info.卖家昵称) || escapeHtml(seller.卖家昵称) || '未知'}">卖家: ${escapeHtml(info.卖家昵称) || escapeHtml(seller.卖家昵称) || '未知'}</span>
                             <div class="time-info">
-                                <p>发布于: ${publishTime}</p>
-                                <p>抓取于: ${crawlTime}</p>
+                                <p>发布于: ${escapeHtml(publishTime)}</p>
+                                <p>抓取于: ${escapeHtml(crawlTime)}</p>
                             </div>
                         </div>
-                        <a href="${info.商品链接 || '#'}" target="_blank" class="action-btn">查看详情</a>
+                        <a href="${escapeHtml(info.商品链接) || '#'}" target="_blank" class="action-btn">查看详情</a>
                     </div>
                 </div>
             </div>
