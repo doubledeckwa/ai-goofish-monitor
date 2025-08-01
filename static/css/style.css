@@ -606,6 +606,7 @@ input:checked + .slider:before {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
+    align-items: start; /* Ensure cards align to the top */
 }
 
 .result-card {
@@ -616,6 +617,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     transition: transform 0.2s, box-shadow 0.2s;
+    min-height: 100%; /* Ensure cards take full height of grid cell */
 }
 
 .result-card:hover {
@@ -646,6 +648,7 @@ input:checked + .slider:before {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* Allow the content to shrink if needed */
 }
 
 .card-title {
@@ -660,6 +663,7 @@ input:checked + .slider:before {
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 44.8px; /* 16px * 1.4 * 2 */
+    word-break: break-word;
 }
 
 .card-title a {
@@ -676,6 +680,7 @@ input:checked + .slider:before {
     font-weight: bold;
     color: #ff4d4f;
     margin: 0 0 12px;
+    word-break: break-word;
 }
 
 .card-ai-summary {
@@ -686,6 +691,9 @@ input:checked + .slider:before {
     font-size: 13px;
     margin-bottom: 12px;
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Allow the summary to shrink if needed */
 }
 
 .card-ai-summary.not-recommended {
@@ -697,6 +705,7 @@ input:checked + .slider:before {
     display: block;
     margin-bottom: 4px;
     color: #389e0d;
+    word-break: break-word;
 }
 
 .card-ai-summary.not-recommended strong {
@@ -708,12 +717,14 @@ input:checked + .slider:before {
     color: #555;
     white-space: pre-wrap; /* Allow wrapping */
     word-break: break-word; /* Break long words */
+    flex-grow: 1;
+    overflow-wrap: break-word;
 }
 
 .card-footer {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     font-size: 13px;
     color: #888;
     border-top: 1px solid #f0f0f0;
@@ -724,6 +735,7 @@ input:checked + .slider:before {
 
 .card-footer > div {
     min-width: 0; /* Allow flex item to shrink and text to ellipsis */
+    flex: 1;
 }
 
 .seller-info {
@@ -740,10 +752,13 @@ input:checked + .slider:before {
     margin: 0;
     font-size: 12px;
     line-height: 1.4;
+    word-break: break-word;
 }
 
 .card-footer .action-btn {
     flex-shrink: 0; /* Prevent the button from shrinking */
+    align-self: flex-start;
+    margin-top: 2px;
 }
 
 .view-json-btn {
