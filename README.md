@@ -97,7 +97,7 @@ pip install -r requirements.txt
     2. 打开Web UI后，进入 **"系统设置"** 页面。
     3. 找到 "登录状态文件"，点击 **"手动更新"** 按钮。
     4. 按照弹窗内的详细指引操作：
-       - 在您的个人电脑上，使用Chrome浏览器安装项目中的`chrome-extension`扩展
+       - 在您的个人电脑上，使用Chrome浏览器安装[闲鱼登录状态提取扩展](https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa)
        - 打开并登录闲鱼官网
        - 登录成功后，点击浏览器工具栏中的扩展图标
        - 点击"提取登录状态"按钮获取登录信息
@@ -154,7 +154,7 @@ python web_server.py
     2. 在浏览器中打开 `http://127.0.0.1:8000` 访问Web UI。
     3. 进入 **"系统设置"** 页面，点击 **"手动更新"** 按钮。
     4. 按照弹窗内的指引操作：
-       - 在您的个人电脑上，使用Chrome浏览器安装项目中的`chrome-extension`扩展
+       - 在您的个人电脑上，使用Chrome浏览器安装[闲鱼登录状态提取扩展](https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa)
        - 打开并登录闲鱼官网
        - 登录成功后，点击浏览器工具栏中的扩展图标
        - 点击"提取登录状态"按钮获取登录信息
