@@ -12,6 +12,9 @@ STATE_FILE = "xianyu_state.json"
 IMAGE_SAVE_DIR = "images"
 os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
 
+# 任务隔离的临时图片目录前缀
+TASK_IMAGE_DIR_PREFIX = "task_images_"
+
 # --- API URL Patterns ---
 API_URL_PATTERN = "h5api.m.goofish.com/h5/mtop.taobao.idlemtopsearch.pc.search"
 DETAIL_API_URL_PATTERN = "h5api.m.goofish.com/h5/mtop.taobao.idle.pc.detail"
