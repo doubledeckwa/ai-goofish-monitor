@@ -28,6 +28,10 @@ if BASE_URL:
     BASE_URL = ''.join(char for char in BASE_URL if char.isprintable()).strip()
 MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
 PROXY_URL = os.getenv("PROXY_URL")
+# 清理PROXY_URL中的不可打印字符
+if PROXY_URL:
+    # 移除常见的不可打印字符，包括回车符(\r)、换行符(\n)、制表符(\t)等
+    PROXY_URL = ''.join(char for char in PROXY_URL if char.isprintable()).strip()
 NTFY_TOPIC_URL = os.getenv("NTFY_TOPIC_URL")
 GOTIFY_URL = os.getenv("GOTIFY_URL")
 GOTIFY_TOKEN = os.getenv("GOTIFY_TOKEN")
