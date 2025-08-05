@@ -360,5 +360,8 @@ graph TD
 
 - 请遵守闲鱼的用户协议和robots.txt规则，不要进行过于频繁的请求，以免对服务器造成负担或导致账号被限制。
 - 本项目仅供学习和技术研究使用，请勿用于非法用途。
+- 本项目采用 [MIT 许可证](LICENSE) 发布，按"现状"提供，不提供任何形式的担保。
+- 项目作者及贡献者不对因使用本软件而导致的任何直接、间接、附带或特殊的损害或损失承担责任。
+- 如需了解更多详细信息，请查看 [免责声明](DISCLAIMER.md) 文件。
 
 [![Star History Chart](https://api.star-history.com/svg?repos=dingyufei615/ai-goofish-monitor&type=Date)](https://star-history.com/#dingyufei615/ai-goofish-monitor&Date)
