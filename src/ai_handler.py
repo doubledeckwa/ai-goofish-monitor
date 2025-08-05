@@ -4,6 +4,7 @@ import json
 import os
 import re
 import sys
+import shutil
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 import requests
@@ -18,6 +19,7 @@ from src.config import (
     AI_DEBUG_MODE,
     IMAGE_DOWNLOAD_HEADERS,
     IMAGE_SAVE_DIR,
+    TASK_IMAGE_DIR_PREFIX,
     MODEL_NAME,
     NTFY_TOPIC_URL,
     GOTIFY_URL,
@@ -65,10 +67,14 @@ async def _download_single_image(url, save_path):
     return save_path
 
 
-async def download_all_images(product_id, image_urls):
-    """异步下载一个商品的所有图片。如果图片已存在则跳过。"""
+async def download_all_images(product_id, image_urls, task_name="default"):
+    """异步下载一个商品的所有图片。如果图片已存在则跳过。支持任务隔离。"""
     if not image_urls:
         return []
+
+    # 为每个任务创建独立的图片目录
+    task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
+    os.makedirs(task_image_dir, exist_ok=True)
 
     urls = [url.strip() for url in image_urls if url.strip().startswith('http')]
     if not urls:
@@ -85,7 +91,7 @@ async def download_all_images(product_id, image_urls):
             if not os.path.splitext(file_name)[1]:
                 file_name += ".jpg"
 
-            save_path = os.path.join(IMAGE_SAVE_DIR, file_name)
+            save_path = os.path.join(task_image_dir, file_name)
 
             if os.path.exists(save_path):
                 safe_print(f"   [图片] 图片 {i + 1}/{total_images} 已存在，跳过下载: {os.path.basename(save_path)}")
@@ -100,6 +106,19 @@ async def download_all_images(product_id, image_urls):
             safe_print(f"   [图片] 处理图片 {url} 时发生错误，已跳过此图: {e}")
 
     return saved_paths
+
+
+def cleanup_task_images(task_name):
+    """清理指定任务的图片目录"""
+    task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
+    if os.path.exists(task_image_dir):
+        try:
+            shutil.rmtree(task_image_dir)
+            safe_print(f"   [清理] 已删除任务 '{task_name}' 的临时图片目录: {task_image_dir}")
+        except Exception as e:
+            safe_print(f"   [清理] 删除任务 '{task_name}' 的临时图片目录时出错: {e}")
+    else:
+        safe_print(f"   [清理] 任务 '{task_name}' 的临时图片目录不存在: {task_image_dir}")
 
 
 def encode_image_to_base64(image_path):

@@ -15,6 +15,7 @@ from src.ai_handler import (
     download_all_images,
     get_ai_analysis,
     send_ntfy_notification,
+    cleanup_task_images,
 )
 from src.config import (
     AI_DEBUG_MODE,
@@ -401,7 +402,7 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                             print(f"   -> 开始对商品 #{item_data['商品ID']} 进行实时AI分析...")
                             # 1. Download images
                             image_urls = item_data.get('商品图片列表', [])
-                            downloaded_image_paths = await download_all_images(item_data['商品ID'], image_urls)
+                            downloaded_image_paths = await download_all_images(item_data['商品ID'], image_urls, task_config.get('task_name', 'default'))
 
                             # 2. Get AI analysis
                             ai_analysis_result = None
@@ -479,5 +480,8 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
             if debug_limit:
                 input("按回车键关闭浏览器...")
             await browser.close()
+
+    # 清理任务图片目录
+    cleanup_task_images(task_config.get('task_name', 'default'))
 
     return processed_item_count
