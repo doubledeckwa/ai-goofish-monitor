@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import shutil
+from datetime import datetime
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 import requests
@@ -131,6 +132,68 @@ def encode_image_to_base64(image_path):
     except Exception as e:
         safe_print(f"编码图片时出错: {e}")
         return None
+
+
+def validate_ai_response_format(parsed_response):
+    """验证AI响应的格式是否符合预期结构"""
+    required_fields = [
+        "prompt_version",
+        "is_recommended", 
+        "reason",
+        "risk_tags",
+        "criteria_analysis"
+    ]
+    
+    criteria_analysis_fields = [
+        "model_chip",
+        "battery_health", 
+        "condition",
+        "history",
+        "seller_type",
+        "shipping",
+        "seller_credit"
+    ]
+    
+    seller_type_fields = [
+        "status",
+        "persona", 
+        "comment",
+        "analysis_details"
+    ]
+    
+    # 检查顶层字段
+    for field in required_fields:
+        if field not in parsed_response:
+            safe_print(f"   [AI分析] 警告：响应缺少必需字段 '{field}'")
+            return False
+    
+    # 检查criteria_analysis字段
+    criteria_analysis = parsed_response.get("criteria_analysis", {})
+    for field in criteria_analysis_fields:
+        if field not in criteria_analysis:
+            safe_print(f"   [AI分析] 警告：criteria_analysis缺少字段 '{field}'")
+            return False
+    
+    # 检查seller_type的analysis_details
+    seller_type = criteria_analysis.get("seller_type", {})
+    if "analysis_details" in seller_type:
+        analysis_details = seller_type["analysis_details"]
+        required_details = ["temporal_analysis", "selling_behavior", "buying_behavior", "behavioral_summary"]
+        for detail in required_details:
+            if detail not in analysis_details:
+                safe_print(f"   [AI分析] 警告：analysis_details缺少字段 '{detail}'")
+                return False
+    
+    # 检查数据类型
+    if not isinstance(parsed_response.get("is_recommended"), bool):
+        safe_print("   [AI分析] 警告：is_recommended字段不是布尔类型")
+        return False
+    
+    if not isinstance(parsed_response.get("risk_tags"), list):
+        safe_print("   [AI分析] 警告：risk_tags字段不是列表类型")
+        return False
+    
+    return True
 
 
 @retry_on_failure(retries=3, delay=5)
@@ -361,7 +424,7 @@ async def send_ntfy_notification(product_data, reason):
             safe_print(f"   -> 发送 Webhook 通知时发生未知错误: {e}")
 
 
-@retry_on_failure(retries=5, delay=10)
+@retry_on_failure(retries=3, delay=5)
 async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
     """将完整的商品JSON数据和所有图片发送给 AI 进行分析（异步）。"""
     if not client:
@@ -383,21 +446,23 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
 
     if AI_DEBUG_MODE:
         safe_print("\n--- [AI DEBUG] ---")
-        safe_print("--- PROMPT TEXT (first 500 chars) ---")
-        safe_print(prompt_text[:500] + "...")
         safe_print("--- PRODUCT DATA (JSON) ---")
         safe_print(product_details_json)
+        safe_print("--- PROMPT TEXT (完整内容) ---")
+        safe_print(prompt_text)
         safe_print("-------------------\n")
 
-    combined_text_prompt = f"""{system_prompt}
-
-请基于你的专业知识和我的要求，分析以下完整的商品JSON数据：
+    combined_text_prompt = f"""请基于你的专业知识和我的要求，分析以下完整的商品JSON数据：
 
 ```json
     {product_details_json}
-"""
-    user_content_list = [{"type": "text", "text": combined_text_prompt}]
+```
 
+{system_prompt}
+"""
+    user_content_list = []
+
+    # 先添加图片内容
     if image_paths:
         for path in image_paths:
             base64_image = encode_image_to_base64(path)
@@ -405,38 +470,124 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                 user_content_list.append(
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}})
 
+    # 再添加文本内容
+    user_content_list.append({"type": "text", "text": combined_text_prompt})
+
     messages = [{"role": "user", "content": user_content_list}]
 
-    response = await client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        response_format={"type": "json_object"}
-    )
-
-    ai_response_content = response.choices[0].message.content
-
-    if AI_DEBUG_MODE:
-        safe_print("\n--- [AI DEBUG] ---")
-        safe_print("--- RAW AI RESPONSE ---")
-        safe_print(ai_response_content)
-        safe_print("---------------------\n")
-
+    # 保存最终传输内容到日志文件
     try:
-        # --- 新增代码：从Markdown代码块中提取JSON ---
-        # 寻找第一个 "{" 和最后一个 "}" 来捕获完整的JSON对象
-        json_start_index = ai_response_content.find('{')
-        json_end_index = ai_response_content.rfind('}')
+        # 创建logs文件夹
+        logs_dir = "logs"
+        os.makedirs(logs_dir, exist_ok=True)
         
-        if json_start_index != -1 and json_end_index != -1:
-            clean_json_str = ai_response_content[json_start_index : json_end_index + 1]
-            return json.loads(clean_json_str)
-        else:
-            # 如果找不到 "{" 或 "}"，说明响应格式异常，按原样尝试解析并准备捕获错误
-            safe_print("---!!! AI RESPONSE WARNING: Could not find JSON object markers '{' and '}' in the response. !!!---")
-            return json.loads(ai_response_content) # 这行很可能会再次触发错误，但保留逻辑完整性
-        # --- 修改结束 ---
+        # 生成日志文件名（当前时间）
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_filename = f"{current_time}.log"
+        log_filepath = os.path.join(logs_dir, log_filename)
+        
+        # 准备日志内容 - 直接保存原始传输内容
+        log_content = json.dumps(messages, ensure_ascii=False)
+        
+        # 写入日志文件
+        with open(log_filepath, 'w', encoding='utf-8') as f:
+            f.write(log_content)
+        
+        safe_print(f"   [日志] AI分析请求已保存到: {log_filepath}")
+        
+    except Exception as e:
+        safe_print(f"   [日志] 保存AI分析日志时出错: {e}")
 
-    except json.JSONDecodeError as e:
-        safe_print("---!!! AI RESPONSE PARSING FAILED (JSONDecodeError) !!!---")
-        safe_print(f"原始返回值 (Raw response from AI):\n---\n{ai_response_content}\n---")
-        raise e
+    # 增强的AI调用，包含更严格的格式控制和重试机制
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # 根据重试次数调整参数
+            current_temperature = 0.1 if attempt == 0 else 0.05  # 重试时使用更低的温度
+            
+            response = await client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=current_temperature,
+                max_tokens=4000,
+            )
+
+            ai_response_content = response.choices[0].message.content
+
+            if AI_DEBUG_MODE:
+                safe_print(f"\n--- [AI DEBUG] 第{attempt + 1}次尝试 ---")
+                safe_print("--- RAW AI RESPONSE ---")
+                safe_print(ai_response_content)
+                safe_print("---------------------\n")
+
+            # 尝试直接解析JSON
+            try:
+                parsed_response = json.loads(ai_response_content)
+                
+                # 验证响应格式
+                if validate_ai_response_format(parsed_response):
+                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试成功，响应格式验证通过")
+                    return parsed_response
+                else:
+                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试格式验证失败")
+                    if attempt < max_retries - 1:
+                        safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                        continue
+                    else:
+                        safe_print("   [AI分析] 所有重试完成，使用最后一次结果")
+                        return parsed_response
+                        
+            except json.JSONDecodeError:
+                safe_print(f"   [AI分析] 第{attempt + 1}次尝试JSON解析失败，尝试清理响应内容...")
+                
+                # 清理可能的Markdown代码块标记
+                cleaned_content = ai_response_content.strip()
+                if cleaned_content.startswith('```json'):
+                    cleaned_content = cleaned_content[7:]
+                if cleaned_content.startswith('```'):
+                    cleaned_content = cleaned_content[3:]
+                if cleaned_content.endswith('```'):
+                    cleaned_content = cleaned_content[:-3]
+                cleaned_content = cleaned_content.strip()
+                
+                # 寻找JSON对象边界
+                json_start_index = cleaned_content.find('{')
+                json_end_index = cleaned_content.rfind('}')
+                
+                if json_start_index != -1 and json_end_index != -1 and json_end_index > json_start_index:
+                    json_str = cleaned_content[json_start_index:json_end_index + 1]
+                    try:
+                        parsed_response = json.loads(json_str)
+                        if validate_ai_response_format(parsed_response):
+                            safe_print(f"   [AI分析] 第{attempt + 1}次尝试清理后成功")
+                            return parsed_response
+                        else:
+                            if attempt < max_retries - 1:
+                                safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                                continue
+                            else:
+                                safe_print("   [AI分析] 所有重试完成，使用清理后的结果")
+                                return parsed_response
+                    except json.JSONDecodeError as e:
+                        safe_print(f"   [AI分析] 第{attempt + 1}次尝试清理后JSON解析仍然失败: {e}")
+                        if attempt < max_retries - 1:
+                            safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                            continue
+                        else:
+                            raise e
+                else:
+                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试无法在响应中找到有效的JSON对象")
+                    if attempt < max_retries - 1:
+                        safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                        continue
+                    else:
+                        raise json.JSONDecodeError("No valid JSON object found", ai_response_content, 0)
+
+        except Exception as e:
+            safe_print(f"   [AI分析] 第{attempt + 1}次尝试AI调用失败: {e}")
+            if attempt < max_retries - 1:
+                safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                continue
+            else:
+                raise e
