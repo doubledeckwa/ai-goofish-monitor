@@ -6,9 +6,11 @@ import glob
 import asyncio
 import signal
 import sys
+import base64
 from contextlib import asynccontextmanager
 from dotenv import dotenv_values
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from src.prompt_utils import generate_criteria, update_config_with_new_task
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -176,12 +178,88 @@ def save_notification_settings(settings: dict):
 
 app = FastAPI(title="闲鱼智能监控机器人", lifespan=lifespan)
 
+# --- 认证配置 ---
+security = HTTPBasic()
+
+# 从环境变量读取认证凭据
+def get_auth_credentials():
+    """从环境变量获取认证凭据"""
+    username = os.getenv("WEB_USERNAME", "admin")
+    password = os.getenv("WEB_PASSWORD", "admin123")
+    return username, password
+
+def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    """验证Basic认证凭据"""
+    username, password = get_auth_credentials()
+    
+    # 检查用户名和密码是否匹配
+    if credentials.username == username and credentials.password == password:
+        return credentials.username
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="认证失败",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
 # --- Globals for process and scheduler management ---
 scraper_processes = {}  # 将单个进程变量改为字典，以管理多个任务进程 {task_id: process}
 scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# 自定义静态文件处理器，添加认证
+class AuthenticatedStaticFiles(StaticFiles):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    async def __call__(self, scope, receive, send):
+        # 检查认证
+        headers = dict(scope.get("headers", []))
+        authorization = headers.get(b"authorization", b"").decode()
+        
+        if not authorization.startswith("Basic "):
+            await send({
+                "type": "http.response.start",
+                "status": 401,
+                "headers": [
+                    (b"www-authenticate", b"Basic realm=Authorization Required"),
+                    (b"content-type", b"text/plain"),
+                ],
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b"Authentication required",
+            })
+            return
+        
+        # 验证凭据
+        try:
+            credentials = base64.b64decode(authorization[6:]).decode()
+            username, password = credentials.split(":", 1)
+            
+            expected_username, expected_password = get_auth_credentials()
+            if username != expected_username or password != expected_password:
+                raise ValueError("Invalid credentials")
+                
+        except Exception:
+            await send({
+                "type": "http.response.start",
+                "status": 401,
+                "headers": [
+                    (b"www-authenticate", b"Basic realm=Authorization Required"),
+                    (b"content-type", b"text/plain"),
+                ],
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b"Authentication failed",
+            })
+            return
+        
+        # 认证成功，继续处理静态文件
+        await super().__call__(scope, receive, send)
+
+# Mount static files with authentication
+app.mount("/static", AuthenticatedStaticFiles(directory="static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
@@ -300,8 +378,18 @@ async def reload_scheduler_jobs():
         scheduler.print_jobs()
 
 
+@app.get("/health")
+async def health_check():
+    """健康检查端点，不需要认证"""
+    return {"status": "healthy", "message": "服务正常运行"}
+
+@app.get("/auth/status")
+async def auth_status(username: str = Depends(verify_credentials)):
+    """检查认证状态"""
+    return {"authenticated": True, "username": username}
+
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request, username: str = Depends(verify_credentials)):
     """
     提供 Web UI 的主页面。
     """
@@ -312,7 +400,7 @@ async def read_root(request: Request):
 CONFIG_FILE = "config.json"
 
 @app.get("/api/tasks")
-async def get_tasks():
+async def get_tasks(username: str = Depends(verify_credentials)):
     """
     读取并返回 config.json 中的所有任务。
     """
@@ -333,7 +421,7 @@ async def get_tasks():
 
 
 @app.post("/api/tasks/generate", response_model=dict)
-async def generate_task(req: TaskGenerateRequest):
+async def generate_task(req: TaskGenerateRequest, username: str = Depends(verify_credentials)):
     """
     使用 AI 生成一个新的分析标准文件，并据此创建一个新任务。
     """
@@ -399,7 +487,7 @@ async def generate_task(req: TaskGenerateRequest):
 
 
 @app.post("/api/tasks", response_model=dict)
-async def create_task(task: Task):
+async def create_task(task: Task, username: str = Depends(verify_credentials)):
     """
     创建一个新任务并将其添加到 config.json。
     """
@@ -426,7 +514,7 @@ async def create_task(task: Task):
 
 
 @app.patch("/api/tasks/{task_id}", response_model=dict)
-async def update_task(task_id: int, task_update: TaskUpdate):
+async def update_task(task_id: int, task_update: TaskUpdate, username: str = Depends(verify_credentials)):
     """
     更新指定ID任务的属性。
     """
@@ -540,7 +628,7 @@ async def update_task_running_status(task_id: int, is_running: bool):
 
 
 @app.post("/api/tasks/start/{task_id}", response_model=dict)
-async def start_single_task(task_id: int):
+async def start_single_task(task_id: int, username: str = Depends(verify_credentials)):
     """启动单个任务。"""
     try:
         async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -559,7 +647,7 @@ async def start_single_task(task_id: int):
 
 
 @app.post("/api/tasks/stop/{task_id}", response_model=dict)
-async def stop_single_task(task_id: int):
+async def stop_single_task(task_id: int, username: str = Depends(verify_credentials)):
     """停止单个任务。"""
     await stop_task_process(task_id)
     return {"message": f"任务ID {task_id} 已发送停止信号。"}
@@ -568,7 +656,7 @@ async def stop_single_task(task_id: int):
 
 
 @app.get("/api/logs")
-async def get_logs(from_pos: int = 0):
+async def get_logs(from_pos: int = 0, username: str = Depends(verify_credentials)):
     """
     获取爬虫日志文件的内容。支持从指定位置增量读取。
     """
@@ -607,7 +695,7 @@ async def get_logs(from_pos: int = 0):
 
 
 @app.delete("/api/logs", response_model=dict)
-async def clear_logs():
+async def clear_logs(username: str = Depends(verify_credentials)):
     """
     清空日志文件内容。
     """
@@ -625,7 +713,7 @@ async def clear_logs():
 
 
 @app.delete("/api/tasks/{task_id}", response_model=dict)
-async def delete_task(task_id: int):
+async def delete_task(task_id: int, username: str = Depends(verify_credentials)):
     """
     从 config.json 中删除指定ID的任务。
     """
@@ -666,7 +754,7 @@ async def delete_task(task_id: int):
 
 
 @app.get("/api/results/files")
-async def list_result_files():
+async def list_result_files(username: str = Depends(verify_credentials)):
     """
     列出所有生成的 .jsonl 结果文件。
     """
@@ -678,7 +766,7 @@ async def list_result_files():
 
 
 @app.delete("/api/results/files/{filename}", response_model=dict)
-async def delete_result_file(filename: str):
+async def delete_result_file(filename: str, username: str = Depends(verify_credentials)):
     """
     删除指定的结果文件。
     """
@@ -697,7 +785,7 @@ async def delete_result_file(filename: str):
 
 
 @app.get("/api/results/{filename}")
-async def get_result_file_content(filename: str, page: int = 1, limit: int = 20, recommended_only: bool = False, sort_by: str = "crawl_time", sort_order: str = "desc"):
+async def get_result_file_content(filename: str, page: int = 1, limit: int = 20, recommended_only: bool = False, sort_by: str = "crawl_time", sort_order: str = "desc", username: str = Depends(verify_credentials)):
     """
     读取指定的 .jsonl 文件内容，支持分页、筛选和排序。
     """
@@ -756,7 +844,7 @@ async def get_result_file_content(filename: str, page: int = 1, limit: int = 20,
 
 
 @app.get("/api/settings/status")
-async def get_system_status():
+async def get_system_status(username: str = Depends(verify_credentials)):
     """
     检查系统关键文件和配置的状态。
     """
@@ -798,7 +886,7 @@ async def get_system_status():
 PROMPTS_DIR = "prompts"
 
 @app.get("/api/prompts")
-async def list_prompts():
+async def list_prompts(username: str = Depends(verify_credentials)):
     """
     列出 prompts/ 目录下的所有 .txt 文件。
     """
@@ -808,7 +896,7 @@ async def list_prompts():
 
 
 @app.get("/api/prompts/{filename}")
-async def get_prompt_content(filename: str):
+async def get_prompt_content(filename: str, username: str = Depends(verify_credentials)):
     """
     获取指定 prompt 文件的内容。
     """
@@ -825,7 +913,7 @@ async def get_prompt_content(filename: str):
 
 
 @app.put("/api/prompts/{filename}")
-async def update_prompt_content(filename: str, prompt_update: PromptUpdate):
+async def update_prompt_content(filename: str, prompt_update: PromptUpdate, username: str = Depends(verify_credentials)):
     """
     更新指定 prompt 文件的内容。
     """
@@ -845,7 +933,7 @@ async def update_prompt_content(filename: str, prompt_update: PromptUpdate):
 
 
 @app.post("/api/login-state", response_model=dict)
-async def update_login_state(data: LoginStateUpdate):
+async def update_login_state(data: LoginStateUpdate, username: str = Depends(verify_credentials)):
     """
     接收前端发送的登录状态JSON字符串，并保存到 xianyu_state.json。
     """
@@ -865,7 +953,7 @@ async def update_login_state(data: LoginStateUpdate):
 
 
 @app.delete("/api/login-state", response_model=dict)
-async def delete_login_state():
+async def delete_login_state(username: str = Depends(verify_credentials)):
     """
     删除 xianyu_state.json 文件。
     """
@@ -880,7 +968,7 @@ async def delete_login_state():
 
 
 @app.get("/api/settings/notifications", response_model=dict)
-async def get_notification_settings():
+async def get_notification_settings(username: str = Depends(verify_credentials)):
     """
     获取通知设置。
     """
@@ -888,7 +976,7 @@ async def get_notification_settings():
 
 
 @app.put("/api/settings/notifications", response_model=dict)
-async def update_notification_settings(settings: NotificationSettings):
+async def update_notification_settings(settings: NotificationSettings, username: str = Depends(verify_credentials)):
     """
     更新通知设置。
     """
