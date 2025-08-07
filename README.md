@@ -1,6 +1,6 @@
-# 闲鱼智能监控机器人
+# 闲鱼(goofish)智能监控机器人
 
-一个基于 Playwright 和AI过滤分析的闲鱼多任务实时监控与智能分析工具，配备了功能完善的 Web 管理界面。
+一个基于 Playwright 和AI过滤分析的闲鱼(goofish)多任务实时监控与智能分析工具，配备了功能完善的 Web 管理界面。
 
 ## ✨ 项目亮点
 
@@ -10,7 +10,7 @@
 - **实时流式处理**: 发现新商品后，立即进入分析流程，告别批处理延迟。
 - **深度AI分析**: 集成多模态大语言模型（如 GPT-4o），结合商品图文和卖家画像进行深度分析，精准筛选。
 - **高度可定制**: 每个监控任务均可配置独立的关键词、价格范围、筛选条件和AI分析指令 (Prompt)。
-- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/)、企业微信机器人和 [Bark](https://bark.day.app/)，将符合AI推荐的商品立即推送到你的手机或桌面。
+- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/)、企业微信群机器人和 [Bark](https://bark.day.app/)，将符合AI推荐的商品立即推送到你的手机或桌面。
 - **定时任务调度**: 支持 Cron 表达式，可为每个任务设置独立的定时执行计划。
 - **Docker 一键部署**: 提供 `docker-compose` 配置，实现快速、标准化的容器化部署。
 - **健壮的反爬策略**: 模拟真人操作，包含多种随机延迟和用户行为，提高稳定性。
@@ -75,7 +75,7 @@ pip install -r requirements.txt
     | `GOTIFY_URL` | (可选) Gotify 服务地址。 | 否 | 例如 `https://push.example.de`。 |
     | `GOTIFY_TOKEN` | (可选) Gotify 应用的 Token。 | 否 | |
     | `BARK_URL` | (可选) [Bark](https://bark.day.app/) 的推送地址。 | 否 | 例如 `https://api.day.app/your_key`。如果留空，将不发送 Bark 通知。 |
-    | `WX_BOT_URL` | (可选) 企业微信机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
+    | `WX_BOT_URL` | (可选) 企业微信群机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
     | `WEBHOOK_URL` | (可选) 通用 Webhook 的 URL 地址。 | 否 | 如果留空，将不发送通用 Webhook 通知。 |
     | `WEBHOOK_METHOD` | (可选) Webhook 请求方法。 | 否 | 支持 `GET` 或 `POST`，默认为 `POST`。 |
     | `WEBHOOK_HEADERS` | (可选) Webhook 的自定义请求头。 | 否 | 必须是有效的 JSON 字符串，例如 `'{"Authorization": "Bearer xxx"}'`。 |
@@ -311,11 +311,9 @@ WEB_PASSWORD=admin123
 
 5. **Q: 我可以在群晖 (Synology) NAS 上通过 Docker 部署吗？**
     - **A:** 可以。部署步骤与标准的 Docker 部署基本一致：
-        1. 在你的电脑上（而不是群晖上）完成 `login.py` 步骤，生成 `xianyu_state.json` 文件。
-        2. 将整个项目文件夹（包含 `.env` 和 `xianyu_state.json`）上传到群晖的某个目录下。
-        3. 在群晖的 Container Manager (或旧版 Docker) 中，使用 `docker-compose up -d` 命令（通过 SSH 或任务计划）来启动项目。确保 `docker-compose.yaml` 中的 volume 映射路径正确指向你在群晖上的项目文件夹。
+        1.  注意：在群晖环境中部署时，可能需要配置Docker镜像仓库访问权限，确保能够正常拉取镜像。
 
-6. **Q: 如何配置使用 Gemini / Qwen / Grok 或其他非 OpenAI 的大语言模型？**
+6. **Q: 如何配置使用 Gemini / Qwen 或其他非 OpenAI 的大语言模型？**
     ***A:** 本项目理论上支持任何提供 OpenAI 兼容 API 接口的模型。关键在于正确配置 `.env` 文件中的三个变量：
         *   `OPENAI_API_KEY`: 你的模型服务商提供的 API Key。
         *`OPENAI_BASE_URL`: 模型服务商提供的 API-Compatible Endpoint 地址。请务必查阅你所使用模型的官方文档，通常格式为 `https://api.your-provider.com/v1` (注意，末尾不需要 `/chat/completions`)。
