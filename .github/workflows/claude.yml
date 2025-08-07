@@ -31,47 +31,24 @@ jobs:
 
       - name: Prepare Environment
         run: |
-          # Install Bun
           curl -fsSL https://bun.sh/install | bash
-          # Create config directory
           mkdir -p $HOME/.claude-code-router
-          # Create config file
           cat << 'EOF' > $HOME/.claude-code-router/config.json
           {
             "log": true,
             "NON_INTERACTIVE_MODE": true,
             "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
-            "OPENAI_BASE_URL": "https://api.deepseek.com",
-            "OPENAI_MODEL": "deepseek-chat"
+            "OPENAI_BASE_URL": "${{ secrets.OPENAI_BASE_URL }}",
+            "OPENAI_MODEL": "${{ secrets.OPENAI_MODEL }}"
           }
           EOF
         shell: bash
 
       - name: Start Claude Code Router
         run: |
-          # Start the router in the background and log output to nohup.out
           nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start &
+          sleep 5 # Give the router a moment to start
         shell: bash
-
-      # ⬇️ --- 新增的诊断步骤 --- ⬇️
-
-      - name: 🧐 Diagnose Network and Service
-        run: |
-          echo "--- Waiting for the router to start up... ---"
-          sleep 5 # 等待5秒，确保代理服务有足够时间启动
-
-          echo "--- Checking router logs (nohup.out) for errors... ---"
-          cat nohup.out || echo "nohup.out not found or is empty."
-
-          echo "--- Checking if the port 3456 is listening... ---"
-          # 使用 ss 命令检查端口是否被监听
-          ss -tulpn | grep 3456 || echo "Port 3456 is not in use. The router may have failed to start."
-
-          echo "--- Testing connectivity from runner to DeepSeek API... ---"
-          # 使用 curl 的 verbose 模式测试外部连接，-m 15 设置15秒超时
-          curl -v -m 15 https://api.deepseek.com/v1/models || echo "Failed to connect to api.deepseek.com"
-
-      # ⬆️ --- 诊断步骤结束 --- ⬆️
 
       - name: Run Claude Code
         id: claude
@@ -79,5 +56,4 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
         with:
-          timeout_minutes: "10" # 可以适当缩短超时，方便更快看到结果
           anthropic_api_key: "any-string-is-ok"
