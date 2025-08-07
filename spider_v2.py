@@ -52,16 +52,31 @@ async def main():
                 
                 # 动态组合成最终的Prompt
                 task['ai_prompt_text'] = base_prompt.replace("{{CRITERIA_SECTION}}", criteria_text)
+                
+                # 验证生成的prompt是否有效
+                if len(task['ai_prompt_text']) < 100:
+                    print(f"警告: 任务 '{task['task_name']}' 生成的prompt过短 ({len(task['ai_prompt_text'])} 字符)，可能存在问题。")
+                elif "{{CRITERIA_SECTION}}" in task['ai_prompt_text']:
+                    print(f"警告: 任务 '{task['task_name']}' 的prompt中仍包含占位符，替换可能失败。")
+                else:
+                    print(f"✅ 任务 '{task['task_name']}' 的prompt生成成功，长度: {len(task['ai_prompt_text'])} 字符")
 
             except FileNotFoundError as e:
                 print(f"警告: 任务 '{task['task_name']}' 的prompt文件缺失: {e}，该任务的AI分析将被跳过。")
+                task['ai_prompt_text'] = ""
+            except Exception as e:
+                print(f"错误: 任务 '{task['task_name']}' 处理prompt文件时发生异常: {e}，该任务的AI分析将被跳过。")
                 task['ai_prompt_text'] = ""
         elif task.get("enabled", False) and task.get("ai_prompt_file"):
             try:
                 with open(task["ai_prompt_file"], 'r', encoding='utf-8') as f:
                     task['ai_prompt_text'] = f.read()
+                print(f"✅ 任务 '{task['task_name']}' 的prompt文件读取成功，长度: {len(task['ai_prompt_text'])} 字符")
             except FileNotFoundError:
                 print(f"警告: 任务 '{task['task_name']}' 的prompt文件 '{task['ai_prompt_file']}' 未找到，该任务的AI分析将被跳过。")
+                task['ai_prompt_text'] = ""
+            except Exception as e:
+                print(f"错误: 任务 '{task['task_name']}' 读取prompt文件时发生异常: {e}，该任务的AI分析将被跳过。")
                 task['ai_prompt_text'] = ""
 
     print("\n--- 开始执行监控任务 ---")
