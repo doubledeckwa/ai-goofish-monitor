@@ -288,7 +288,9 @@ WEB_PASSWORD=admin123
 
 - [@jooooody](https://linux.do/u/jooooody/summary)
 
-以及感谢Aider和Gemini 解放双手，代码写起来飞一般的感觉～
+以及感谢 [LinuxDo](https://linux.do/) 社区，希望L站越来越好。
+
+以及感谢ClaudeCode/Aider/Gemini 工具解放双手，代码写起来飞一般的感觉～
 
 ## Support & Sponsoring
 
