@@ -99,6 +99,55 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function fetchAISettings() {
+        try {
+            const response = await fetch('/api/settings/ai');
+            if (!response.ok) throw new Error('无法获取AI设置');
+            return await response.json();
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
+    async function updateAISettings(settings) {
+        try {
+            const response = await fetch('/api/settings/ai', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(settings),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '更新AI设置失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('无法更新AI设置:', error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
+    async function testAISettings(settings) {
+        try {
+            const response = await fetch('/api/settings/ai/test', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(settings),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || '测试AI设置失败');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('无法测试AI设置:', error);
+            alert(`错误: ${error.message}`);
+            return null;
+        }
+    }
+
     async function updateNotificationSettings(settings) {
         try {
             const response = await fetch('/api/settings/notifications', {
@@ -489,6 +538,43 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
     }
 
+    function renderAISettings(settings) {
+        if (!settings) return '<p>无法加载AI设置。</p>';
+
+        return `
+            <form id="ai-settings-form">
+                <div class="form-group">
+                    <label for="openai-api-key">API Key *</label>
+                    <input type="password" id="openai-api-key" name="OPENAI_API_KEY" value="${settings.OPENAI_API_KEY || ''}" placeholder="例如: sk-..." required>
+                    <p class="form-hint">你的AI模型服务商提供的API Key</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="openai-base-url">API Base URL *</label>
+                    <input type="text" id="openai-base-url" name="OPENAI_BASE_URL" value="${settings.OPENAI_BASE_URL || ''}" placeholder="例如: https://api.openai.com/v1/" required>
+                    <p class="form-hint">AI模型的API接口地址，必须兼容OpenAI格式</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="openai-model-name">模型名称 *</label>
+                    <input type="text" id="openai-model-name" name="OPENAI_MODEL_NAME" value="${settings.OPENAI_MODEL_NAME || ''}" placeholder="例如: gemini-2.5-pro" required>
+                    <p class="form-hint">你要使用的具体模型名称，必须支持图片分析</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="proxy-url">代理地址 (可选)</label>
+                    <input type="text" id="proxy-url" name="PROXY_URL" value="${settings.PROXY_URL || ''}" placeholder="例如: http://127.0.0.1:7890">
+                    <p class="form-hint">HTTP/S代理地址，支持 http 和 socks5 格式</p>
+                </div>
+                
+                <div class="form-group">
+                    <button type="button" id="test-ai-settings-btn" class="control-button">测试连接</button>
+                    <button type="submit" class="control-button primary-btn">保存AI设置</button>
+                </div>
+            </form>
+        `;
+    }
+
     async function refreshLoginStatusWidget() {
         const status = await fetchSystemStatus();
         if (status) {
@@ -870,7 +956,29 @@ document.addEventListener('DOMContentLoaded', function () {
             notificationContainer.innerHTML = '<p>加载通知配置失败。请检查服务器是否正常运行。</p>';
         }
 
-        // 3. Setup Prompt Editor
+        // 3. Render AI Settings
+        const aiContainer = document.createElement('div');
+        aiContainer.className = 'settings-card';
+        aiContainer.innerHTML = `
+            <h3>AI模型配置</h3>
+            <div id="ai-settings-container">
+                <p>正在加载AI配置...</p>
+            </div>
+        `;
+        
+        // Insert AI settings card before Prompt Management
+        const promptCard = document.querySelector('.settings-card h3').closest('.settings-card');
+        promptCard.parentNode.insertBefore(aiContainer, promptCard);
+
+        const aiSettingsContainer = document.getElementById('ai-settings-container');
+        const aiSettings = await fetchAISettings();
+        if (aiSettings !== null) {
+            aiSettingsContainer.innerHTML = renderAISettings(aiSettings);
+        } else {
+            aiSettingsContainer.innerHTML = '<p>加载AI配置失败。请检查服务器是否正常运行。</p>';
+        }
+
+        // 4. Setup Prompt Editor
         const promptSelector = document.getElementById('prompt-selector');
         const promptEditor = document.getElementById('prompt-editor');
         const savePromptBtn = document.getElementById('save-prompt-btn');
@@ -927,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', function () {
             savePromptBtn.textContent = '保存更改';
         });
 
-        // 4. Add event listener for notification settings form
+        // 5. Add event listener for notification settings form
         const notificationForm = document.getElementById('notification-settings-form');
         if (notificationForm) {
             notificationForm.addEventListener('submit', async (e) => {
@@ -966,6 +1074,69 @@ document.addEventListener('DOMContentLoaded', function () {
                 saveBtn.disabled = false;
                 saveBtn.textContent = originalText;
             });
+        }
+
+        // 6. Add event listener for AI settings form
+        const aiForm = document.getElementById('ai-settings-form');
+        if (aiForm) {
+            aiForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Collect form data
+                const formData = new FormData(aiForm);
+                const settings = {};
+                
+                // Handle regular inputs
+                for (let [key, value] of formData.entries()) {
+                    settings[key] = value || '';
+                }
+                
+                // Save settings
+                const saveBtn = aiForm.querySelector('button[type="submit"]');
+                const originalText = saveBtn.textContent;
+                saveBtn.disabled = true;
+                saveBtn.textContent = '保存中...';
+                
+                const result = await updateAISettings(settings);
+                if (result) {
+                    alert(result.message || "AI设置已保存！");
+                }
+                
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            });
+
+            // Add event listener for AI settings test button
+            const testBtn = document.getElementById('test-ai-settings-btn');
+            if (testBtn) {
+                testBtn.addEventListener('click', async () => {
+                    // Collect form data
+                    const formData = new FormData(aiForm);
+                    const settings = {};
+                    
+                    // Handle regular inputs
+                    for (let [key, value] of formData.entries()) {
+                        settings[key] = value || '';
+                    }
+                    
+                    // Test settings
+                    const originalText = testBtn.textContent;
+                    testBtn.disabled = true;
+                    testBtn.textContent = '测试中...';
+                    
+                    const result = await testAISettings(settings);
+                    if (result) {
+                        if (result.success) {
+                            alert(result.message || "AI模型连接测试成功！");
+                        } else {
+                            alert("测试失败: " + result.message);
+                        }
+                    }
+                    
+                    testBtn.disabled = false;
+                    testBtn.textContent = originalText;
+                });
+            }
         }
     }
 

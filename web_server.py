@@ -176,6 +176,56 @@ def save_notification_settings(settings: dict):
                 f.write(f"{key}={value}\n")
 
 
+def load_ai_settings():
+    """Load AI model settings from .env file"""
+    from dotenv import dotenv_values
+    config = dotenv_values(".env")
+    
+    return {
+        "OPENAI_API_KEY": config.get("OPENAI_API_KEY", ""),
+        "OPENAI_BASE_URL": config.get("OPENAI_BASE_URL", ""),
+        "OPENAI_MODEL_NAME": config.get("OPENAI_MODEL_NAME", ""),
+        "PROXY_URL": config.get("PROXY_URL", "")
+    }
+
+
+def save_ai_settings(settings: dict):
+    """Save AI model settings to .env file"""
+    env_file = ".env"
+    env_lines = []
+    
+    # Read existing .env file
+    if os.path.exists(env_file):
+        with open(env_file, 'r', encoding='utf-8') as f:
+            env_lines = f.readlines()
+    
+    # Update or add AI settings
+    setting_keys = [
+        "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL_NAME", "PROXY_URL"
+    ]
+    
+    # Create a dictionary of existing settings
+    existing_settings = {}
+    for line in env_lines:
+        if '=' in line and not line.strip().startswith('#'):
+            key, value = line.split('=', 1)
+            existing_settings[key.strip()] = value.strip()
+    
+    # Update with new settings
+    existing_settings.update(settings)
+    
+    # Write back to file
+    with open(env_file, 'w', encoding='utf-8') as f:
+        for key in setting_keys:
+            value = existing_settings.get(key, "")
+            f.write(f"{key}={value}\n")
+        
+        # Write any other existing settings that are not AI settings
+        for key, value in existing_settings.items():
+            if key not in setting_keys:
+                f.write(f"{key}={value}\n")
+
+
 app = FastAPI(title="闲鱼智能监控机器人", lifespan=lifespan)
 
 # --- 认证配置 ---
@@ -987,6 +1037,70 @@ async def update_notification_settings(settings: NotificationSettings, username:
         return {"message": "通知设置已成功更新。"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"更新通知设置时出错: {e}")
+
+
+@app.get("/api/settings/ai", response_model=dict)
+async def get_ai_settings(username: str = Depends(verify_credentials)):
+    """
+    获取AI模型设置。
+    """
+    return load_ai_settings()
+
+
+@app.put("/api/settings/ai", response_model=dict)
+async def update_ai_settings(settings: dict, username: str = Depends(verify_credentials)):
+    """
+    更新AI模型设置。
+    """
+    try:
+        save_ai_settings(settings)
+        return {"message": "AI模型设置已成功更新。"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"更新AI模型设置时出错: {e}")
+
+
+@app.post("/api/settings/ai/test", response_model=dict)
+async def test_ai_settings(settings: dict, username: str = Depends(verify_credentials)):
+    """
+    测试AI模型设置是否有效。
+    """
+    try:
+        from openai import OpenAI
+        import httpx
+        
+        # 创建OpenAI客户端
+        client_params = {
+            "api_key": settings.get("OPENAI_API_KEY", ""),
+            "base_url": settings.get("OPENAI_BASE_URL", ""),
+            "timeout": httpx.Timeout(30.0),
+        }
+        
+        # 如果有代理设置
+        proxy_url = settings.get("PROXY_URL", "")
+        if proxy_url:
+            client_params["http_client"] = httpx.Client(proxy=proxy_url)
+        
+        client = OpenAI(**client_params)
+        
+        # 测试连接
+        response = client.chat.completions.create(
+            model=settings.get("OPENAI_MODEL_NAME", ""),
+            messages=[
+                {"role": "user", "content": "Hello, this is a test message to verify the connection."}
+            ],
+            max_tokens=10
+        )
+        
+        return {
+            "success": True, 
+            "message": "AI模型连接测试成功！",
+            "response": response.choices[0].message.content if response.choices else "No response"
+        }
+    except Exception as e:
+        return {
+            "success": False, 
+            "message": f"AI模型连接测试失败: {str(e)}"
+        }
 
 
 if __name__ == "__main__":
