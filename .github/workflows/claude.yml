@@ -37,3 +37,6 @@ jobs:
           timeout_minutes: "60"
           claude_env: |
             ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+            ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+            ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+            ANTHROPIC_SMALL_FAST_MODEL: ${{ secrets.ANTHROPIC_SMALL_FAST_MODEL }}
