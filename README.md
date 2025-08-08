@@ -1,6 +1,6 @@
-# 闲鱼智能监控机器人
+# 闲鱼(goofish)智能监控机器人
 
-一个基于 Playwright 和AI过滤分析的闲鱼多任务实时监控与智能分析工具，配备了功能完善的 Web 管理界面。
+一个基于 Playwright 和AI过滤分析的闲鱼(goofish)多任务实时监控与智能分析工具，配备了功能完善的 Web 管理界面。
 
 ## ✨ 项目亮点
 
@@ -10,7 +10,7 @@
 - **实时流式处理**: 发现新商品后，立即进入分析流程，告别批处理延迟。
 - **深度AI分析**: 集成多模态大语言模型（如 GPT-4o），结合商品图文和卖家画像进行深度分析，精准筛选。
 - **高度可定制**: 每个监控任务均可配置独立的关键词、价格范围、筛选条件和AI分析指令 (Prompt)。
-- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/)、企业微信机器人和 [Bark](https://bark.day.app/)，将符合AI推荐的商品立即推送到你的手机或桌面。
+- **即时通知**: 支持通过 [ntfy.sh](https://ntfy.sh/)、企业微信群机器人和 [Bark](https://bark.day.app/)，将符合AI推荐的商品立即推送到你的手机或桌面。
 - **定时任务调度**: 支持 Cron 表达式，可为每个任务设置独立的定时执行计划。
 - **Docker 一键部署**: 提供 `docker-compose` 配置，实现快速、标准化的容器化部署。
 - **健壮的反爬策略**: 模拟真人操作，包含多种随机延迟和用户行为，提高稳定性。
@@ -75,7 +75,7 @@ pip install -r requirements.txt
     | `GOTIFY_URL` | (可选) Gotify 服务地址。 | 否 | 例如 `https://push.example.de`。 |
     | `GOTIFY_TOKEN` | (可选) Gotify 应用的 Token。 | 否 | |
     | `BARK_URL` | (可选) [Bark](https://bark.day.app/) 的推送地址。 | 否 | 例如 `https://api.day.app/your_key`。如果留空，将不发送 Bark 通知。 |
-    | `WX_BOT_URL` | (可选) 企业微信机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
+    | `WX_BOT_URL` | (可选) 企业微信群机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
     | `WEBHOOK_URL` | (可选) 通用 Webhook 的 URL 地址。 | 否 | 如果留空，将不发送通用 Webhook 通知。 |
     | `WEBHOOK_METHOD` | (可选) Webhook 请求方法。 | 否 | 支持 `GET` 或 `POST`，默认为 `POST`。 |
     | `WEBHOOK_HEADERS` | (可选) Webhook 的自定义请求头。 | 否 | 必须是有效的 JSON 字符串，例如 `'{"Authorization": "Bearer xxx"}'`。 |
@@ -274,112 +274,9 @@ WEB_PASSWORD=admin123
 
 ## 常见问题 (FAQ)
 
-这里整理了一些社区用户在 Issues 中提出的常见问题及其解答。
+我们整理了一份详细的常见问题解答文档，覆盖了从环境配置、AI设置到反爬虫策略的各类问题。
 
-1. **Q: 运行 `login.py` 或 `spider_v2.py` 时出现 `'gbk' codec can't encode character` 相关的编码错误？**
-    - **A:** 这是典型的 Windows 环境下的编码问题。项目代码和日志默认使用 UTF-8 编码。
-    - **解决方案:** 在运行 Python 脚本前，通过设置环境变量强制使用 UTF-8。在 PowerShell 或 CMD 中执行以下命令，然后再运行脚本：
-
-        ```bash
-        set PYTHONUTF8=1
-        python spider_v2.py
-        ```
-
-        或者使用 `chcp 65001` 命令切换活动代码页为 UTF-8。
-
-2. **Q: 运行 `login.py` 时提示需要 `playwright install` 怎么办？**
-    - **A:** 这个错误表示 Playwright 运行所需的浏览器文件缺失。推荐的解决方法是，确保所有依赖都已通过 `requirements.txt` 正确安装。请在命令行中运行：
-
-        ```bash
-        pip install -r requirements.txt
-        ```
-
-        如果问题依旧，可以尝试手动安装 chromium 浏览器：
-
-        ```bash
-        playwright install chromium
-        ```
-
-3. **Q: 创建任务或运行时，提示 "Request timed out" 或 "Connection error" 是什么原因？**
-    - **A:** 这通常是网络问题，表示你的服务器无法连接到 `.env` 文件中配置的 `OPENAI_BASE_URL`。请检查：
-        - 你的服务器网络是否通畅。
-        - 如果你在中国大陆，访问国外 AI 服务（如 OpenAI, Gemini）可能需要设置网络代理。现在你可以直接在 `.env` 文件中配置 `PROXY_URL` 变量来解决此问题。
-        - 确认 `OPENAI_BASE_URL` 地址填写正确，并且该服务正在正常运行。
-
-4. **Q: 我选择的 AI 模型不支持图片分析怎么办？**
-    - **A:** 本项目的核心优势之一是结合图片进行多模态分析，因此 **必须** 选择一个支持图片识别（Vision / Multi-modal）的 AI 模型。如果你配置的模型不支持图片，AI 分析会失败或效果大打折扣。请在 `.env` 文件中将 `OPENAI_MODEL_NAME` 更换为支持图片输入的模型，例如 `gpt-4o`, `gemini-1.5-pro`, `deepseek-v2`, `qwen-vl-plus` 等。
-
-5. **Q: 我可以在群晖 (Synology) NAS 上通过 Docker 部署吗？**
-    - **A:** 可以。部署步骤与标准的 Docker 部署基本一致：
-        1. 在你的电脑上（而不是群晖上）完成 `login.py` 步骤，生成 `xianyu_state.json` 文件。
-        2. 将整个项目文件夹（包含 `.env` 和 `xianyu_state.json`）上传到群晖的某个目录下。
-        3. 在群晖的 Container Manager (或旧版 Docker) 中，使用 `docker-compose up -d` 命令（通过 SSH 或任务计划）来启动项目。确保 `docker-compose.yaml` 中的 volume 映射路径正确指向你在群晖上的项目文件夹。
-
-6. **Q: 如何配置使用 Gemini / Qwen / Grok 或其他非 OpenAI 的大语言模型？**
-    ***A:** 本项目理论上支持任何提供 OpenAI 兼容 API 接口的模型。关键在于正确配置 `.env` 文件中的三个变量：
-        *   `OPENAI_API_KEY`: 你的模型服务商提供的 API Key。
-        *`OPENAI_BASE_URL`: 模型服务商提供的 API-Compatible Endpoint 地址。请务必查阅你所使用模型的官方文档，通常格式为 `https://api.your-provider.com/v1` (注意，末尾不需要 `/chat/completions`)。
-        *   `OPENAI_MODEL_NAME`: 你要使用的具体模型名称，需要模型支持图片识别，例如 `gemini-2.5-flash`。
-    - **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
-
-7. **Q: 运行一段时间后被闲鱼检测到，提示“异常流量”或需要滑动验证？**
-    ***A:** 这是闲鱼的反爬虫机制。为了降低被检测的风险，可以尝试以下方法：
-        *   **关闭无头模式:** 在 `.env` 文件中设置 `RUN_HEADLESS=false`。这样浏览器会以有界面的方式运行，当出现滑动验证码时，你可以手动完成验证，程序会继续执行。
-        ***降低监控频率:** 避免同时运行大量监控任务。
-        *   **使用干净的网络环境:** 频繁爬取可能导致 IP 被临时标记。
-8. **Q: pyzbar 在 Windows 上安装失败怎么办？**
-    - **A:** pyzbar 在 Windows 上需要额外的 zbar 动态链接库支持。
-    - **解决方案 (Windows):**
-        - **方法1 (推荐):** 使用 Chocolatey 安装：
-
-            ```cmd
-            choco install zbar
-            ```
-
-        - **方法2:** 手动下载并添加到 PATH：
-            1. 从 [zbar releases](https://github.com/NaturalHistoryMuseum/pyzbar/releases) 下载对应版本的 `libzbar-64.dll`
-            2. 将文件放到 Python 安装目录或添加到系统 PATH
-        - **方法3:** 使用 conda 安装：
-
-            ```cmd
-            conda install -c conda-forge zbar
-            ```
-
-    - **Linux 用户:** 直接安装系统包即可：
-
-        ```bash
-        # Ubuntu/Debian
-        sudo apt-get install libzbar0
-        
-        # CentOS/RHEL
-        sudo yum install zbar
-        
-        # Arch Linux
-        sudo pacman -S zbar
-        ```
-
-9. **Q: 运行 `login.py` 时提示 `ModuleNotFoundError: No module named 'PIL'` 是什么原因？**
-    - **A:** 这个错误通常是因为Python版本过低或者依赖包安装不完整导致的。本项目推荐使用 Python 3.10 或更高版本。
-    - **解决方案:**
-        - 确保使用 Python 3.10+ 版本运行项目
-        - 重新安装依赖包：
-
-            ```bash
-            pip install -r requirements.txt
-            ```
-
-        - 如果问题依旧，可以尝试单独安装 Pillow 包：
-
-            ```bash
-            pip install Pillow
-            ```
-            
-10. **Q: 配置AI API时遇到404错误怎么办？**
-    - **A:** 如果在配置AI API时遇到404错误，建议先使用阿里云提供的API进行调试，确保基础功能正常后再尝试其他API提供商。某些API提供商可能存在兼容性问题或需要特殊的配置。请检查：
-        - 确认 `OPENAI_BASE_URL` 地址填写正确，确保该服务正在正常运行。
-        - 检查网络连接是否正常。
-        - 确认API Key是否正确且具有访问权限。
-        - 某些API提供商可能需要特殊的请求头或参数配置，请查阅其官方文档。
+👉 **[点击此处查看常见问题解答 (FAQ.md)](FAQ.md)**
 
 ## 致谢
 
