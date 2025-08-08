@@ -311,10 +311,33 @@ async def send_ntfy_notification(product_data, reason):
 
     # --- 发送企业微信机器人通知 ---
     if WX_BOT_URL:
+        # 将消息转换为Markdown格式，使链接可点击
+        lines = message.split('\n')
+        markdown_content = f"## {notification_title}\n\n"
+        
+        for line in lines:
+            if line.startswith('手机端链接:') or line.startswith('电脑端链接:') or line.startswith('链接:'):
+                # 提取链接部分并转换为Markdown超链接
+                if ':' in line:
+                    label, url = line.split(':', 1)
+                    url = url.strip()
+                    if url and url != '#':
+                        markdown_content += f"- **{label}:** [{url}]({url})\n"
+                    else:
+                        markdown_content += f"- **{label}:** 暂无链接\n"
+                else:
+                    markdown_content += f"- {line}\n"
+            else:
+                # 其他行保持原样
+                if line:
+                    markdown_content += f"- {line}\n"
+                else:
+                    markdown_content += "\n"
+        
         payload = {
-            "msgtype": "text",
-            "text": {
-                "content": f"{notification_title}\n{message}"
+            "msgtype": "markdown",
+            "markdown": {
+                "content": markdown_content
             }
         }
 
