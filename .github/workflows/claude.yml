@@ -1,5 +1,4 @@
-
-name: Claude Code Action 小助手
+name: Claude Code
 
 on:
   issue_comment:
@@ -30,14 +29,36 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run Claude PR Action
+      - name: Prepare Environment
+        run: |
+
+          curl -fsSL https://bun.sh/install | bash
+
+          mkdir -p $HOME/.claude-code-router
+
+          cat << 'EOF' > $HOME/.claude-code-router/config.json
+          {
+            "log": true,
+            "NON_INTERACTIVE_MODE": true,
+            "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+            "OPENAI_BASE_URL": "${{ secrets.OPENAI_BASE_URL }}",
+            "OPENAI_MODEL": "${{ secrets.OPENAI_MODEL }}"
+          }
+          EOF
+        shell: bash
+
+      - name: Start Claude Code Router
+        run: |
+
+          nohup ~/.bun/bin/bunx @musistudio/claude-code-router start &
+          sleep 5 # Give the router a moment to start
+        shell: bash
+
+      - name: Run Claude Code
+        id: claude
         uses: anthropics/claude-code-action@beta
+        env:
+          ANTHROPIC_BASE_URL: http://localhost:3456
         with:
-          claude_code_oauth_token: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
-          timeout_minutes: "60"
-          claude_env: |
-            ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-            ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-            ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
-            ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-            ANTHROPIC_SMALL_FAST_MODEL: ${{ secrets.ANTHROPIC_SMALL_FAST_MODEL }}
+
+          anthropic_api_key: "any-string-is-ok"
