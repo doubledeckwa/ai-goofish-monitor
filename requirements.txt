@@ -12,3 +12,6 @@ httpx[socks]
 Pillow
 pyzbar
 qrcode
+pytest
+pytest-asyncio
+coverage
