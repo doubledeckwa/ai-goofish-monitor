@@ -41,7 +41,7 @@ jobs:
             "log": true,
             "NON_INTERACTIVE_MODE": true,
             "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
-            "OPENAI_BASE_URL": "https://api-inference.modelscope.cn",
+            "OPENAI_BASE_URL": "https://api-inference.modelscope.cn/v1/",
             "OPENAI_MODEL": "Qwen/Qwen3-Coder-480B-A35B-Instruct"
           }
           EOF
@@ -49,9 +49,7 @@ jobs:
 
       - name: Start Claude Code Router
         run: |
-
-          nohup ~/.bun/bin/bunx @musistudio/claude-code-router start &
-          sleep 5 # Give the router a moment to start
+          nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start &
         shell: bash
 
       - name: Run Claude Code
