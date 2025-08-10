@@ -38,58 +38,11 @@ jobs:
 
           cat << 'EOF' > $HOME/.claude-code-router/config.json
           {
-              "log": true,
-              "NON_INTERACTIVE_MODE": true,
-              "API_TIMEOUT_MS": 600000,
-              "Providers": [
-                  {
-                      "name": "modelscope",
-                      "api_base_url": "https://api-inference.modelscope.cn/v1/chat/completions",
-                      "api_key": "${{ secrets.OPENAI_API_KEY }}",
-                      "models": [
-                          "Qwen/Qwen3-Coder-480B-A35B-Instruct",
-                          "Qwen/Qwen3-235B-A22B-Thinking-2507"
-                      ],
-                      "transformer": {
-                          "use": [
-                              [
-                                  "maxtoken",
-                                  {
-                                      "max_tokens": 65536
-                                  }
-                              ],
-                              "enhancetool"
-                          ],
-                          "Qwen/Qwen3-235B-A22B-Thinking-2507": {
-                              "use": [
-                                  "reasoning"
-                              ]
-                          }
-                      }
-                  },
-                  {
-                      "name": "gemini",
-                      "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
-                      "api_key": "${{ secrets.GEMINI_API_KEY }}",
-                      "models": [
-                          "gemini-2.5-flash",
-                          "gemini-2.5-pro"
-                      ],
-                      "transformer": {
-                          "use": [
-                              "gemini"
-                          ]
-                      }
-                  }
-              ],
-              "Router": {
-                  "default": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
-                  "background": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
-                  "think": "modelscope,Qwen/Qwen3-235B-A22B-Thinking-2507",
-                  "longContext": "modelscope,Qwen/Qwen3-Coder-480B-A35B-Instruct",
-                  "longContextThreshold": 60000,
-                  "webSearch": "gemini,gemini-2.5-flash"
-              }
+            "log": true,
+            "NON_INTERACTIVE_MODE": true,
+            "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
+            "OPENAI_BASE_URL": "https://api-inference.modelscope.cn/v1/",
+            "OPENAI_MODEL": "Qwen/Qwen3-Coder-480B-A35B-Instruct"
           }
           EOF
         shell: bash
@@ -105,5 +58,4 @@ jobs:
         env:
           ANTHROPIC_BASE_URL: http://localhost:3456
         with:
-
           anthropic_api_key: "any-string-is-ok"
