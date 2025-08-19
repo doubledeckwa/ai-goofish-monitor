@@ -1103,6 +1103,42 @@ async def test_ai_settings(settings: dict, username: str = Depends(verify_creden
         }
 
 
+@app.post("/api/settings/ai/test/backend", response_model=dict)
+async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
+    """
+    测试AI模型设置是否有效（从后端容器内发起）。
+    """
+    try:
+        from src.config import client, MODEL_NAME
+        
+        # 使用与spider_v2.py相同的AI客户端配置
+        if not client:
+            return {
+                "success": False, 
+                "message": "后端AI客户端未初始化，请检查.env配置文件中的AI设置。"
+            }
+        
+        # 测试连接
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "user", "content": "Hello, this is a test message from backend container to verify connection."}
+            ],
+            max_tokens=10
+        )
+        
+        return {
+            "success": True, 
+            "message": "后端AI模型连接测试成功！容器网络正常。",
+            "response": response.choices[0].message.content if response.choices else "No response"
+        }
+    except Exception as e:
+        return {
+            "success": False, 
+            "message": f"后端AI模型连接测试失败: {str(e)}。这表明容器内网络可能存在问题。"
+        }
+
+
 if __name__ == "__main__":
     # 从 .env 文件加载环境变量
     config = dotenv_values(".env")
