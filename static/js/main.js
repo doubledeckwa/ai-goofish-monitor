@@ -568,7 +568,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>
                 
                 <div class="form-group">
-                    <button type="button" id="test-ai-settings-btn" class="control-button">测试连接</button>
+                    <button type="button" id="test-ai-settings-btn" class="control-button">测试连接（浏览器）</button>
+                    <button type="button" id="test-ai-settings-backend-btn" class="control-button">测试连接（后端容器）</button>
                     <button type="submit" class="control-button primary-btn">保存AI设置</button>
                 </div>
             </form>
@@ -1106,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 saveBtn.textContent = originalText;
             });
 
-            // Add event listener for AI settings test button
+            // Add event listener for AI settings test button (browser)
             const testBtn = document.getElementById('test-ai-settings-btn');
             if (testBtn) {
                 testBtn.addEventListener('click', async () => {
@@ -1129,12 +1130,48 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (result.success) {
                             alert(result.message || "AI模型连接测试成功！");
                         } else {
-                            alert("测试失败: " + result.message);
+                            alert("浏览器测试失败: " + result.message);
                         }
                     }
                     
                     testBtn.disabled = false;
                     testBtn.textContent = originalText;
+                });
+            }
+
+            // Add event listener for AI settings test button (backend)
+            const testBackendBtn = document.getElementById('test-ai-settings-backend-btn');
+            if (testBackendBtn) {
+                testBackendBtn.addEventListener('click', async () => {
+                    // Test backend settings without form data (uses env config)
+                    const originalText = testBackendBtn.textContent;
+                    testBackendBtn.disabled = true;
+                    testBackendBtn.textContent = '测试中...';
+                    
+                    try {
+                        const response = await fetch('/api/settings/ai/test/backend', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('后端测试请求失败');
+                        }
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            alert(result.message || "后端AI模型连接测试成功！");
+                        } else {
+                            alert("后端容器测试失败: " + result.message);
+                        }
+                    } catch (error) {
+                        alert("后端容器测试错误: " + error.message);
+                    }
+                    
+                    testBackendBtn.disabled = false;
+                    testBackendBtn.textContent = originalText;
                 });
             }
         }
