@@ -1119,7 +1119,7 @@ async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
             }
         
         # 测试连接
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "user", "content": "Hello, this is a test message from backend container to verify connection."}
