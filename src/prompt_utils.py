@@ -65,6 +65,11 @@ async def generate_criteria(user_description: str, reference_file_path: str) -> 
         )
         generated_text = response.choices[0].message.content
         print("AI已成功生成内容。")
+        
+        # 处理content可能为None的情况
+        if generated_text is None:
+            raise RuntimeError("AI返回的内容为空，请检查模型配置或重试。")
+        
         return generated_text.strip()
     except Exception as e:
         print(f"调用 OpenAI API 时出错: {e}")
