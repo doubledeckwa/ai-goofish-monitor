@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.getElementById('main-content');
     const navLinks = document.querySelectorAll('.nav-link');
     let logRefreshInterval = null;
@@ -907,7 +907,7 @@ document.addEventListener('DOMContentLoaded', function () {
             sortBySelector.addEventListener('change', fetchAndRenderResults);
             sortOrderSelector.addEventListener('change', fetchAndRenderResults);
             refreshBtn.addEventListener('click', fetchAndRenderResults);
-            
+
             // Enable delete button when a file is selected
             const updateDeleteButtonState = () => {
                 deleteBtn.disabled = !selector.value;
@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', function () {
             selector.addEventListener('change', updateDeleteButtonState);
             // 初始化时也更新一次删除按钮状态
             updateDeleteButtonState();
-            
+
             // Delete button functionality
             deleteBtn.addEventListener('click', async () => {
                 const selectedFile = selector.value;
@@ -923,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     alert('请先选择一个结果文件。');
                     return;
                 }
-                
+
                 if (confirm(`你确定要删除结果文件 "${selectedFile}" 吗？此操作不可恢复。`)) {
                     const result = await deleteResultFile(selectedFile);
                     if (result) {
@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             });
-            
+
             // Initial load
             await fetchAndRenderResults();
         } else {
@@ -966,7 +966,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <p>正在加载AI配置...</p>
             </div>
         `;
-        
+
         // Insert AI settings card before Prompt Management
         const promptCard = document.querySelector('.settings-card h3').closest('.settings-card');
         promptCard.parentNode.insertBefore(aiContainer, promptCard);
@@ -1041,11 +1041,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (notificationForm) {
             notificationForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 // Collect form data
                 const formData = new FormData(notificationForm);
                 const settings = {};
-                
+
                 // Handle regular inputs
                 for (let [key, value] of formData.entries()) {
                     if (key === 'PCURL_TO_MOBILE') {
@@ -1054,24 +1054,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         settings[key] = value || '';
                     }
                 }
-                
+
                 // Handle unchecked checkboxes (they don't appear in FormData)
                 const pcurlCheckbox = document.getElementById('pcurl-to-mobile');
                 if (pcurlCheckbox && !pcurlCheckbox.checked) {
                     settings.PCURL_TO_MOBILE = false;
                 }
-                
+
                 // Save settings
                 const saveBtn = notificationForm.querySelector('button[type="submit"]');
                 const originalText = saveBtn.textContent;
                 saveBtn.disabled = true;
                 saveBtn.textContent = '保存中...';
-                
+
                 const result = await updateNotificationSettings(settings);
                 if (result) {
                     alert(result.message || "通知设置已保存！");
                 }
-                
+
                 saveBtn.disabled = false;
                 saveBtn.textContent = originalText;
             });
@@ -1082,27 +1082,27 @@ document.addEventListener('DOMContentLoaded', function () {
         if (aiForm) {
             aiForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                
+
                 // Collect form data
                 const formData = new FormData(aiForm);
                 const settings = {};
-                
+
                 // Handle regular inputs
                 for (let [key, value] of formData.entries()) {
                     settings[key] = value || '';
                 }
-                
+
                 // Save settings
                 const saveBtn = aiForm.querySelector('button[type="submit"]');
                 const originalText = saveBtn.textContent;
                 saveBtn.disabled = true;
                 saveBtn.textContent = '保存中...';
-                
+
                 const result = await updateAISettings(settings);
                 if (result) {
                     alert(result.message || "AI设置已保存！");
                 }
-                
+
                 saveBtn.disabled = false;
                 saveBtn.textContent = originalText;
             });
@@ -1114,17 +1114,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Collect form data
                     const formData = new FormData(aiForm);
                     const settings = {};
-                    
+
                     // Handle regular inputs
                     for (let [key, value] of formData.entries()) {
                         settings[key] = value || '';
                     }
-                    
+
                     // Test settings
                     const originalText = testBtn.textContent;
                     testBtn.disabled = true;
                     testBtn.textContent = '测试中...';
-                    
+
                     const result = await testAISettings(settings);
                     if (result) {
                         if (result.success) {
@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             alert("浏览器测试失败: " + result.message);
                         }
                     }
-                    
+
                     testBtn.disabled = false;
                     testBtn.textContent = originalText;
                 });
@@ -1147,7 +1147,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const originalText = testBackendBtn.textContent;
                     testBackendBtn.disabled = true;
                     testBackendBtn.textContent = '测试中...';
-                    
+
                     try {
                         const response = await fetch('/api/settings/ai/test/backend', {
                             method: 'POST',
@@ -1155,11 +1155,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                 'Content-Type': 'application/json',
                             },
                         });
-                        
+
                         if (!response.ok) {
                             throw new Error('后端测试请求失败');
                         }
-                        
+
                         const result = await response.json();
                         if (result.success) {
                             alert(result.message || "后端AI模型连接测试成功！");
@@ -1169,7 +1169,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     } catch (error) {
                         alert("后端容器测试错误: " + error.message);
                     }
-                    
+
                     testBackendBtn.disabled = false;
                     testBackendBtn.textContent = originalText;
                 });
@@ -1179,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Handle navigation clicks
     navLinks.forEach(link => {
-        link.addEventListener('click', function (e) {
+        link.addEventListener('click', function(e) {
             e.preventDefault();
             const hash = this.getAttribute('href');
             if (window.location.hash !== hash) {
@@ -1342,9 +1342,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         closeModalBtn.addEventListener('click', closeModal);
         cancelBtn.addEventListener('click', closeModal);
-        modal.addEventListener('click', (event) => {
+
+        let canClose = false;
+        modal.addEventListener('mousedown', event => {
+            canClose = event.target === modal;
+        });
+        modal.addEventListener('mouseup', (event) => {
             // Close if clicked on the overlay background
-            if (event.target === modal) {
+            if (canClose && event.target === modal) {
                 closeModal();
             }
         });
