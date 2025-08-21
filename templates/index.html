@@ -235,6 +235,34 @@
     </div>
 </div>
 
+
+<!-- refresh criteria Modal -->
+<div id="refresh-criteria-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>重新生成AI标准</h2>
+            <button id="close-refresh-criteria-btn" class="close-button">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="refresh-criteria-form">
+                <div class="form-group">
+                    <label for="refresh-criteria-description">详细购买需求</label>
+                    <textarea id="refresh-criteria-description" name="description" rows="6"
+                              placeholder="请用自然语言详细描述你的购买需求，AI将根据此描述生成分析标准。例如：我想买一台95新以上的索尼A7M4相机，预算在10000到13000元之间，快门数要低于5000。必须是国行且配件齐全。优先考虑个人卖家..."
+                              required></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button id="cancel-refresh-criteria-btn" class="control-button">取消</button>
+            <button id="refresh-criteria-btn" class="control-button primary-btn">
+                <span class="btn-text">重新生成</span>
+                <span class="spinner" style="display: none;"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- JSON Viewer Modal -->
 <div id="json-viewer-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
@@ -263,7 +291,8 @@
                 <p>此方法用于在无法运行图形化浏览器的服务器上更新闲鱼登录凭证。</p>
                 <p>安装Chrome扩展来提取闲鱼登录状态：</p>
                 <ol class="instructions">
-                    <li>在Chrome浏览器中安装 <a href="https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa" target="_blank" rel="noopener noreferrer">闲鱼登录状态提取扩展</a></li>
+                    <li>在Chrome浏览器中安装 <a href="https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa" target="_blank"
+                                                rel="noopener noreferrer">闲鱼登录状态提取扩展</a></li>
                     <li>打开并登录 <a href="https://www.goofish.com" target="_blank"
                                       rel="noopener noreferrer">闲鱼官网</a>。
                     </li>

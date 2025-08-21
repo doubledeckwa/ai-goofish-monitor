@@ -279,6 +279,21 @@ h2 {
     color: #ff4d4f;
 }
 
+.criteria {
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.refresh-criteria {
+    display: flex;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
 /* Toggle Switch */
 .switch {
     position: relative;
