@@ -95,9 +95,9 @@ async def lifespan(app: FastAPI):
     await reload_scheduler_jobs()
     if not scheduler.running:
         scheduler.start()
-    
+
     yield
-    
+
     # Shutdown
     if scheduler.running:
         print("正在关闭调度器...")
@@ -117,7 +117,7 @@ def load_notification_settings():
     """Load notification settings from .env file"""
     from dotenv import dotenv_values
     config = dotenv_values(".env")
-    
+
     return {
         "NTFY_TOPIC_URL": config.get("NTFY_TOPIC_URL", ""),
         "GOTIFY_URL": config.get("GOTIFY_URL", ""),
@@ -138,29 +138,29 @@ def save_notification_settings(settings: dict):
     """Save notification settings to .env file"""
     env_file = ".env"
     env_lines = []
-    
+
     # Read existing .env file
     if os.path.exists(env_file):
         with open(env_file, 'r', encoding='utf-8') as f:
             env_lines = f.readlines()
-    
+
     # Update or add notification settings
     setting_keys = [
-        "NTFY_TOPIC_URL", "GOTIFY_URL", "GOTIFY_TOKEN", "BARK_URL", 
+        "NTFY_TOPIC_URL", "GOTIFY_URL", "GOTIFY_TOKEN", "BARK_URL",
         "WX_BOT_URL", "WEBHOOK_URL", "WEBHOOK_METHOD", "WEBHOOK_HEADERS",
         "WEBHOOK_CONTENT_TYPE", "WEBHOOK_QUERY_PARAMETERS", "WEBHOOK_BODY", "PCURL_TO_MOBILE"
     ]
-    
+
     # Create a dictionary of existing settings
     existing_settings = {}
     for line in env_lines:
         if '=' in line and not line.strip().startswith('#'):
             key, value = line.split('=', 1)
             existing_settings[key.strip()] = value.strip()
-    
+
     # Update with new settings
     existing_settings.update(settings)
-    
+
     # Write back to file
     with open(env_file, 'w', encoding='utf-8') as f:
         for key in setting_keys:
@@ -169,7 +169,7 @@ def save_notification_settings(settings: dict):
                 f.write(f"{key}={str(value).lower()}\n")
             else:
                 f.write(f"{key}={value}\n")
-        
+
         # Write any other existing settings that are not notification settings
         for key, value in existing_settings.items():
             if key not in setting_keys:
@@ -180,7 +180,7 @@ def load_ai_settings():
     """Load AI model settings from .env file"""
     from dotenv import dotenv_values
     config = dotenv_values(".env")
-    
+
     return {
         "OPENAI_API_KEY": config.get("OPENAI_API_KEY", ""),
         "OPENAI_BASE_URL": config.get("OPENAI_BASE_URL", ""),
@@ -193,33 +193,33 @@ def save_ai_settings(settings: dict):
     """Save AI model settings to .env file"""
     env_file = ".env"
     env_lines = []
-    
+
     # Read existing .env file
     if os.path.exists(env_file):
         with open(env_file, 'r', encoding='utf-8') as f:
             env_lines = f.readlines()
-    
+
     # Update or add AI settings
     setting_keys = [
         "OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL_NAME", "PROXY_URL"
     ]
-    
+
     # Create a dictionary of existing settings
     existing_settings = {}
     for line in env_lines:
         if '=' in line and not line.strip().startswith('#'):
             key, value = line.split('=', 1)
             existing_settings[key.strip()] = value.strip()
-    
+
     # Update with new settings
     existing_settings.update(settings)
-    
+
     # Write back to file
     with open(env_file, 'w', encoding='utf-8') as f:
         for key in setting_keys:
             value = existing_settings.get(key, "")
             f.write(f"{key}={value}\n")
-        
+
         # Write any other existing settings that are not AI settings
         for key, value in existing_settings.items():
             if key not in setting_keys:
@@ -241,7 +241,7 @@ def get_auth_credentials():
 def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
     """验证Basic认证凭据"""
     username, password = get_auth_credentials()
-    
+
     # 检查用户名和密码是否匹配
     if credentials.username == username and credentials.password == password:
         return credentials.username
@@ -260,12 +260,12 @@ scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 class AuthenticatedStaticFiles(StaticFiles):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     async def __call__(self, scope, receive, send):
         # 检查认证
         headers = dict(scope.get("headers", []))
         authorization = headers.get(b"authorization", b"").decode()
-        
+
         if not authorization.startswith("Basic "):
             await send({
                 "type": "http.response.start",
@@ -280,16 +280,16 @@ class AuthenticatedStaticFiles(StaticFiles):
                 "body": b"Authentication required",
             })
             return
-        
+
         # 验证凭据
         try:
             credentials = base64.b64decode(authorization[6:]).decode()
             username, password = credentials.split(":", 1)
-            
+
             expected_username, expected_password = get_auth_credentials()
             if username != expected_username or password != expected_password:
                 raise ValueError("Invalid credentials")
-                
+
         except Exception:
             await send({
                 "type": "http.response.start",
@@ -304,7 +304,7 @@ class AuthenticatedStaticFiles(StaticFiles):
                 "body": b"Authentication failed",
             })
             return
-        
+
         # 认证成功，继续处理静态文件
         await super().__call__(scope, receive, send)
 
@@ -374,7 +374,7 @@ async def _set_all_tasks_stopped_in_config():
         if needs_update:
             for task in tasks:
                 task['is_running'] = False
-            
+
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
             print("所有任务状态已在配置文件中重置为“已停止”。")
@@ -395,7 +395,7 @@ async def reload_scheduler_jobs():
     try:
         async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             tasks = json.loads(await f.read())
-        
+
         for i, task in enumerate(tasks):
             task_name = task.get("task_name")
             cron_str = task.get("cron")
@@ -421,7 +421,7 @@ async def reload_scheduler_jobs():
         print(f"[警告] 配置文件 {CONFIG_FILE} 未找到，无法加载定时任务。")
     except Exception as e:
         print(f"[错误] 重新加载定时任务时发生错误: {e}")
-    
+
     print("定时任务加载完成。")
     if scheduler.get_jobs():
         print("当前已调度的任务:")
@@ -476,11 +476,11 @@ async def generate_task(req: TaskGenerateRequest, username: str = Depends(verify
     使用 AI 生成一个新的分析标准文件，并据此创建一个新任务。
     """
     print(f"收到 AI 任务生成请求: {req.task_name}")
-    
+
     # 1. 为新标准文件生成一个唯一的文件名
     safe_keyword = "".join(c for c in req.keyword.lower().replace(' ', '_') if c.isalnum() or c in "_-").rstrip()
     output_filename = f"prompts/{safe_keyword}_criteria.txt"
-    
+
     # 2. 调用 AI 生成分析标准
     try:
         generated_criteria = await generate_criteria(
@@ -555,7 +555,7 @@ async def create_task(task: Task, username: str = Depends(verify_credentials)):
     try:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
-        
+
         new_task_data['id'] = len(tasks) - 1
         await reload_scheduler_jobs()
         return {"message": "任务创建成功。", "task": new_task_data}
@@ -579,7 +579,7 @@ async def update_task(task_id: int, task_update: TaskUpdate, username: str = Dep
 
     # 更新数据
     update_data = task_update.dict(exclude_unset=True)
-    
+
     if not update_data:
         return JSONResponse(content={"message": "数据无变化，未执行更新。"}, status_code=200)
 
@@ -595,7 +595,7 @@ async def update_task(task_id: int, task_update: TaskUpdate, username: str = Dep
     try:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
-        
+
         await reload_scheduler_jobs()
 
         updated_task = tasks[task_id]
@@ -626,7 +626,7 @@ async def start_task_process(task_id: int, task_name: str):
         )
         scraper_processes[task_id] = process
         print(f"启动任务 '{task_name}' (PID: {process.pid})，日志输出到 {log_file_path}")
-        
+
         # 更新配置文件中的状态
         await update_task_running_status(task_id, True)
     except Exception as e:
@@ -650,7 +650,7 @@ async def stop_task_process(task_id: int):
             os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         else:
             process.terminate()
-        
+
         await process.wait()
         print(f"任务进程 {process.pid} (ID: {task_id}) 已终止。")
     except ProcessLookupError:
@@ -668,7 +668,7 @@ async def update_task_running_status(task_id: int, is_running: bool):
     try:
         async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             tasks = json.loads(await f.read())
-        
+
         if 0 <= task_id < len(tasks):
             tasks[task_id]['is_running'] = is_running
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
@@ -685,7 +685,7 @@ async def start_single_task(task_id: int, username: str = Depends(verify_credent
             tasks = json.loads(await f.read())
         if not (0 <= task_id < len(tasks)):
             raise HTTPException(status_code=404, detail="任务未找到。")
-        
+
         task = tasks[task_id]
         if not task.get("enabled", False):
             raise HTTPException(status_code=400, detail="任务已被禁用，无法启动。")
@@ -726,7 +726,7 @@ async def get_logs(from_pos: int = 0, username: str = Depends(verify_credentials
 
             await f.seek(from_pos)
             new_bytes = await f.read()
-        
+
         # 解码获取的字节
         try:
             new_content = new_bytes.decode('utf-8')
@@ -795,7 +795,7 @@ async def delete_task(task_id: int, username: str = Depends(verify_credentials))
     try:
         async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
-        
+
         await reload_scheduler_jobs()
 
         return {"message": "任务删除成功。", "task_name": deleted_task.get("task_name")}
@@ -822,11 +822,11 @@ async def delete_result_file(filename: str, username: str = Depends(verify_crede
     """
     if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="无效的文件名。")
-    
+
     filepath = os.path.join("jsonl", filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="结果文件未找到。")
-    
+
     try:
         os.remove(filepath)
         return {"message": f"结果文件 '{filename}' 已成功删除。"}
@@ -841,7 +841,7 @@ async def get_result_file_content(filename: str, page: int = 1, limit: int = 20,
     """
     if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="无效的文件名。")
-    
+
     filepath = os.path.join("jsonl", filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="结果文件未找到。")
@@ -879,7 +879,7 @@ async def get_result_file_content(filename: str, page: int = 1, limit: int = 20,
 
     is_reverse = (sort_order == "desc")
     results.sort(key=get_sort_key, reverse=is_reverse)
-    
+
     total_items = len(results)
     start = (page - 1) * limit
     end = start + limit
@@ -952,11 +952,11 @@ async def get_prompt_content(filename: str, username: str = Depends(verify_crede
     """
     if "/" in filename or ".." in filename:
         raise HTTPException(status_code=400, detail="无效的文件名。")
-    
+
     filepath = os.path.join(PROMPTS_DIR, filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Prompt 文件未找到。")
-    
+
     async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:
         content = await f.read()
     return {"filename": filename, "content": content}
@@ -1067,38 +1067,42 @@ async def test_ai_settings(settings: dict, username: str = Depends(verify_creden
     try:
         from openai import OpenAI
         import httpx
-        
+
         # 创建OpenAI客户端
         client_params = {
             "api_key": settings.get("OPENAI_API_KEY", ""),
             "base_url": settings.get("OPENAI_BASE_URL", ""),
             "timeout": httpx.Timeout(30.0),
         }
-        
+
         # 如果有代理设置
         proxy_url = settings.get("PROXY_URL", "")
         if proxy_url:
             client_params["http_client"] = httpx.Client(proxy=proxy_url)
-        
+
+        mode_name = settings.get("OPENAI_MODEL_NAME", "")
+        print(f"LOG: 后端容器AI测试 BASE_URL: {client_params['base_url']}, MODEL_NAME: {mode_name}, PROXY_URL: {proxy_url}")
+
         client = OpenAI(**client_params)
-        
+
         # 测试连接
         response = client.chat.completions.create(
-            model=settings.get("OPENAI_MODEL_NAME", ""),
+            model=mode_name,
             messages=[
                 {"role": "user", "content": "Hello, this is a test message to verify the connection."}
             ],
-            max_tokens=10
+            max_tokens=10,
+            extra_body={"enable_thinking": False}
         )
-        
+
         return {
-            "success": True, 
+            "success": True,
             "message": "AI模型连接测试成功！",
             "response": response.choices[0].message.content if response.choices else "No response"
         }
     except Exception as e:
         return {
-            "success": False, 
+            "success": False,
             "message": f"AI模型连接测试失败: {str(e)}"
         }
 
@@ -1109,32 +1113,34 @@ async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
     测试AI模型设置是否有效（从后端容器内发起）。
     """
     try:
-        from src.config import client, MODEL_NAME
-        
+        from src.config import client, BASE_URL, MODEL_NAME
+
         # 使用与spider_v2.py相同的AI客户端配置
         if not client:
             return {
-                "success": False, 
+                "success": False,
                 "message": "后端AI客户端未初始化，请检查.env配置文件中的AI设置。"
             }
-        
+
+        print(f"LOG: 后端容器AI测试 BASE_URL: {BASE_URL}, MODEL_NAME: {MODEL_NAME}")
         # 测试连接
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "user", "content": "Hello, this is a test message from backend container to verify connection."}
             ],
-            max_tokens=10
+            max_tokens=10,
+            extra_body={"enable_thinking": False}
         )
-        
+
         return {
-            "success": True, 
+            "success": True,
             "message": "后端AI模型连接测试成功！容器网络正常。",
             "response": response.choices[0].message.content if response.choices else "No response"
         }
     except Exception as e:
         return {
-            "success": False, 
+            "success": False,
             "message": f"后端AI模型连接测试失败: {str(e)}。这表明容器内网络可能存在问题。"
         }
 
@@ -1142,14 +1148,14 @@ async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
 if __name__ == "__main__":
     # 从 .env 文件加载环境变量
     config = dotenv_values(".env")
-    
+
     # 获取服务器端口，如果未设置则默认为 8000
     server_port = int(config.get("SERVER_PORT", 8000))
 
     # 设置默认编码
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    
+
     print(f"启动 Web 管理界面，请在浏览器访问 http://127.0.0.1:{server_port}")
 
     # 启动 Uvicorn 服务器
