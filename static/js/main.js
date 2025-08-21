@@ -1445,6 +1445,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const btnText = refreshBtn.querySelector('.btn-text');
             const spinner = refreshBtn.querySelector('.spinner');
+
+            // Show loading state
             btnText.style.display = 'none';
             spinner.style.display = 'inline-block';
             refreshBtn.disabled = true;
@@ -1452,6 +1454,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const taskId = refreshCriteriaModal.dataset.taskId
             const formData = new FormData(form);
             const result = await updateTask(taskId, {description: formData.get('description')});
+
+            // Hide loading state
+            btnText.style.display = 'inline-block';
+            spinner.style.display = 'none';
+            refreshBtn.disabled = false;
+
             if (result && result.task) {
                 closeModal();
             }
