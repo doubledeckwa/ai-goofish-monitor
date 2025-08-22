@@ -682,6 +682,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return '<p>没有找到任何任务。请点击右上角“创建新任务”来添加一个。</p>';
         }
 
+        const refreshBtn = '<svg class="icon" viewBox="0 0 1025 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"  width="16" height="16"><path d="M914.17946 324.34283C854.308387 324.325508 750.895846 324.317788 750.895846 324.317788 732.045471 324.317788 716.764213 339.599801 716.764213 358.451121 716.764213 377.30244 732.045471 392.584453 750.895846 392.584453L955.787864 392.584453C993.448095 392.584453 1024 362.040424 1024 324.368908L1024 119.466667C1024 100.615347 1008.718742 85.333333 989.868367 85.333333 971.017993 85.333333 955.736735 100.615347 955.736735 119.466667L955.736735 256.497996C933.314348 217.628194 905.827487 181.795372 873.995034 149.961328 778.623011 54.584531 649.577119 0 511.974435 0 229.218763 0 0 229.230209 0 512 0 794.769791 229.218763 1024 511.974435 1024 794.730125 1024 1023.948888 794.769791 1023.948888 512 1023.948888 493.148681 1008.66763 477.866667 989.817256 477.866667 970.966881 477.866667 955.685623 493.148681 955.685623 512 955.685623 757.067153 757.029358 955.733333 511.974435 955.733333 266.91953 955.733333 68.263265 757.067153 68.263265 512 68.263265 266.932847 266.91953 68.266667 511.974435 68.266667 631.286484 68.266667 743.028524 115.531923 825.725634 198.233152 862.329644 234.839003 892.298522 277.528256 914.17946 324.34283L914.17946 324.34283Z" fill="#389BFF"></path></svg>'
+
         const tableHeader = `
             <thead>
                 <tr>
@@ -722,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${task.min_price || '不限'} - ${task.max_price || '不限'}</td>
                 <td>${task.personal_only ? '<span class="tag personal">个人闲置</span>' : ''}</td>
                 <td>${task.max_pages || 3}</td>
-                <td>${(task.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</td>
+                <td><div class="criteria"><button class="refresh-criteria" title="重新生成AI标准" data-task-id="${task.id}">${refreshBtn}</button>${(task.ai_prompt_criteria_file || 'N/A').replace('prompts/', '')}</div></td>
                 <td>${task.cron || '未设置'}</td>
                 <td>
                     ${actionButton}
@@ -1306,6 +1308,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('tasks-table-container');
             const tasks = await fetchTasks();
             container.innerHTML = renderTasksTable(tasks);
+        } else if (button.matches('.refresh-criteria')) {
+            const task = JSON.parse(row.dataset.task);
+            const modal = document.getElementById('refresh-criteria-modal');
+            const textarea = document.getElementById('refresh-criteria-description');
+            textarea.value = task['description'] || '';
+            modal.dataset.taskId = taskId;
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('visible'), 10);
         }
     });
 
@@ -1396,6 +1406,65 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    }
+
+    // --- refresh criteria Modal Logic ---
+    const refreshCriteriaModal = document.getElementById('refresh-criteria-modal');
+    if (refreshCriteriaModal) {
+        const form = document.getElementById('refresh-criteria-form');
+        const closeModalBtn = document.getElementById('close-refresh-criteria-btn');
+        const cancelBtn = document.getElementById('cancel-refresh-criteria-btn');
+        const refreshBtn = document.getElementById('refresh-criteria-btn');
+
+        const closeModal = () => {
+            refreshCriteriaModal.classList.remove('visible');
+            setTimeout(() => {
+                refreshCriteriaModal.style.display = 'none';
+                form.reset(); // Reset form on close
+            }, 300);
+        };
+
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+
+        let canClose = false;
+        refreshCriteriaModal.addEventListener('mousedown', event => {
+            canClose = event.target === refreshCriteriaModal;
+        });
+        refreshCriteriaModal.addEventListener('mouseup', (event) => {
+            // Close if clicked on the overlay background
+            if (canClose && event.target === refreshCriteriaModal) {
+                closeModal();
+            }
+        });
+
+        refreshBtn.addEventListener('click', async () => {
+            if (form.checkValidity() === false) {
+                form.reportValidity();
+                return;
+            }
+            const btnText = refreshBtn.querySelector('.btn-text');
+            const spinner = refreshBtn.querySelector('.spinner');
+
+            // Show loading state
+            btnText.style.display = 'none';
+            spinner.style.display = 'inline-block';
+            refreshBtn.disabled = true;
+
+            const taskId = refreshCriteriaModal.dataset.taskId
+            const formData = new FormData(form);
+            const result = await updateTask(taskId, {description: formData.get('description')});
+
+            // Hide loading state
+            btnText.style.display = 'inline-block';
+            spinner.style.display = 'none';
+            refreshBtn.disabled = false;
+
+            if (result && result.task) {
+                closeModal();
+            }
+        })
+
     }
 
 

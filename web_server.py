@@ -20,11 +20,15 @@ from typing import List, Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
+from src.file_operator import FileOperator
+from src.task import get_task, update_task
+
 
 class Task(BaseModel):
     task_name: str
     enabled: bool
     keyword: str
+    description: str
     max_pages: int
     personal_only: bool
     min_price: Optional[str] = None
@@ -39,6 +43,7 @@ class TaskUpdate(BaseModel):
     task_name: Optional[str] = None
     enabled: Optional[bool] = None
     keyword: Optional[str] = None
+    description: Optional[str] = None
     max_pages: Optional[int] = None
     personal_only: Optional[bool] = None
     min_price: Optional[str] = None
@@ -511,6 +516,7 @@ async def generate_task(req: TaskGenerateRequest, username: str = Depends(verify
         "min_price": req.min_price,
         "max_price": req.max_price,
         "cron": req.cron,
+        "description": req.description,
         "ai_prompt_base_file": "prompts/base_prompt.txt",
         "ai_prompt_criteria_file": output_filename,
         "is_running": False
@@ -564,17 +570,12 @@ async def create_task(task: Task, username: str = Depends(verify_credentials)):
 
 
 @app.patch("/api/tasks/{task_id}", response_model=dict)
-async def update_task(task_id: int, task_update: TaskUpdate, username: str = Depends(verify_credentials)):
+async def update_task_api(task_id: int, task_update: TaskUpdate, username: str = Depends(verify_credentials)):
     """
     更新指定ID任务的属性。
     """
-    try:
-        async with aiofiles.open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            tasks = json.loads(await f.read())
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        raise HTTPException(status_code=500, detail=f"读取或解析配置文件失败: {e}")
-
-    if not (0 <= task_id < len(tasks)):
+    task = await get_task(task_id)
+    if not task:
         raise HTTPException(status_code=404, detail="任务未找到。")
 
     # 更新数据
@@ -583,27 +584,38 @@ async def update_task(task_id: int, task_update: TaskUpdate, username: str = Dep
     if not update_data:
         return JSONResponse(content={"message": "数据无变化，未执行更新。"}, status_code=200)
 
+    if 'description' in update_data:
+        criteria_filename = task.get('ai_prompt_criteria_file')
+        criteria_file_op = FileOperator(criteria_filename)
+        try:
+            generated_criteria = await generate_criteria(
+                user_description=update_data.get("description"),
+                reference_file_path="prompts/macbook_criteria.txt"  # 使用默认的macbook标准作为参考
+            )
+            if not generated_criteria:
+                raise HTTPException(status_code=500, detail="AI未能生成分析标准。")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"调用AI生成标准时出错: {e}")
+
+        success = await criteria_file_op.write(generated_criteria)
+
+        if not success:
+            raise HTTPException(status_code=500, detail=f"更新的AI标准写入出错")
+
     # 如果任务从“启用”变为“禁用”，且正在运行，则先停止它
     if 'enabled' in update_data and not update_data['enabled']:
         if scraper_processes.get(task_id):
             print(f"任务 '{tasks[task_id]['task_name']}' 已被禁用，正在停止其进程...")
             await stop_task_process(task_id) # 这会处理进程和is_running状态
 
-    tasks[task_id].update(update_data)
+    task.update(update_data)
 
-    # 异步写回文件
-    try:
-        async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
+    success = await update_task(task_id, task)
 
-        await reload_scheduler_jobs()
-
-        updated_task = tasks[task_id]
-        updated_task['id'] = task_id
-        return {"message": "任务更新成功。", "task": updated_task}
-    except Exception as e:
+    if not success:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
 
+    return {"message": "任务更新成功。", "task": task}
 
 async def start_task_process(task_id: int, task_name: str):
     """内部函数：启动一个指定的任务进程。"""
