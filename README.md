@@ -285,24 +285,19 @@ WEB_PASSWORD=admin123
 
 - [superboyyy/xianyu_spider](https://github.com/superboyyy/xianyu_spider)
 
-以及感谢LinuxDo相关佬友的脚本贡献
+以及感谢LinuxDo相关人员的脚本贡献
 
 - [@jooooody](https://linux.do/u/jooooody/summary)
 
-以及感谢 [LinuxDo](https://linux.do/) 社区，希望L站越来越好。
+以及感谢 [LinuxDo](https://linux.do/) 社区。
 
-以及感谢ClaudeCode/Aider/Gemini 工具解放双手，代码写起来飞一般的感觉～
+以及感谢 ClaudeCode/ModelScope/Gemini 等模型/工具，解放双手 体验Vibe Coding的快乐。
 
-## Support & Sponsoring
-
-如果该项目对您有帮助，请考虑 buy a coffe for me , 非常感谢您的支持！
-
-<table>
-  <tr>
-    <td><img src="static/zfb_support.jpg" width="200" alt="Alipay" /></td>
-    <td><img src="static/wx_support.png" width="200" alt="WeChat Pay" /></td>
-  </tr>
-</table>
+## 体会
+本项目 90%+ 的代码都由AI生成，包括 ISSUE 中涉及的 PR 。
+Vibe Coding 的可怕之处在于如果不过多的参与项目建设，对AI生成的代码没有进行细致的review，没有思考过AI为什么这么写，盲目的通过跑测试用例验证功能可用性只会导致项目变成一个黑盒。
+同样再用AI对AI生成的代码进行code review时，就像是用AI来验证另一个AI的回答是不是AI，陷入了自我证明的困境之中，所以AI可以辅助分析，但不应该成为真相的仲裁者。
+AI是万能的，能帮助解决99%的编码问题，AI不是万能，解决的每一个问题都需要自己去思考一遍，AI只是辅助，执行人得是自己。
 
 ## ⚠️ 注意事项
 
