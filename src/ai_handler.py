@@ -528,13 +528,16 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
             # 根据重试次数调整参数
             current_temperature = 0.1 if attempt == 0 else 0.05  # 重试时使用更低的温度
 
+            from src.config import get_ai_request_params
+            
             response = await client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                response_format={"type": "json_object"},
-                temperature=current_temperature,
-                max_tokens=4000,
-                extra_body={"enable_thinking": False}
+                **get_ai_request_params(
+                    model=MODEL_NAME,
+                    messages=messages,
+                    response_format={"type": "json_object"},
+                    temperature=current_temperature,
+                    max_tokens=4000
+                )
             )
 
             ai_response_content = response.choices[0].message.content

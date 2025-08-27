@@ -87,6 +87,7 @@ pip install -r requirements.txt
     | `RUN_HEADLESS` | 是否以无头模式运行爬虫浏览器。 | 否 | 默认为 `true`。在本地调试遇到验证码时可设为 `false` 手动处理。**Docker部署时必须为 `true`**。 |
     | `AI_DEBUG_MODE` | 是否开启AI调试模式。 | 否 | 默认为 `false`。开启后会在控制台打印详细的AI请求和响应日志。 |
     | `SKIP_AI_ANALYSIS` | 是否跳过AI分析并直接发送通知。 | 否 | 默认为 `false`。设置为 `true` 时，所有爬取到的商品将直接发送通知而不经过AI分析。 |
+    | `ENABLE_THINKING` | 是否启用enable_thinking参数。 | 否 | 默认为 `false`。某些AI模型需要此参数，而有些则不支持。如果遇到"Invalid JSON payload received. Unknown name "enable_thinking""错误，请尝试设置为 `false`。 |
     | `SERVER_PORT` | Web UI服务的运行端口。 | 否 | 默认为 `8000`。 |
     | `WEB_USERNAME` | Web界面登录用户名。 | 否 | 默认为 `admin`。生产环境请务必修改。 |
     | `WEB_PASSWORD` | Web界面登录密码。 | 否 | 默认为 `admin123`。生产环境请务必修改为强密码。 |

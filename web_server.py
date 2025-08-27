@@ -1097,14 +1097,17 @@ async def test_ai_settings(settings: dict, username: str = Depends(verify_creden
 
         client = OpenAI(**client_params)
 
+        from src.config import get_ai_request_params
+        
         # 测试连接
         response = client.chat.completions.create(
-            model=mode_name,
-            messages=[
-                {"role": "user", "content": "Hello, this is a test message to verify the connection."}
-            ],
-            max_tokens=10,
-            extra_body={"enable_thinking": False}
+            **get_ai_request_params(
+                model=mode_name,
+                messages=[
+                    {"role": "user", "content": "Hello, this is a test message to verify the connection."}
+                ],
+                max_tokens=10
+            )
         )
 
         return {
@@ -1134,15 +1137,18 @@ async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
                 "message": "后端AI客户端未初始化，请检查.env配置文件中的AI设置。"
             }
 
+        from src.config import get_ai_request_params
+        
         print(f"LOG: 后端容器AI测试 BASE_URL: {BASE_URL}, MODEL_NAME: {MODEL_NAME}")
         # 测试连接
         response = await client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "user", "content": "Hello, this is a test message from backend container to verify connection."}
-            ],
-            max_tokens=10,
-            extra_body={"enable_thinking": False}
+            **get_ai_request_params(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "user", "content": "Hello, this is a test message from backend container to verify connection."}
+                ],
+                max_tokens=10
+            )
         )
 
         return {
