@@ -42,6 +42,7 @@ LOGIN_IS_EDGE = os.getenv("LOGIN_IS_EDGE", "false").lower() == "true"
 RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true"
 AI_DEBUG_MODE = os.getenv("AI_DEBUG_MODE", "false").lower() == "true"
 SKIP_AI_ANALYSIS = os.getenv("SKIP_AI_ANALYSIS", "false").lower() == "true"
+ENABLE_THINKING = os.getenv("ENABLE_THINKING", "false").lower() == "true"
 
 # --- Headers ---
 IMAGE_DOWNLOAD_HEADERS = {
@@ -81,3 +82,11 @@ if not client:
 # 检查关键配置
 if not all([BASE_URL, MODEL_NAME]) and 'prompt_generator.py' in sys.argv[0]:
     sys.exit("错误：请确保在 .env 文件中完整设置了 OPENAI_BASE_URL 和 OPENAI_MODEL_NAME。(OPENAI_API_KEY 对于某些服务是可选的)")
+
+def get_ai_request_params(**kwargs):
+    """
+    构建AI请求参数，根据ENABLE_THINKING环境变量决定是否添加enable_thinking参数
+    """
+    if ENABLE_THINKING:
+        kwargs["extra_body"] = {"enable_thinking": False}
+    return kwargs

@@ -35,9 +35,17 @@
 *   `OPENAI_MODEL_NAME`: 你要使用的具体模型名称，需要模型支持图片识别，例如 `gemini-2.5-flash`。
 - **示例:** 如果你的服务商文档说 Completions 接口是 `https://xx.xx.com/v1/chat/completions`，那么 `OPENAI_BASE_URL` 就应该填 `https://xx.xx.com/v1`。
 
+#### 问：为什么AI模型连接测试失败，提示 "Invalid JSON payload received. Unknown name "enable_thinking": Cannot find field" 错误？
+
+**答：** 这是因为某些AI模型不支持 `enable_thinking` 参数导致的。项目现在支持通过环境变量 `ENABLE_THINKING` 来控制是否添加这个参数：
+
+*   **解决方案：** 在 `.env` 文件中设置 `ENABLE_THINKING=false`，然后重新运行AI模型连接测试。
+*   **默认行为：** 从项目v1.0版本开始，默认情况下 `ENABLE_THINKING` 设置为 `false`，不会添加 `enable_thinking` 参数，以兼容更多AI模型。
+*   **特殊需求：** 如果你使用的AI模型需要这个参数，可以将 `ENABLE_THINKING` 设置为 `true`。
+
 ---
 
-### **Q2: 登录与反爬虫**
+### **Q3: 登录与反爬虫**
 
 #### 问：为什么 `xianyu_state.json` 文件会自动消失？
 
@@ -53,7 +61,7 @@
 
 ---
 
-### **Q3: 环境与部署**
+### **Q4: 环境与部署**
 
 #### 问：运行 `login.py` 或 `spider_v2.py` 时出现 `'gbk' codec can't encode character` 相关的编码错误？
 **答:** 这是典型的 Windows 环境下的编码问题。项目代码和日志默认使用 UTF-8 编码。
@@ -138,7 +146,7 @@ docker run --shm-size=1gb -v "$(pwd)":/app ai-goofish-monitor
 
 ---
 
-### **Q4: 功能使用问题**
+### **Q5: 功能使用问题**
 
 #### 问：如何设置定时任务的执行频率？
 
