@@ -75,7 +75,7 @@ pip install -r requirements.txt
     | `GOTIFY_URL` | (可选) Gotify 服务地址。 | 否 | 例如 `https://push.example.de`。 |
     | `GOTIFY_TOKEN` | (可选) Gotify 应用的 Token。 | 否 | |
     | `BARK_URL` | (可选) [Bark](https://bark.day.app/) 的推送地址。 | 否 | 例如 `https://api.day.app/your_key`。如果留空，将不发送 Bark 通知。 |
-    | `WX_BOT_URL` | (可选) 企业微信群机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。 |
+    | `WX_BOT_URL` | (可选) 企业微信群机器人的 Webhook 地址。 | 否 | 如果留空，将不会发送企业微信通知。注意：在 `.env` 文件中配置此值时，请确保 URL 地址用双引号包围，否则可能导致配置不生效。 |
     | `WEBHOOK_URL` | (可选) 通用 Webhook 的 URL 地址。 | 否 | 如果留空，将不发送通用 Webhook 通知。 |
     | `WEBHOOK_METHOD` | (可选) Webhook 请求方法。 | 否 | 支持 `GET` 或 `POST`，默认为 `POST`。 |
     | `WEBHOOK_HEADERS` | (可选) Webhook 的自定义请求头。 | 否 | 必须是有效的 JSON 字符串，例如 `'{"Authorization": "Bearer xxx"}'`。 |
