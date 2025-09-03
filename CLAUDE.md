@@ -126,3 +126,5 @@ python prompt_generator.py
 
 开发文档
 @[XIANYU_MONITOR_DOCUMENTATION.md](XIANYU_MONITOR_DOCUMENTATION.md)
+
+Always respond in Chinese-simplified
