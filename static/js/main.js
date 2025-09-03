@@ -1231,6 +1231,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('tasks-table-container').innerHTML = renderTasksTable(tasks);
         } else if (button.matches('.edit-btn')) {
             const taskData = JSON.parse(row.dataset.task);
+            const isRunning = taskData.is_running === true;
+            const statusBadge = isRunning
+                ? `<span class="status-badge status-running">运行中</span>`
+                : `<span class="status-badge status-stopped">已停止</span>`;
 
             row.classList.add('editing');
             row.innerHTML = `
@@ -1241,6 +1245,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </label>
                 </td>
                 <td><input type="text" value="${taskData.task_name}" data-field="task_name"></td>
+                <td>${statusBadge}</td>
                 <td><input type="text" value="${taskData.keyword}" data-field="keyword"></td>
                 <td>
                     <input type="text" value="${taskData.min_price || ''}" placeholder="不限" data-field="min_price" style="width: 60px;"> -
