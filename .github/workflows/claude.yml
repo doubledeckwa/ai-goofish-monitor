@@ -11,12 +11,12 @@ on:
     types: [submitted]
 
 jobs:
-  claude-code-action:
+  claude:
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,37 +25,14 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
         with:
           fetch-depth: 1
-
-      - name: Prepare Environment
-        run: |
-
-          curl -fsSL https://bun.sh/install | bash
-
-          mkdir -p $HOME/.claude-code-router
-
-          cat << 'EOF' > $HOME/.claude-code-router/config.json
-          {
-            "log": true,
-            "NON_INTERACTIVE_MODE": true,
-            "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}",
-            "OPENAI_BASE_URL": "https://api-inference.modelscope.cn/v1/",
-            "OPENAI_MODEL": "Qwen/Qwen3-Coder-480B-A35B-Instruct"
-          }
-          EOF
-        shell: bash
-
-      - name: Start Claude Code Router
-        run: |
-          nohup ~/.bun/bin/bunx @musistudio/claude-code-router@1.0.8 start &
-        shell: bash
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@beta
         env:
-          ANTHROPIC_BASE_URL: http://localhost:3456
-        with:
-          anthropic_api_key: "any-string-is-ok"
+          ANTHROPIC_BASE_URL: https://api-inference.modelscope.cn
+          ANTHROPIC_MODEL: 'Qwen/Qwen3-Coder-480B-A35B-Instruct'
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
