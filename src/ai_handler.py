@@ -36,6 +36,7 @@ from src.config import (
     WEBHOOK_CONTENT_TYPE,
     WEBHOOK_QUERY_PARAMETERS,
     WEBHOOK_BODY,
+    ENABLE_RESPONSE_FORMAT,
     client,
 )
 from src.utils import convert_goofish_link, retry_on_failure
@@ -582,14 +583,20 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
 
             from src.config import get_ai_request_params
             
+            # 构建请求参数，根据ENABLE_RESPONSE_FORMAT决定是否使用response_format
+            request_params = {
+                "model": MODEL_NAME,
+                "messages": messages,
+                "temperature": current_temperature,
+                "max_tokens": 4000
+            }
+            
+            # 只有启用response_format时才添加该参数
+            if ENABLE_RESPONSE_FORMAT:
+                request_params["response_format"] = {"type": "json_object"}
+            
             response = await client.chat.completions.create(
-                **get_ai_request_params(
-                    model=MODEL_NAME,
-                    messages=messages,
-                    response_format={"type": "json_object"},
-                    temperature=current_temperature,
-                    max_tokens=4000
-                )
+                **get_ai_request_params(**request_params)
             )
 
             ai_response_content = response.choices[0].message.content
