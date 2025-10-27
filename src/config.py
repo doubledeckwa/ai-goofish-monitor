@@ -45,6 +45,7 @@ RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true"
 AI_DEBUG_MODE = os.getenv("AI_DEBUG_MODE", "false").lower() == "true"
 SKIP_AI_ANALYSIS = os.getenv("SKIP_AI_ANALYSIS", "false").lower() == "true"
 ENABLE_THINKING = os.getenv("ENABLE_THINKING", "false").lower() == "true"
+ENABLE_RESPONSE_FORMAT = os.getenv("ENABLE_RESPONSE_FORMAT", "true").lower() == "true"
 
 # --- Headers ---
 IMAGE_DOWNLOAD_HEADERS = {
@@ -87,8 +88,13 @@ if not all([BASE_URL, MODEL_NAME]) and 'prompt_generator.py' in sys.argv[0]:
 
 def get_ai_request_params(**kwargs):
     """
-    构建AI请求参数，根据ENABLE_THINKING环境变量决定是否添加enable_thinking参数
+    构建AI请求参数，根据ENABLE_THINKING和ENABLE_RESPONSE_FORMAT环境变量决定是否添加相应参数
     """
     if ENABLE_THINKING:
         kwargs["extra_body"] = {"enable_thinking": False}
+    
+    # 如果禁用response_format，则移除该参数
+    if not ENABLE_RESPONSE_FORMAT and "response_format" in kwargs:
+        del kwargs["response_format"]
+    
     return kwargs
