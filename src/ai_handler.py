@@ -147,45 +147,22 @@ def validate_ai_response_format(parsed_response):
         "criteria_analysis"
     ]
 
-    criteria_analysis_fields = [
-        "model_chip",
-        "battery_health",
-        "condition",
-        "history",
-        "seller_type",
-        "shipping",
-        "seller_credit"
-    ]
-
-    seller_type_fields = [
-        "status",
-        "persona",
-        "comment",
-        "analysis_details"
-    ]
-
     # 检查顶层字段
     for field in required_fields:
         if field not in parsed_response:
             safe_print(f"   [AI分析] 警告：响应缺少必需字段 '{field}'")
             return False
 
-    # 检查criteria_analysis字段
+    # 检查criteria_analysis是否为字典且不为空
     criteria_analysis = parsed_response.get("criteria_analysis", {})
-    for field in criteria_analysis_fields:
-        if field not in criteria_analysis:
-            safe_print(f"   [AI分析] 警告：criteria_analysis缺少字段 '{field}'")
-            return False
+    if not isinstance(criteria_analysis, dict) or not criteria_analysis:
+        safe_print("   [AI分析] 警告：criteria_analysis必须是非空字典")
+        return False
 
-    # 检查seller_type的analysis_details
-    seller_type = criteria_analysis.get("seller_type", {})
-    if "analysis_details" in seller_type:
-        analysis_details = seller_type["analysis_details"]
-        required_details = ["temporal_analysis", "selling_behavior", "buying_behavior", "behavioral_summary"]
-        for detail in required_details:
-            if detail not in analysis_details:
-                safe_print(f"   [AI分析] 警告：analysis_details缺少字段 '{detail}'")
-                return False
+    # 检查seller_type字段（所有商品都需要）
+    if "seller_type" not in criteria_analysis:
+        safe_print("   [AI分析] 警告：criteria_analysis缺少必需字段 'seller_type'")
+        return False
 
     # 检查数据类型
     if not isinstance(parsed_response.get("is_recommended"), bool):
@@ -463,6 +440,22 @@ async def send_ntfy_notification(product_data, reason):
                 )
 
             elif WEBHOOK_METHOD == "POST":
+                # 准备URL（处理查询参数）
+                final_url = WEBHOOK_URL
+                if WEBHOOK_QUERY_PARAMETERS:
+                    try:
+                        params_str = replace_placeholders(WEBHOOK_QUERY_PARAMETERS)
+                        params = json.loads(params_str)
+
+                        # 解析原始URL并追加新参数
+                        url_parts = list(urlparse(final_url))
+                        query = dict(parse_qsl(url_parts[4]))
+                        query.update(params)
+                        url_parts[4] = urlencode(query)
+                        final_url = urlunparse(url_parts)
+                    except json.JSONDecodeError:
+                        safe_print(f"   -> [警告] Webhook 查询参数格式错误，请检查 .env 中的 WEBHOOK_QUERY_PARAMETERS。")
+
                 # 准备请求体
                 data = None
                 json_payload = None
@@ -485,7 +478,7 @@ async def send_ntfy_notification(product_data, reason):
 
                 response = await loop.run_in_executor(
                     None,
-                    lambda: requests.post(WEBHOOK_URL, headers=headers, json=json_payload, data=data, timeout=15)
+                    lambda: requests.post(final_url, headers=headers, json=json_payload, data=data, timeout=15)
                 )
             else:
                 safe_print(f"   -> [警告] 不支持的 WEBHOOK_METHOD: {WEBHOOK_METHOD}。")
