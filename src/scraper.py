@@ -175,15 +175,45 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
         print(f"LOG: 输出文件 {output_filename} 不存在，将创建新文件。")
 
     async with async_playwright() as p:
+        # 反检测启动参数
+        launch_args = [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process'
+        ]
+
         if LOGIN_IS_EDGE:
-            browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="msedge")
+            browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="msedge", args=launch_args)
         else:
-            # Docker环境内，使用Playwright自带的chromium；本地环境，使用系统安装的Chrome
             if RUNNING_IN_DOCKER:
-                browser = await p.chromium.launch(headless=RUN_HEADLESS)
+                browser = await p.chromium.launch(headless=RUN_HEADLESS, args=launch_args)
             else:
-                browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome")
-        context = await browser.new_context(storage_state=STATE_FILE, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+                browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome", args=launch_args)
+
+        # 完整的浏览器指纹伪装
+        context = await browser.new_context(
+            storage_state=STATE_FILE,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            viewport={'width': 1920, 'height': 1080},
+            locale='zh-CN',
+            timezone_id='Asia/Shanghai',
+            permissions=['geolocation'],
+            geolocation={'longitude': 121.4737, 'latitude': 31.2304},
+            color_scheme='light',
+            device_scale_factor=1
+        )
+
+        # 注入反检测脚本
+        await context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en']});
+            window.chrome = {runtime: {}};
+        """)
+
         page = await context.new_page()
 
         try:
@@ -201,6 +231,10 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
 
             # 等待页面加载出关键筛选元素，以确认已成功进入搜索结果页
             await page.wait_for_selector('text=新发布', timeout=15000)
+
+            # 模拟真实用户行为：页面加载后的初始停留和浏览
+            log_time("[反爬] 模拟用户查看页面...")
+            await random_sleep(5, 10)
 
             # --- 新增：检查是否存在验证弹窗 ---
             baxia_dialog = page.locator("div.baxia-dialog-mask")
