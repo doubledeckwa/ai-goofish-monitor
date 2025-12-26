@@ -193,31 +193,60 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
             else:
                 browser = await p.chromium.launch(headless=RUN_HEADLESS, channel="chrome", args=launch_args)
 
-        # 完整的浏览器指纹伪装
+        # 使用移动设备模拟（与真实Chrome移动模式一致）
+        # 基于HAR分析：真实浏览器使用Android移动设备模拟
         context = await browser.new_context(
             storage_state=STATE_FILE,
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            viewport={'width': 1920, 'height': 1080},
+            user_agent="Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+            viewport={'width': 412, 'height': 915},  # Pixel 5尺寸
+            device_scale_factor=2.625,
+            is_mobile=True,
+            has_touch=True,
             locale='zh-CN',
             timezone_id='Asia/Shanghai',
             permissions=['geolocation'],
             geolocation={'longitude': 121.4737, 'latitude': 31.2304},
-            color_scheme='light',
-            device_scale_factor=1
+            color_scheme='light'
         )
 
-        # 注入反检测脚本
+        # 增强反检测脚本（模拟真实移动设备）
         await context.add_init_script("""
+            // 移除webdriver标识
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+
+            // 模拟真实移动设备的navigator属性
             Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-            Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en']});
-            window.chrome = {runtime: {}};
+            Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en-US', 'en']});
+
+            // 添加chrome对象
+            window.chrome = {runtime: {}, loadTimes: function() {}, csi: function() {}};
+
+            // 模拟触摸支持
+            Object.defineProperty(navigator, 'maxTouchPoints', {get: () => 5});
+
+            // 覆盖permissions查询（避免暴露自动化）
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({state: Notification.permission}) :
+                    originalQuery(parameters)
+            );
         """)
 
         page = await context.new_page()
 
         try:
-            log_time("步骤 1 - 直接导航到搜索结果页...")
+            # 步骤 0 - 模拟真实用户：先访问首页（重要的反检测措施）
+            log_time("步骤 0 - 模拟真实用户访问首页...")
+            await page.goto("https://www.goofish.com/", wait_until="domcontentloaded", timeout=30000)
+            log_time("[反爬] 在首页停留，模拟浏览...")
+            await random_sleep(3, 6)
+
+            # 模拟随机滚动（移动设备的触摸滚动）
+            await page.evaluate("window.scrollBy(0, Math.random() * 500 + 200)")
+            await random_sleep(1, 2)
+
+            log_time("步骤 1 - 导航到搜索结果页...")
             # 使用 'q' 参数构建正确的搜索URL，并进行URL编码
             params = {'q': keyword}
             search_url = f"https://www.goofish.com/search?{urlencode(params)}"
