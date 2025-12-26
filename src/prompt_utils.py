@@ -67,7 +67,12 @@ async def generate_criteria(user_description: str, reference_file_path: str) -> 
                 temperature=0.5 # Lower temperature for more predictable structure
             )
         )
-        generated_text = response.choices[0].message.content
+        # 兼容不同API响应格式，检查response是否为字符串
+        if hasattr(response, 'choices'):
+            generated_text = response.choices[0].message.content
+        else:
+            # 如果response是字符串，则直接使用
+            generated_text = response
         print("AI已成功生成内容。")
         
         # 处理content可能为None的情况

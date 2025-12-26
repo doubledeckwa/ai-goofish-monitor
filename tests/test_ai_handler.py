@@ -111,7 +111,7 @@ def test_encode_image_to_base64(mock_file, mock_exists):
 
 def test_validate_ai_response_format():
     """Test the validate_ai_response_format function"""
-    # Test valid response
+    # Test valid response (electronic product)
     valid_response = {
         "prompt_version": "1.0",
         "is_recommended": True,
@@ -125,26 +125,64 @@ def test_validate_ai_response_format():
             "seller_type": {
                 "status": "individual",
                 "persona": "test",
-                "comment": "test",
-                "analysis_details": {
-                    "temporal_analysis": "test",
-                    "selling_behavior": "test",
-                    "buying_behavior": "test",
-                    "behavioral_summary": "test"
-                }
+                "comment": "test"
             },
             "shipping": {"status": "included", "comment": "test"},
             "seller_credit": {"status": "high", "comment": "test"}
         }
     }
-    
+
     assert validate_ai_response_format(valid_response) is True
-    
-    # Test invalid response (missing required field)
+
+    # Test valid response (non-electronic product like baby stroller)
+    valid_response_baby_stroller = {
+        "prompt_version": "1.0",
+        "is_recommended": True,
+        "reason": "test reason",
+        "risk_tags": [],
+        "criteria_analysis": {
+            "condition": {"status": "excellent", "comment": "test"},
+            "brand": {"status": "good", "comment": "test"},
+            "seller_type": {
+                "status": "individual",
+                "persona": "parent",
+                "comment": "test"
+            },
+            "shipping": {"status": "included", "comment": "test"}
+        }
+    }
+
+    assert validate_ai_response_format(valid_response_baby_stroller) is True
+
+    # Test invalid response (missing required top-level field)
     invalid_response = valid_response.copy()
     del invalid_response["is_recommended"]
-    
+
     assert validate_ai_response_format(invalid_response) is False
+
+    # Test invalid response (missing seller_type in criteria_analysis)
+    invalid_response_no_seller = {
+        "prompt_version": "1.0",
+        "is_recommended": True,
+        "reason": "test reason",
+        "risk_tags": [],
+        "criteria_analysis": {
+            "condition": {"status": "excellent", "comment": "test"}
+        }
+    }
+
+    assert validate_ai_response_format(invalid_response_no_seller) is False
+
+    # Test invalid response (empty criteria_analysis)
+    invalid_response_empty = {
+        "prompt_version": "1.0",
+        "is_recommended": True,
+        "reason": "test reason",
+        "risk_tags": [],
+        "criteria_analysis": {}
+    }
+
+    assert validate_ai_response_format(invalid_response_empty) is False
 
 
 @patch("src.ai_handler.requests.post")
