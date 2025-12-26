@@ -592,7 +592,12 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                 **get_ai_request_params(**request_params)
             )
 
-            ai_response_content = response.choices[0].message.content
+            # 兼容不同API响应格式，检查response是否为字符串
+            if hasattr(response, 'choices'):
+                ai_response_content = response.choices[0].message.content
+            else:
+                # 如果response是字符串，则直接使用
+                ai_response_content = response
 
             if AI_DEBUG_MODE:
                 safe_print(f"\n--- [AI DEBUG] 第{attempt + 1}次尝试 ---")
