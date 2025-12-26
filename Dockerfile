@@ -28,6 +28,8 @@ ENV PYTHONUNBUFFERED=1
 ENV RUNNING_IN_DOCKER=true
 # 告知 Playwright 在哪里找到浏览器
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+# 设置时区为中国时区
+ENV TZ=Asia/Shanghai
 
 # 从 builder 阶段复制虚拟环境，这样我们就可以使用 playwright 命令
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
@@ -35,6 +37,7 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 # 安装所有运行浏览器所需的系统级依赖（包括libzbar0）和网络诊断工具
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        tzdata \
         libzbar0 \
         curl \
         wget \
