@@ -7,9 +7,10 @@ import asyncio
 import signal
 import sys
 import base64
+import traceback
 from contextlib import asynccontextmanager
 from dotenv import dotenv_values
-from fastapi import FastAPI, Request, HTTPException, Depends, status
+from fastapi import FastAPI, Request, HTTPException, Depends, status, WebSocket, WebSocketDisconnect
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from src.prompt_utils import generate_criteria, update_config_with_new_task
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -22,6 +23,27 @@ from apscheduler.triggers.cron import CronTrigger
 
 from src.file_operator import FileOperator
 from src.task import get_task, update_task
+
+# --- WebSocket Manager ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+manager = ConnectionManager()
 
 
 class Task(BaseModel):
@@ -266,63 +288,32 @@ def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
 scraper_processes = {}  # 将单个进程变量改为字典，以管理多个任务进程 {task_id: process}
 scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
 
-# 自定义静态文件处理器，添加认证
-class AuthenticatedStaticFiles(StaticFiles):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+# Mount static files
+# Check if we are running in a Docker container with the built frontend
+DIST_DIR = "dist"
+DIST_ASSETS_DIR = os.path.join(DIST_DIR, "assets")
 
-    async def __call__(self, scope, receive, send):
-        # 检查认证
-        headers = dict(scope.get("headers", []))
-        authorization = headers.get(b"authorization", b"").decode()
+if os.path.exists(DIST_DIR) and os.path.exists(DIST_ASSETS_DIR):
+    app.mount("/assets", StaticFiles(directory=DIST_ASSETS_DIR), name="assets")
+else:
+    # Fallback/Dev mode: Mount local static if needed or do nothing
+    pass
 
-        if not authorization.startswith("Basic "):
-            await send({
-                "type": "http.response.start",
-                "status": 401,
-                "headers": [
-                    (b"www-authenticate", b"Basic realm=Authorization Required"),
-                    (b"content-type", b"text/plain"),
-                ],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": b"Authentication required",
-            })
-            return
-
-        # 验证凭据
-        try:
-            credentials = base64.b64decode(authorization[6:]).decode()
-            username, password = credentials.split(":", 1)
-
-            expected_username, expected_password = get_auth_credentials()
-            if username != expected_username or password != expected_password:
-                raise ValueError("Invalid credentials")
-
-        except Exception:
-            await send({
-                "type": "http.response.start",
-                "status": 401,
-                "headers": [
-                    (b"www-authenticate", b"Basic realm=Authorization Required"),
-                    (b"content-type", b"text/plain"),
-                ],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": b"Authentication failed",
-            })
-            return
-
-        # 认证成功，继续处理静态文件
-        await super().__call__(scope, receive, send)
-
-# Mount static files with authentication
-app.mount("/static", AuthenticatedStaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Setup templates
 templates = Jinja2Templates(directory="templates")
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception:
+        manager.disconnect(websocket)
 
 # --- Scheduler Functions ---
 async def run_single_task(task_id: int, task_name: str):
@@ -361,6 +352,7 @@ async def run_single_task(task_id: int, task_name: str):
         await process.wait()
         if process.returncode == 0:
             print(f"定时任务 '{task_name}' 执行成功。日志已写入 {log_file_path}")
+            await manager.broadcast({"type": "results_updated"})
         else:
             print(f"定时任务 '{task_name}' 执行失败。返回码: {process.returncode}。详情请查看 {log_file_path}")
 
@@ -455,9 +447,23 @@ async def auth_status(username: str = Depends(verify_credentials)):
     return {"authenticated": True, "username": username}
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, username: str = Depends(verify_credentials)):
+async def read_root(request: Request):
     """
     提供 Web UI 的主页面。
+    """
+    dist_index = os.path.join(DIST_DIR, "index.html")
+    if os.path.exists(dist_index):
+        async with aiofiles.open(dist_index, 'r', encoding='utf-8') as f:
+            content = await f.read()
+        return HTMLResponse(content=content)
+    
+    # Fallback to legacy template
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/legacy", response_class=HTMLResponse)
+async def read_legacy(request: Request):
+    """
+    提供旧版 Web UI 页面（保留所有原有功能）。
     """
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -550,6 +556,7 @@ async def generate_task(req: TaskGenerateRequest, username: str = Depends(verify
     new_task_with_id = new_task.copy()
     new_task_with_id['id'] = len(tasks) - 1
 
+    await manager.broadcast({"type": "tasks_updated"})
     return {"message": "AI 任务创建成功。", "task": new_task_with_id}
 
 
@@ -575,6 +582,7 @@ async def create_task(task: Task, username: str = Depends(verify_credentials)):
 
         new_task_data['id'] = len(tasks) - 1
         await reload_scheduler_jobs()
+        await manager.broadcast({"type": "tasks_updated"})
         return {"message": "任务创建成功。", "task": new_task_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
@@ -626,6 +634,7 @@ async def update_task_api(task_id: int, task_update: TaskUpdate, username: str =
     if not success:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
 
+    await manager.broadcast({"type": "tasks_updated"})
     return {"message": "任务更新成功。", "task": task}
 
 async def start_task_process(task_id: int, task_name: str):
@@ -659,6 +668,8 @@ async def start_task_process(task_id: int, task_name: str):
         # 更新配置文件中的状态
         await update_task_running_status(task_id, True)
     except Exception as e:
+        print(f"启动任务进程内部出错: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"启动任务 '{task_name}' 进程时出错: {e}")
 
 
@@ -702,6 +713,11 @@ async def update_task_running_status(task_id: int, is_running: bool):
             tasks[task_id]['is_running'] = is_running
             async with aiofiles.open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 await f.write(json.dumps(tasks, ensure_ascii=False, indent=2))
+            
+            await manager.broadcast({
+                "type": "task_status_changed",
+                "data": {"id": task_id, "is_running": is_running}
+            })
     except Exception as e:
         print(f"更新任务 {task_id} 状态时出错: {e}")
 
@@ -722,6 +738,8 @@ async def start_single_task(task_id: int, username: str = Depends(verify_credent
         await start_task_process(task_id, task['task_name'])
         return {"message": f"任务 '{task['task_name']}' 已启动。"}
     except Exception as e:
+        print(f"启动任务API出错: {e}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -823,6 +841,7 @@ async def delete_task(task_id: int, username: str = Depends(verify_credentials))
 
         await reload_scheduler_jobs()
 
+        await manager.broadcast({"type": "tasks_updated"})
         return {"message": "任务删除成功。", "task_name": deleted_task.get("task_name")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"写入配置文件时发生错误: {e}")
@@ -854,6 +873,7 @@ async def delete_result_file(filename: str, username: str = Depends(verify_crede
 
     try:
         os.remove(filepath)
+        await manager.broadcast({"type": "results_updated"})
         return {"message": f"结果文件 '{filename}' 已成功删除。"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"删除结果文件时出错: {e}")
@@ -1175,6 +1195,22 @@ async def test_ai_settings_backend(username: str = Depends(verify_credentials)):
             "message": f"后端AI模型连接测试失败: {str(e)}。这表明容器内网络可能存在问题。"
         }
 
+@app.get("/{full_path:path}", response_class=HTMLResponse, include_in_schema=False)
+async def spa_fallback(full_path: str, request: Request):
+    """
+    前端 SPA 路由兜底（History 模式）。
+    """
+    if full_path.startswith(("api", "static", "assets", "ws")):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    dist_index = os.path.join(DIST_DIR, "index.html")
+    if os.path.exists(dist_index):
+        async with aiofiles.open(dist_index, 'r', encoding='utf-8') as f:
+            content = await f.read()
+        return HTMLResponse(content=content)
+
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 if __name__ == "__main__":
     # 从 .env 文件加载环境变量
@@ -1191,4 +1227,3 @@ if __name__ == "__main__":
 
     # 启动 Uvicorn 服务器
     uvicorn.run(app, host="0.0.0.0", port=server_port)
-
