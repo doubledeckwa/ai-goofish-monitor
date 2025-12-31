@@ -5,16 +5,43 @@ class WebSocketService {
   private reconnectInterval = 3000;
   private listeners: Map<string, WebSocketEventHandler[]> = new Map();
   public isConnected = false;
+  private shouldConnect = false;
 
   constructor() {
-    this.connect();
+    // 延迟连接，等待认证完成
+    // 只有在有认证信息时才尝试连接
+    if (localStorage.getItem('auth_credentials')) {
+      this.connect();
+    }
+  }
+
+  public start() {
+    // 手动启动 WebSocket 连接
+    this.shouldConnect = true;
+    if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+      this.connect();
+    }
+  }
+
+  public stop() {
+    // 停止 WebSocket 连接
+    this.shouldConnect = false;
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
   }
 
   private connect() {
     // Determine the protocol (ws or wss) based on the current page protocol
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // This includes port if present
-    const url = `${protocol}//${host}/ws`;
+
+    // Get auth credentials from localStorage
+    const credentials = localStorage.getItem('auth_credentials');
+    const url = credentials
+      ? `${protocol}//${host}/ws?token=${credentials}`
+      : `${protocol}//${host}/ws`;
 
     console.log(`Connecting to WebSocket at ${url}`);
     this.ws = new WebSocket(url);
@@ -43,8 +70,10 @@ class WebSocketService {
         this.isConnected = false;
         this.emit('disconnected', { isConnected: false });
       }
-      // Attempt reconnect
-      setTimeout(() => this.connect(), this.reconnectInterval);
+      // 只有在 shouldConnect 为 true 或有认证信息时才重连
+      if (this.shouldConnect || localStorage.getItem('auth_credentials')) {
+        setTimeout(() => this.connect(), this.reconnectInterval);
+      }
     };
 
     this.ws.onerror = (error) => {

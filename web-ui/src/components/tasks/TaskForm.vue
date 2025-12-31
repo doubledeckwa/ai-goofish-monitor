@@ -49,7 +49,10 @@ function handleSubmit() {
     })
     return
   }
-  emit('submit', { ...form.value })
+
+  // Filter out fields that shouldn't be sent in update requests
+  const { id, is_running, ...submitData } = form.value as any
+  emit('submit', submitData)
 }
 </script>
 

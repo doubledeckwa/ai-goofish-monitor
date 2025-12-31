@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { wsService } from '@/services/websocket'
 
 // Global State
 const username = ref<string | null>(localStorage.getItem('auth_username'))
@@ -14,9 +15,12 @@ export function useAuth() {
     const encoded = btoa(`${user}:${pass}`)
     username.value = user
     credentials.value = encoded
-    
+
     localStorage.setItem('auth_username', user)
     localStorage.setItem('auth_credentials', encoded)
+
+    // 启动 WebSocket 连接
+    wsService.start()
   }
 
   function logout() {
@@ -24,7 +28,10 @@ export function useAuth() {
     credentials.value = null
     localStorage.removeItem('auth_username')
     localStorage.removeItem('auth_credentials')
-    
+
+    // 停止 WebSocket 连接
+    wsService.stop()
+
     // Redirect to login if using router
     if (router) {
       router.push('/login')

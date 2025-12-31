@@ -72,4 +72,5 @@ COPY . .
 EXPOSE 8000
 
 # 容器启动时执行的命令
-CMD ["python", "web_server.py"]
+# 使用新架构的启动方式
+CMD ["python", "-m", "src.app"]

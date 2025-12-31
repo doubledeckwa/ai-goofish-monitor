@@ -15,7 +15,7 @@ import { toast } from '@/components/ui/toast'
 import { deleteLoginState, updateLoginState } from '@/api/settings'
 import { getPromptContent, listPrompts, updatePrompt } from '@/api/prompts'
 
-const { 
+const {
   notificationSettings,
   aiSettings,
   systemStatus,
@@ -26,8 +26,7 @@ const {
   refreshStatus,
   saveNotificationSettings,
   saveAiSettings,
-  testAiConnection,
-  testAiConnectionBackend
+  testAiConnection
 } = useSettings()
 
 const activeTab = ref('ai')
@@ -79,15 +78,6 @@ async function handleTestAi() {
     notifySuccess('AI 连接测试完成', res.message)
   } catch (e) {
     notifyError('AI 连接测试失败', (e as Error).message)
-  }
-}
-
-async function handleTestAiBackend() {
-  try {
-    const res = await testAiConnectionBackend()
-    notifySuccess('后端容器测试完成', res.message)
-  } catch (e) {
-    notifyError('后端容器测试失败', (e as Error).message)
   }
 }
 
@@ -263,8 +253,7 @@ watch(selectedPrompt, async (value) => {
             正在加载 AI 配置...
           </CardContent>
           <CardFooter v-if="isReady" class="flex gap-2">
-            <Button variant="outline" @click="handleTestAi" :disabled="isSaving">测试连接 (浏览器)</Button>
-            <Button variant="outline" @click="handleTestAiBackend" :disabled="isSaving">测试连接 (后端容器)</Button>
+            <Button variant="outline" @click="handleTestAi" :disabled="isSaving">测试连接</Button>
             <Button @click="handleSaveAi" :disabled="isSaving">保存 AI 设置</Button>
           </CardFooter>
         </Card>

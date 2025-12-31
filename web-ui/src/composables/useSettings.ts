@@ -86,19 +86,6 @@ export function useSettings() {
     }
   }
 
-  async function testAiConnectionBackend() {
-    isSaving.value = true
-    try {
-      const res = await settingsApi.testAiSettingsBackend()
-      return res
-    } catch (e) {
-      if (e instanceof Error) error.value = e
-      throw e
-    } finally {
-      isSaving.value = false
-    }
-  }
-
   onMounted(fetchAll)
 
   return {
@@ -113,7 +100,6 @@ export function useSettings() {
     saveNotificationSettings,
     saveAiSettings,
     testAiConnection,
-    testAiConnectionBackend,
     refreshStatus,
   }
 }

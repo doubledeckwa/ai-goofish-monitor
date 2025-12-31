@@ -74,13 +74,6 @@ export async function testAiSettings(settings: AiSettings): Promise<{ success: b
   })
 }
 
-export async function testAiSettingsBackend(): Promise<{ success: boolean; message: string; response?: string }> {
-  return await http('/api/settings/ai/test/backend', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-  })
-}
-
 export async function getSystemStatus(): Promise<SystemStatus> {
   return await http('/api/settings/status')
 }
