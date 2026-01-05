@@ -65,7 +65,7 @@ COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 COPY --from=frontend-builder /web-ui/dist /app/dist
 
 # 复制应用代码
-# .dockerignore 文件会处理排除项
+# .dockerignore 文件会处理排除项-m
 COPY . .
 
 # 声明服务运行的端口
