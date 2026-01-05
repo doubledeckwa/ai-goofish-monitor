@@ -1,4 +1,12 @@
-# Stage 1: Build the environment with dependencies
+# Stage 1: Build the Vue application
+FROM node:22-alpine AS frontend-builder
+WORKDIR /web-ui
+COPY web-ui/package*.json ./
+RUN npm install
+COPY web-ui/ .
+RUN npm run build
+
+# Stage 2: Build the python environment with dependencies
 FROM python:3.11-slim-bookworm AS builder
 
 # 设置环境变量以防止交互式提示
@@ -16,7 +24,7 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r re
 # 只下载 Playwright 的 Chromium 浏览器，系统依赖在下一阶段安装
 RUN playwright install chromium
 
-# Stage 2: Create the final, lean image
+# Stage 3: Create the final, lean image
 FROM python:3.11-slim-bookworm
 
 # 设置工作目录和环境变量
@@ -53,12 +61,16 @@ RUN apt-get update \
 # 从 builder 阶段复制预先下载好的浏览器
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
+# 复制前端构建产物到 /app/dist
+COPY --from=frontend-builder /web-ui/dist /app/dist
+
 # 复制应用代码
-# .dockerignore 文件会处理排除项
+# .dockerignore 文件会处理排除项-m
 COPY . .
 
 # 声明服务运行的端口
 EXPOSE 8000
 
 # 容器启动时执行的命令
-CMD ["python", "web_server.py"]
+# 使用新架构的启动方式
+CMD ["python", "-m", "src.app"]

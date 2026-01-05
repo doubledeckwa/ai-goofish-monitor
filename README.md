@@ -7,7 +7,7 @@
 - **Web 可视化管理**: 任务管理、AI 标准编辑、实时日志、结果浏览
 - **AI 驱动**: 自然语言创建任务，多模态模型深度分析商品
 - **多任务并发**: 独立配置关键词、价格、筛选条件和 AI Prompt
-- **即时通知**: 支持 ntfy.sh、企业微信、Bark、Webhook
+- **即时通知**: 支持 ntfy.sh、企业微信、Bark、Telegram、Webhook
 - **定时调度**: Cron 表达式配置周期性任务
 - **Docker 部署**: 一键容器化部署
 
@@ -21,12 +21,13 @@
 
 ### 环境准备
 
-**要求**: Python 3.10+
+**要求**: Python 3.10+ Vue3
 
 ```bash
 git clone https://github.com/Usagi-org/ai-goofish-monitor
 cd ai-goofish-monitor
 pip install -r requirements.txt
+playwright install chromium
 ```
 
 ### 配置
@@ -53,15 +54,15 @@ cp .env.example .env
 
 3. **获取登录状态**
 
-启动服务后，访问 Web UI → **系统设置** → **手动更新登录状态**，按提示使用 [Chrome 扩展](https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa) 提取登录信息。
+启动服务后，访问 Web UI → **登录页面** → **右上角-手动更新登录状态**，按提示使用 [Chrome 扩展](https://chromewebstore.google.com/detail/xianyu-login-state-extrac/eidlpfjiodpigmfcahkmlenhppfklcoa) 提取闲鱼Cookie。
 
 ### 启动服务
 
 ```bash
-python web_server.py
+chmod +x start.sh && ./start.sh
 ```
 
-访问 `http://127.0.0.1:8000`，使用自然语言创建监控任务即可开始使用。
+访问 `http://127.0.0.1:8000`，创建监控任务即可开始使用。
 
 ## 🐳 Docker 部署 (推荐)
 
@@ -78,7 +79,7 @@ python web_server.py
     cd ai-goofish-monitor
     ```
 
-3. **创建 `.env` 文件**: 参考 **[快速开始](#-快速开始-web-ui-推荐)** 部分的说明，在项目根目录创建并填写 `.env` 文件。
+3. **创建 `.env` 文件**: 参考 **[快速开始](#快速开始)** 部分的说明，在项目根目录创建并填写 `.env` 文件。
 
 4. **获取登录状态 (关键步骤!)**: Docker容器内无法进行扫码登录。请在**启动容器后**，通过访问Web UI来设置登录状态：
     1. （在宿主机上）执行 `docker-compose up -d` 启动服务。
@@ -209,16 +210,7 @@ WEB_PASSWORD=admin123
 
 </details>
 
-## 常见问题 (FAQ)
 
-<details>
-<summary>点击展开常见问题详情</summary>
-
-我们整理了一份详细的常见问题解答文档，覆盖了从环境配置、AI设置到反爬虫策略的各类问题。
-
-👉 **[点击此处查看常见问题解答 (FAQ.md)](FAQ.md)**
-
-</details>
 
 ## 致谢
 
@@ -235,7 +227,7 @@ WEB_PASSWORD=admin123
 
 以及感谢 [LinuxDo](https://linux.do/) 社区。
 
-以及感谢 ClaudeCode/ModelScope/Gemini 等模型/工具，解放双手 体验Vibe Coding的快乐。
+以及感谢 ClaudeCode/Gemini 等模型/工具，解放双手 体验Vibe Coding的快乐。
 
 </details>
 
@@ -250,7 +242,6 @@ Vibe Coding 的可怕之处在于如果不过多的参与项目建设，对AI生
 
 同样再用AI对AI生成的代码进行code review时，就像是用AI来验证另一个AI的回答是不是AI，陷入了自我证明的困境之中，所以AI可以辅助分析，但不应该成为真相的仲裁者。
 
-AI是万能的，能帮助开发者解决99%的编码问题，AI同样不是万能，解决的每一个问题都需要开发者去验证思考一遍，AI是辅助，AI产出的内容也只能是辅助。
 
 </details>
 

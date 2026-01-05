@@ -75,8 +75,8 @@ async def generate_criteria(user_description: str, reference_file_path: str) -> 
             generated_text = response
         print("AI已成功生成内容。")
         
-        # 处理content可能为None的情况
-        if generated_text is None:
+        # 处理content可能为None或空字符串的情况
+        if generated_text is None or generated_text.strip() == "":
             raise RuntimeError("AI返回的内容为空，请检查模型配置或重试。")
         
         return generated_text.strip()
@@ -98,7 +98,14 @@ async def update_config_with_new_task(new_task: dict, config_file: str = "config
                 content = await f.read()
                 # 处理空文件的情况
                 if content.strip():
-                    config_data = json.loads(content)
+                    try:
+                        config_data = json.loads(content)
+                        print(f"成功读取现有配置，当前任务数量: {len(config_data)}")
+                    except json.JSONDecodeError as e:
+                        print(f"解析配置文件失败，将创建新配置: {e}")
+                        config_data = []
+        else:
+            print(f"配置文件不存在，将创建新文件: {config_file}")
 
         # 追加新任务
         config_data.append(new_task)
@@ -106,12 +113,24 @@ async def update_config_with_new_task(new_task: dict, config_file: str = "config
         # 写回配置文件
         async with aiofiles.open(config_file, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(config_data, ensure_ascii=False, indent=2))
+            print(f"配置文件写入完成")
 
         print(f"成功！新任务 '{new_task.get('task_name')}' 已添加到 {config_file} 并已启用。")
         return True
-    except json.JSONDecodeError:
-        sys.stderr.write(f"错误: 配置文件 {config_file} 格式错误，无法解析。\n")
+    except json.JSONDecodeError as e:
+        error_msg = f"错误: 配置文件 {config_file} 格式错误，无法解析: {e}"
+        sys.stderr.write(error_msg + "\n")
+        print(error_msg)
         return False
     except IOError as e:
-        sys.stderr.write(f"错误: 读写配置文件失败: {e}\n")
+        error_msg = f"错误: 读写配置文件失败: {e}"
+        sys.stderr.write(error_msg + "\n")
+        print(error_msg)
+        return False
+    except Exception as e:
+        error_msg = f"错误: 更新配置文件时发生未知错误: {e}"
+        sys.stderr.write(error_msg + "\n")
+        print(error_msg)
+        import traceback
+        print(traceback.format_exc())
         return False
