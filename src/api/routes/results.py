@@ -1,5 +1,5 @@
 """
-结果文件管理路由
+Results file management routing
 """
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -15,30 +15,30 @@ router = APIRouter(prefix="/api/results", tags=["results"])
 
 @router.get("/files")
 async def get_result_files():
-    """获取所有结果文件列表"""
-    # 主要从 jsonl 目录获取文件
+    """Get a list of all result files"""
+    # Mainly from jsonl Get files from directory
     jsonl_dir = "jsonl"
     files = []
 
     if os.path.isdir(jsonl_dir):
         files = [f for f in os.listdir(jsonl_dir) if f.endswith(".jsonl")]
 
-    # 返回格式与前端期望一致
+    # The return format is consistent with the front-end expectation
     return {"files": files}
 
 
 @router.get("/files/{filename:path}")
 async def download_result_file(filename: str):
-    """下载指定的结果文件"""
-    # 安全检查：防止路径遍历攻击
+    """Download the specified results file"""
+    # Security Check: Prevent path traversal attacks
     if ".." in filename or filename.startswith("/"):
-        return {"error": "非法的文件路径"}
+        return {"error": "Illegal file path"}
 
-    # 文件在 jsonl 目录中
+    # The file is in jsonl in directory
     file_path = os.path.join("jsonl", filename)
 
     if not os.path.exists(file_path) or not filename.endswith(".jsonl"):
-        return {"error": "文件不存在"}
+        return {"error": "File does not exist"}
 
     return FileResponse(
         path=file_path,
@@ -49,26 +49,26 @@ async def download_result_file(filename: str):
 
 @router.delete("/files/{filename:path}")
 async def delete_result_file(filename: str):
-    """删除指定的结果文件"""
-    # 安全检查：防止路径遍历攻击
+    """Delete the specified result file"""
+    # Security Check: Prevent path traversal attacks
     if ".." in filename or filename.startswith("/"):
-        raise HTTPException(status_code=400, detail="非法的文件路径")
+        raise HTTPException(status_code=400, detail="Illegal file path")
 
-    # 只允许删除 .jsonl 文件
+    # Only delete is allowed .jsonl document
     if not filename.endswith(".jsonl"):
-        raise HTTPException(status_code=400, detail="只能删除 .jsonl 文件")
+        raise HTTPException(status_code=400, detail="can only be deleted .jsonl document")
 
-    # 文件在 jsonl 目录中
+    # The file is in jsonl in directory
     file_path = os.path.join("jsonl", filename)
 
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="文件不存在")
+        raise HTTPException(status_code=404, detail="File does not exist")
 
     try:
         os.remove(file_path)
-        return {"message": f"文件 {filename} 已成功删除"}
+        return {"message": f"document {filename} Deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"删除文件时出错: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the file: {str(e)}")
 
 
 @router.get("/{filename}")
@@ -80,14 +80,14 @@ async def get_result_file_content(
     sort_by: str = Query("crawl_time"),
     sort_order: str = Query("desc"),
 ):
-    """读取指定的 .jsonl 文件内容，支持分页、筛选和排序"""
-    # 安全检查
+    """Read the specified .jsonl File content, support paging、Filter and sort"""
+    # security check
     if not filename.endswith(".jsonl") or "/" in filename or ".." in filename:
-        raise HTTPException(status_code=400, detail="无效的文件名")
+        raise HTTPException(status_code=400, detail="Invalid file name")
 
     filepath = os.path.join("jsonl", filename)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail="结果文件未找到")
+        raise HTTPException(status_code=404, detail="Result file not found")
 
     results = []
     try:
@@ -103,26 +103,26 @@ async def get_result_file_content(
                 except json.JSONDecodeError:
                     continue
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取结果文件时出错: {e}")
+        raise HTTPException(status_code=500, detail=f"An error occurred while reading the results file: {e}")
 
-    # 排序逻辑
+    # Sorting logic
     def get_sort_key(item):
-        info = item.get("商品信息", {})
+        info = item.get("Product information", {})
         if sort_by == "publish_time":
-            return info.get("发布时间", "0000-00-00 00:00")
+            return info.get("Release time", "0000-00-00 00:00")
         elif sort_by == "price":
-            price_str = str(info.get("当前售价", "0")).replace("¥", "").replace(",", "").strip()
+            price_str = str(info.get("Current selling price", "0")).replace("¥", "").replace(",", "").strip()
             try:
                 return float(price_str)
             except (ValueError, TypeError):
                 return 0.0
         else:  # default to crawl_time
-            return item.get("爬取时间", "")
+            return item.get("Crawl time", "")
 
     is_reverse = (sort_order == "desc")
     results.sort(key=get_sort_key, reverse=is_reverse)
 
-    # 分页
+    # Pagination
     total_items = len(results)
     start = (page - 1) * limit
     end = start + limit

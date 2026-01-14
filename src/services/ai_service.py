@@ -1,13 +1,13 @@
 """
-AI 分析服务
-封装 AI 分析相关的业务逻辑
+AI Analysis Services
+encapsulation AI Analyze relevant business logic
 """
 from typing import Dict, List, Optional
 from src.infrastructure.external.ai_client import AIClient
 
 
 class AIAnalysisService:
-    """AI 分析服务"""
+    """AI Analysis Services"""
 
     def __init__(self, ai_client: AIClient):
         self.ai_client = ai_client
@@ -19,18 +19,18 @@ class AIAnalysisService:
         prompt_text: str
     ) -> Optional[Dict]:
         """
-        分析商品
+        Analyze products
 
         Args:
-            product_data: 商品数据
-            image_paths: 图片路径列表
-            prompt_text: 分析提示词
+            product_data: Product data
+            image_paths: Image path list
+            prompt_text: Analyze prompt words
 
         Returns:
-            分析结果
+            Analyze results
         """
         if not self.ai_client.is_available():
-            print("AI 客户端不可用，跳过分析")
+            print("AI Client unavailable, skip analysis")
             return None
 
         try:
@@ -39,14 +39,14 @@ class AIAnalysisService:
             if result and self._validate_result(result):
                 return result
             else:
-                print("AI 分析结果验证失败")
+                print("AI Analysis result verification failed")
                 return None
         except Exception as e:
-            print(f"AI 分析服务出错: {e}")
+            print(f"AI Analysis service error: {e}")
             return None
 
     def _validate_result(self, result: Dict) -> bool:
-        """验证 AI 分析结果的格式"""
+        """verify AI Format of analysis results"""
         required_fields = [
             "prompt_version",
             "is_recommended",
@@ -55,24 +55,24 @@ class AIAnalysisService:
             "criteria_analysis"
         ]
 
-        # 检查必需字段
+        # Check required fields
         for field in required_fields:
             if field not in result:
-                print(f"AI 响应缺少必需字段: {field}")
+                print(f"AI Response is missing a required field: {field}")
                 return False
 
-        # 检查数据类型
+        # Check data type
         if not isinstance(result.get("is_recommended"), bool):
-            print("is_recommended 字段不是布尔类型")
+            print("is_recommended Field is not of type boolean")
             return False
 
         if not isinstance(result.get("risk_tags"), list):
-            print("risk_tags 字段不是列表类型")
+            print("risk_tags Field is not a list type")
             return False
 
         criteria_analysis = result.get("criteria_analysis", {})
         if not isinstance(criteria_analysis, dict) or not criteria_analysis:
-            print("criteria_analysis 必须是非空字典")
+            print("criteria_analysis Must be a non-empty dictionary")
             return False
 
         return True

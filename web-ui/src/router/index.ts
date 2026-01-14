@@ -7,7 +7,7 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: () => import('@/views/LoginView.vue'),
-    meta: { title: '登录' },
+    meta: { title: 'Log in' },
   },
   {
     path: '/',
@@ -18,31 +18,31 @@ const routes = [
         path: 'tasks',
         name: 'Tasks',
         component: () => import('@/views/TasksView.vue'),
-        meta: { title: '任务管理', requiresAuth: true },
+        meta: { title: 'task management', requiresAuth: true },
       },
       {
         path: 'accounts',
         name: 'Accounts',
         component: () => import('@/views/AccountsView.vue'),
-        meta: { title: '账号管理', requiresAuth: true },
+        meta: { title: 'Account management', requiresAuth: true },
       },
       {
         path: 'results',
         name: 'Results',
         component: () => import('@/views/ResultsView.vue'),
-        meta: { title: '结果查看', requiresAuth: true },
+        meta: { title: 'View results', requiresAuth: true },
       },
       {
         path: 'logs',
         name: 'Logs',
         component: () => import('@/views/LogsView.vue'),
-        meta: { title: '运行日志', requiresAuth: true },
+        meta: { title: 'Run log', requiresAuth: true },
       },
       {
         path: 'settings',
         name: 'Settings',
         component: () => import('@/views/SettingsView.vue'),
-        meta: { title: '系统设置', requiresAuth: true },
+        meta: { title: 'System settings', requiresAuth: true },
       },
     ],
   },
@@ -62,7 +62,7 @@ router.beforeEach((to, _from, next) => {
   const { isAuthenticated } = useAuth()
   
   // Set document title
-  document.title = `${to.meta.title} - 闲鱼智能监控` || '闲鱼智能监控'
+  document.title = `${to.meta.title} - Xianyu Intelligent Monitoring` || 'Xianyu Intelligent Monitoring'
 
   if (to.meta.requiresAuth && !isAuthenticated.value) {
     next({ name: 'Login', query: { redirect: to.fullPath } })

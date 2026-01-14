@@ -28,10 +28,10 @@ async function getActiveGoofishTab() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const tab = tabs?.[0];
   if (!tab || !tab.id || !tab.url) {
-    throw new Error("未找到活动标签页");
+    throw new Error("Active tab not found");
   }
   if (!tab.url.includes("goofish.com")) {
-    throw new Error("请先打开 goofish.com 页面");
+    throw new Error("please open first goofish.com page");
   }
   return tab;
 }
@@ -111,7 +111,7 @@ async function capturePageData(tabId) {
   });
 
   if (!result || !result.result) {
-    throw new Error("无法获取页面信息");
+    throw new Error("Unable to get page information");
   }
 
   return result.result;
@@ -210,7 +210,7 @@ async function captureHeaders(tabId) {
     };
 
     const extraInfo = ["requestHeaders"];
-    // extraHeaders 提供更完整的 header 视图，在新版本 Chrome 需要显式声明
+    // extraHeaders provide a more complete header view, in new version Chrome Requires explicit declaration
     extraInfo.push("extraHeaders");
 
     chrome.webRequest.onBeforeSendHeaders.addListener(
@@ -221,7 +221,7 @@ async function captureHeaders(tabId) {
 
     const timer = setTimeout(() => cleanup(null), 2000);
 
-    // 触发一次轻量请求以获取真实请求头
+    // Trigger a lightweight request to obtain the real request headers
     chrome.scripting
       .executeScript({
         target: { tabId },
@@ -238,7 +238,7 @@ async function captureHeaders(tabId) {
         },
       })
       .catch(() => {
-        // 如果注入失败，继续等待可能已有的请求
+        // If the injection fails, continue to wait for possible existing requests
       });
   });
 }

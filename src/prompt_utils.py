@@ -9,28 +9,28 @@ from src.infrastructure.external.ai_client import AIClient
 
 # The meta-prompt to instruct the AI
 META_PROMPT_TEMPLATE = """
-你是一位世界级的AI提示词工程大师。你的任务是根据用户提供的【购买需求】，模仿一个【参考范例】，为闲鱼监控机器人的AI分析模块（代号 EagleEye）生成一份全新的【分析标准】文本。
+you are a world classAIPrompt Word Engineering Master. Your tasks are based on what the user provides【Purchase demand], imitate a【Reference example], for the Xianyu monitoring robotAIAnalysis module (codename EagleEye）Generate a new [analysis standard】text。
 
-你的输出必须严格遵循【参考范例】的结构、语气和核心原则，但内容要完全针对用户的【购买需求】进行定制。最终生成的文本将作为AI分析模块的思考指南。
+Your output must strictly follow [Reference Example】The structure, tone and core principles of，However, the content must be completely targeted at users’ [purchasing needs]】Customize. The final generated text will be asAIThinking Guide for the Analysis Module。
 
 ---
-这是【参考范例】（`macbook_criteria.txt`）：
+This is [reference example】（`macbook_criteria.txt`）：
 ```text
 {reference_text}
 ```
 ---
 
-这是用户的【购买需求】：
+This is the user’s [purchase demand]】：
 ```text
 {user_description}
 ```
 ---
 
-请现在开始生成全新的【分析标准】文本。请注意：
-1.  **只输出新生成的文本内容**，不要包含任何额外的解释、标题或代码块标记。
-2.  保留范例中的 `[V6.3 核心升级]`、`[V6.4 逻辑修正]` 等版本标记，这有助于保持格式一致性。
-3.  将范例中所有与 "MacBook" 相关的内容，替换为与用户需求商品相关的内容。
-4.  思考并生成针对新商品类型的“一票否决硬性原则”和“危险信号清单”。
+Please start generating new [Analysis Standards] now】text. please note：
+1.  **Only output the newly generated text content**，Do not include any additional explanations, titles, or code block tags。
+2.  Keep the example `[V6.3 Core upgrade]`、`[V6.4 logic correction]` etc. version marking, which helps maintain formatting consistency。
+3.  Replace everything in the example with "MacBook" Relevant content is replaced with content related to the products the user needs.。
+4.  Think about and generate "one-vote veto" rules for new product types”and “Red Flag Checklist.”。
 """
 
 
@@ -42,24 +42,24 @@ async def generate_criteria(user_description: str, reference_file_path: str) -> 
     if not ai_client.is_available():
         ai_client.refresh()
     if not ai_client.is_available():
-        raise RuntimeError("AI客户端未初始化，无法生成分析标准。请检查.env配置。")
+        raise RuntimeError("AIThe client is not initialized and cannot generate analysis standards.。Check, please.envConfiguration。")
 
-    print(f"正在读取参考文件: {reference_file_path}")
+    print(f"Reading reference file: {reference_file_path}")
     try:
         with open(reference_file_path, 'r', encoding='utf-8') as f:
             reference_text = f.read()
     except FileNotFoundError:
-        raise FileNotFoundError(f"参考文件未找到: {reference_file_path}")
+        raise FileNotFoundError(f"Reference file not found: {reference_file_path}")
     except IOError as e:
-        raise IOError(f"读取参考文件失败: {e}")
+        raise IOError(f"Failed to read reference file: {e}")
 
-    print("正在构建发送给AI的指令...")
+    print("Building is being sent toAIinstructions...")
     prompt = META_PROMPT_TEMPLATE.format(
         reference_text=reference_text,
         user_description=user_description
     )
 
-    print("正在调用AI生成新的分析标准，请稍候...")
+    print("CallingAIGenerating new analysis standards, please wait....")
     try:
         request_params = {
             "model": ai_client.settings.model_name,
@@ -70,68 +70,68 @@ async def generate_criteria(user_description: str, reference_file_path: str) -> 
             request_params["extra_body"] = {"enable_thinking": False}
 
         response = await ai_client.client.chat.completions.create(**request_params)
-        # 兼容不同API响应格式，检查response是否为字符串
+        # Compatible with differentAPIresponse format, checkresponseWhether it is a string
         if hasattr(response, 'choices'):
             generated_text = response.choices[0].message.content
         else:
-            # 如果response是字符串，则直接使用
+            # ifresponseis a string, use it directly
             generated_text = response
-        print("AI已成功生成内容。")
+        print("AIContent generated successfully。")
         
-        # 处理content可能为None或空字符串的情况
+        # deal withcontentmay beNoneOr the case of empty string
         if generated_text is None or generated_text.strip() == "":
-            raise RuntimeError("AI返回的内容为空，请检查模型配置或重试。")
+            raise RuntimeError("AIThe returned content is empty, please check the model configuration or try again。")
         
         return generated_text.strip()
     except Exception as e:
-        print(f"调用 OpenAI API 时出错: {e}")
+        print(f"call OpenAI API error: {e}")
         raise e
 
 
 async def update_config_with_new_task(new_task: dict, config_file: str = "config.json"):
     """
-    将一个新任务添加到指定的JSON配置文件中。
+    Adds a new task to the specifiedJSONin configuration file。
     """
-    print(f"正在更新配置文件: {config_file}")
+    print(f"Updating configuration file: {config_file}")
     try:
-        # 读取现有配置
+        # Read existing configuration
         config_data = []
         if os.path.exists(config_file):
             async with aiofiles.open(config_file, 'r', encoding='utf-8') as f:
                 content = await f.read()
-                # 处理空文件的情况
+                # Handling empty files
                 if content.strip():
                     try:
                         config_data = json.loads(content)
-                        print(f"成功读取现有配置，当前任务数量: {len(config_data)}")
+                        print(f"Successfully read existing configuration, current number of tasks: {len(config_data)}")
                     except json.JSONDecodeError as e:
-                        print(f"解析配置文件失败，将创建新配置: {e}")
+                        print(f"Failed to parse configuration file, new configuration will be created: {e}")
                         config_data = []
         else:
-            print(f"配置文件不存在，将创建新文件: {config_file}")
+            print(f"Configuration file does not exist, a new file will be created: {config_file}")
 
-        # 追加新任务
+        # Add new tasks
         config_data.append(new_task)
 
-        # 写回配置文件
+        # Write back configuration file
         async with aiofiles.open(config_file, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(config_data, ensure_ascii=False, indent=2))
-            print(f"配置文件写入完成")
+            print(f"Configuration file writing completed")
 
-        print(f"成功！新任务 '{new_task.get('task_name')}' 已添加到 {config_file} 并已启用。")
+        print(f"success! new tasks '{new_task.get('task_name')}' has been added to {config_file} and enabled。")
         return True
     except json.JSONDecodeError as e:
-        error_msg = f"错误: 配置文件 {config_file} 格式错误，无法解析: {e}"
+        error_msg = f"mistake: Configuration file {config_file} Format error, cannot be parsed: {e}"
         sys.stderr.write(error_msg + "\n")
         print(error_msg)
         return False
     except IOError as e:
-        error_msg = f"错误: 读写配置文件失败: {e}"
+        error_msg = f"mistake: Failed to read and write configuration file: {e}"
         sys.stderr.write(error_msg + "\n")
         print(error_msg)
         return False
     except Exception as e:
-        error_msg = f"错误: 更新配置文件时发生未知错误: {e}"
+        error_msg = f"mistake: An unknown error occurred while updating the configuration file: {e}"
         sys.stderr.write(error_msg + "\n")
         print(error_msg)
         import traceback

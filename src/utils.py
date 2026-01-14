@@ -15,7 +15,7 @@ from requests.exceptions import HTTPError
 
 def retry_on_failure(retries=3, delay=5):
     """
-    一个通用的异步重试装饰器，增加了对HTTP错误的详细日志记录。
+    A generic asynchronous retry decorator that adds support forHTTPDetailed logging of errors。
     """
     def decorator(func):
         @wraps(func)
@@ -24,30 +24,30 @@ def retry_on_failure(retries=3, delay=5):
                 try:
                     return await func(*args, **kwargs)
                 except (APIStatusError, HTTPError) as e:
-                    print(f"函数 {func.__name__} 第 {i + 1}/{retries} 次尝试失败，发生HTTP错误。")
+                    print(f"function {func.__name__} No. {i + 1}/{retries} failed attempts, occurredHTTPmistake。")
                     if hasattr(e, 'status_code'):
-                        print(f"  - 状态码 (Status Code): {e.status_code}")
+                        print(f"  - status code (Status Code): {e.status_code}")
                     if hasattr(e, 'response') and hasattr(e.response, 'text'):
                         response_text = e.response.text
                         print(
-                            f"  - 返回值 (Response): {response_text[:300]}{'...' if len(response_text) > 300 else ''}")
+                            f"  - return value (Response): {response_text[:300]}{'...' if len(response_text) > 300 else ''}")
                 except json.JSONDecodeError as e:
-                    print(f"函数 {func.__name__} 第 {i + 1}/{retries} 次尝试失败: JSON解析错误 - {e}")
+                    print(f"function {func.__name__} No. {i + 1}/{retries} failed attempts: JSONParse error - {e}")
                 except Exception as e:
-                    print(f"函数 {func.__name__} 第 {i + 1}/{retries} 次尝试失败: {type(e).__name__} - {e}")
+                    print(f"function {func.__name__} No. {i + 1}/{retries} failed attempts: {type(e).__name__} - {e}")
 
                 if i < retries - 1:
-                    print(f"将在 {delay} 秒后重试...")
+                    print(f"will be in {delay} Try again in seconds...")
                     await asyncio.sleep(delay)
 
-            print(f"函数 {func.__name__} 在 {retries} 次尝试后彻底失败。")
+            print(f"function {func.__name__} exist {retries} Total failure after attempts。")
             return None
         return wrapper
     return decorator
 
 
-async def safe_get(data, *keys, default="暂无"):
-    """安全获取嵌套字典值"""
+async def safe_get(data, *keys, default="None yet"):
+    """Safely get nested dictionary values"""
     for key in keys:
         try:
             data = data[key]
@@ -57,14 +57,14 @@ async def safe_get(data, *keys, default="暂无"):
 
 
 async def random_sleep(min_seconds: float, max_seconds: float):
-    """异步等待一个在指定范围内的随机时间。"""
+    """Asynchronously waits for a random time within a specified range。"""
     delay = random.uniform(min_seconds, max_seconds)
-    print(f"   [延迟] 等待 {delay:.2f} 秒... (范围: {min_seconds}-{max_seconds}s)")
+    print(f"   [Delay] wait {delay:.2f} Second... (scope: {min_seconds}-{max_seconds}s)")
     await asyncio.sleep(delay)
 
 
 def log_time(message: str, prefix: str = "") -> None:
-    """在日志前加上 YY-MM-DD HH:MM:SS 时间戳的简单打印。"""
+    """Add before the log YY-MM-DD HH:MM:SS Simple printing of timestamp。"""
     try:
         ts = datetime.now().strftime(' %Y-%m-%d %H:%M:%S')
     except Exception:
@@ -82,14 +82,14 @@ def sanitize_filename(value: str) -> str:
 
 
 def build_task_log_path(task_id: int, task_name: str) -> str:
-    """生成任务日志路径（包含任务名）。"""
+    """Generate task log path (including task name）。"""
     safe_name = sanitize_filename(task_name)
     filename = f"{safe_name}_{task_id}.log"
     return os.path.join("logs", filename)
 
 
 def resolve_task_log_path(task_id: int, task_name: str) -> str:
-    """优先使用任务名生成日志路径，不存在时回退为按 ID 匹配。"""
+    """Priority is given to using the task name to generate the log path. If it does not exist, it will fall back to pressing ID match。"""
     primary_path = build_task_log_path(task_id, task_name)
     if os.path.exists(primary_path):
         return primary_path
@@ -102,7 +102,7 @@ def resolve_task_log_path(task_id: int, task_name: str) -> str:
 
 def convert_goofish_link(url: str) -> str:
     """
-    将Goofish商品链接转换为只包含商品ID的手机端格式。
+    WillGoofishProduct links are converted to include only productsIDmobile phone format。
     """
     match_first_link = re.search(r'item\?id=(\d+)', url)
     if match_first_link:
@@ -113,12 +113,12 @@ def convert_goofish_link(url: str) -> str:
 
 
 def get_link_unique_key(link: str) -> str:
-    """截取链接中第一个"&"之前的内容作为唯一标识依据。"""
+    """Intercept the first link"&"The previous content is used as the basis for unique identification.。"""
     return link.split('&', 1)[0]
 
 
 async def save_to_jsonl(data_record: dict, keyword: str):
-    """将一个包含商品和卖家信息的完整记录追加保存到 .jsonl 文件。"""
+    """Append a complete record containing product and seller information to .jsonl document。"""
     output_dir = "jsonl"
     os.makedirs(output_dir, exist_ok=True)
     filename = os.path.join(output_dir, f"{keyword.replace(' ', '_')}_full_data.jsonl")
@@ -127,16 +127,16 @@ async def save_to_jsonl(data_record: dict, keyword: str):
             f.write(json.dumps(data_record, ensure_ascii=False) + "\n")
         return True
     except IOError as e:
-        print(f"写入文件 {filename} 出错: {e}")
+        print(f"write file {filename} Error: {e}")
         return False
 
 
 def format_registration_days(total_days: int) -> str:
     """
-    将总天数格式化为“X年Y个月”的字符串。
+    Format the total number of days as“XYearYmonth" string。
     """
     if not isinstance(total_days, int) or total_days <= 0:
-        return '未知'
+        return 'unknown'
 
     DAYS_IN_YEAR = 365.25
     DAYS_IN_MONTH = DAYS_IN_YEAR / 12
@@ -150,10 +150,10 @@ def format_registration_days(total_days: int) -> str:
         months = 0
 
     if years > 0 and months > 0:
-        return f"来闲鱼{years}年{months}个月"
+        return f"Come to Xianyu{years}Year{months}months"
     elif years > 0 and months == 0:
-        return f"来闲鱼{years}年整"
+        return f"Come to Xianyu{years}whole year"
     elif years == 0 and months > 0:
-        return f"来闲鱼{months}个月"
+        return f"Come to Xianyu{months}months"
     else:
-        return "来闲鱼不足一个月"
+        return "Been in Xianyu for less than a month"

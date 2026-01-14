@@ -1,75 +1,75 @@
-# 测试指南
+# Testing Guide
 
-本项目使用 pytest 作为测试框架。以下是运行测试的指南。
+This project uses pytest as a testing framework. Here are the guidelines for running the tests。
 
-## 安装依赖
+## Install dependencies
 
-在运行测试之前，请确保已安装所有开发依赖项：
+Before running tests, make sure all development dependencies are installed：
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## 运行测试
+## Run tests
 
-### 运行所有测试
+### Run all tests
 
 ```bash
 pytest
 ```
 
-### 运行特定测试文件
+### Run a specific test file
 
 ```bash
 pytest tests/integration/test_api_tasks.py
 ```
 
-### 运行特定测试函数
+### Run a specific test function
 
 ```bash
 pytest tests/unit/test_utils.py::test_safe_get_nested_and_default
 ```
 
-### 生成覆盖率报告
+### Generate coverage report
 
 ```bash
 coverage run -m pytest
 coverage report
-coverage html  # 生成 HTML 报告
+coverage html  # generate HTML Report
 ```
 
-## 测试文件结构
+## Test file structure
 
 ```
 tests/
 ├── __init__.py
-├── conftest.py              # 共享 fixtures（API/CLI/样例数据）
-├── fixtures/                # 贴近真实的样例数据（搜索/用户/评价/任务配置）
+├── conftest.py              # shared fixtures（API/CLI/sample data）
+├── fixtures/                # Close to real sample data (search/user/evaluate/Task configuration）
 │   ├── config.sample.json
 │   ├── ratings.json
 │   ├── search_results.json
 │   ├── state.sample.json
 │   ├── user_head.json
 │   └── user_items.json
-├── integration/             # 关键链路集成测试（API/CLI/解析器）
+├── integration/             # Critical link integration testing（API/CLI/parser）
 │   ├── test_api_tasks.py
 │   ├── test_cli_spider.py
 │   └── test_pipeline_parse.py
-└── unit/                    # 核心纯函数单元测试
+└── unit/                    # Core pure function unit testing
     ├── test_domain_task.py
     └── test_utils.py
 ```
 
-## 编写新测试
+## Write new tests
 
-1. 新增测试放在 `tests/integration/` 或 `tests/unit/`
-2. 文件名以 `test_` 开头，函数名以 `test_` 开头
-3. 测试采用同步执行（不依赖 pytest-asyncio）
-4. 外部依赖（Playwright/AI/通知/网络）统一 mock
-5. 使用 `tests/fixtures/` 的样例数据，避免依赖真实网络
+1. Add new tests in `tests/integration/` or `tests/unit/`
+2. The file name starts with `test_` Starting with, the function name starts with `test_` beginning
+3. Tests are executed synchronously (do not rely on pytest-asyncio）
+4. external dependencies（Playwright/AI/notify/network) unification mock
+5. use `tests/fixtures/` sample data to avoid relying on real networks
 
-## 注意事项
+## Things to note
 
-1. 目标是离线可跑且稳定复现
-2. 集成测试优先覆盖真实运行链路（API、CLI、解析器）
-3. 如需新增真实场景样例，统一补充到 `tests/fixtures/`
+1. The goal is to be runable offline and reproducible stably.
+2. Integration tests give priority to covering real running links（API、CLI、parser）
+3. If you need to add real scene examples, please add them to `tests/fixtures/`

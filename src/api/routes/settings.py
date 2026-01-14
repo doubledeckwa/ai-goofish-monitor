@@ -1,5 +1,5 @@
 """
-设置管理路由
+Set up management routes
 """
 import os
 from typing import Optional
@@ -47,7 +47,7 @@ def _normalize_bool_value(value: bool) -> str:
 
 
 class NotificationSettingsModel(BaseModel):
-    """通知设置模型"""
+    """Notification settings model"""
     NTFY_TOPIC_URL: Optional[str] = None
     GOTIFY_URL: Optional[str] = None
     GOTIFY_TOKEN: Optional[str] = None
@@ -65,7 +65,7 @@ class NotificationSettingsModel(BaseModel):
 
 
 class AISettingsModel(BaseModel):
-    """AI设置模型"""
+    """AISet up the model"""
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_BASE_URL: Optional[str] = None
     OPENAI_MODEL_NAME: Optional[str] = None
@@ -83,7 +83,7 @@ class RotationSettingsModel(BaseModel):
 
 @router.get("/notifications")
 async def get_notification_settings():
-    """获取通知设置"""
+    """Get notification settings"""
     return {
         "NTFY_TOPIC_URL": env_manager.get_value("NTFY_TOPIC_URL", ""),
         "GOTIFY_URL": env_manager.get_value("GOTIFY_URL", ""),
@@ -106,7 +106,7 @@ async def get_notification_settings():
 async def update_notification_settings(
     settings: NotificationSettingsModel,
 ):
-    """更新通知设置"""
+    """Update notification settings"""
     updates = {}
     payload = settings.dict(exclude_none=True)
     for key, value in payload.items():
@@ -117,8 +117,8 @@ async def update_notification_settings(
     success = env_manager.update_values(updates)
     if success:
         _reload_env()
-        return {"message": "通知设置已成功更新"}
-    return {"message": "更新通知设置失败"}
+        return {"message": "Notification settings updated successfully"}
+    return {"message": "Failed to update notification settings"}
 
 @router.get("/rotation")
 async def get_rotation_settings():
@@ -145,22 +145,22 @@ async def update_rotation_settings(
     success = env_manager.update_values(updates)
     if success:
         _reload_env()
-        return {"message": "轮换设置已成功更新"}
-    return {"message": "更新轮换设置失败"}
+        return {"message": "Rotation settings updated successfully"}
+    return {"message": "Failed to update rotation settings"}
 
 
 @router.get("/status")
 async def get_system_status(
     process_service: ProcessService = Depends(get_process_service),
 ):
-    """获取系统状态"""
+    """Get system status"""
     state_file = "xianyu_state.json"
     login_state_exists = os.path.exists(state_file)
 
-    # 检查 .env 文件
+    # examine .env document
     env_file_exists = os.path.exists(".env")
 
-    # 检查关键环境变量是否设置
+    # Check whether key environment variables are set
     openai_api_key = env_manager.get_value("OPENAI_API_KEY", "")
     openai_base_url = env_manager.get_value("OPENAI_BASE_URL", "")
     openai_model_name = env_manager.get_value("OPENAI_MODEL_NAME", "")
@@ -195,7 +195,7 @@ async def get_system_status(
 
 
 class AISettingsModel(BaseModel):
-    """AI设置模型"""
+    """AISet up the model"""
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_BASE_URL: Optional[str] = None
     OPENAI_MODEL_NAME: Optional[str] = None
@@ -204,7 +204,7 @@ class AISettingsModel(BaseModel):
 
 @router.get("/ai")
 async def get_ai_settings():
-    """获取AI设置"""
+    """getAIset up"""
     return {
         "OPENAI_BASE_URL": env_manager.get_value("OPENAI_BASE_URL", ""),
         "OPENAI_MODEL_NAME": env_manager.get_value("OPENAI_MODEL_NAME", ""),
@@ -216,7 +216,7 @@ async def get_ai_settings():
 async def update_ai_settings(
     settings: AISettingsModel,
 ):
-    """更新AI设置"""
+    """renewAIset up"""
     updates = {}
     if settings.OPENAI_API_KEY is not None:
         updates["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
@@ -230,15 +230,15 @@ async def update_ai_settings(
     success = env_manager.update_values(updates)
     if success:
         _reload_env()
-        return {"message": "AI设置已成功更新"}
-    return {"message": "更新AI设置失败"}
+        return {"message": "AISettings updated successfully"}
+    return {"message": "renewAISetup failed"}
 
 
 @router.post("/ai/test")
 async def test_ai_settings(
     settings: dict,
 ):
-    """测试AI模型设置是否有效"""
+    """testAIAre the model settings valid?"""
     try:
         from openai import OpenAI
         import httpx
@@ -247,24 +247,24 @@ async def test_ai_settings(
         submitted_api_key = settings.get("OPENAI_API_KEY", "")
         api_key = submitted_api_key or stored_api_key
 
-        # 创建OpenAI客户端
+        # createOpenAIclient
         client_params = {
             "api_key": api_key,
             "base_url": settings.get("OPENAI_BASE_URL", ""),
             "timeout": httpx.Timeout(30.0),
         }
 
-        # 如果有代理设置
+        # If you have proxy settings
         proxy_url = settings.get("PROXY_URL", "")
         if proxy_url:
             client_params["http_client"] = httpx.Client(proxy=proxy_url)
 
         model_name = settings.get("OPENAI_MODEL_NAME", "")
-        print(f"AI测试 - BASE_URL: {client_params['base_url']}, MODEL: {model_name}")
+        print(f"AItest - BASE_URL: {client_params['base_url']}, MODEL: {model_name}")
 
         client = OpenAI(**client_params)
 
-        # 测试连接
+        # test connection
         response = client.chat.completions.create(
             model=model_name,
             messages=[
@@ -275,11 +275,11 @@ async def test_ai_settings(
 
         return {
             "success": True,
-            "message": "AI模型连接测试成功！",
+            "message": "AIModel connection test successful！",
             "response": response.choices[0].message.content if response.choices else "No response"
         }
     except Exception as e:
         return {
             "success": False,
-            "message": f"AI模型连接测试失败: {str(e)}"
+            "message": f"AIModel connection test failed: {str(e)}"
         }

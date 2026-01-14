@@ -1,18 +1,18 @@
 name: Docker Image CI on merge to master
 
-# 双触发模式：手动触发 + PR合并自动触发
+# Dual trigger mode: manual trigger + PRMerge automatically triggered
 on:
-  # 手动触发（仓库页面出现"Run workflow"按钮）
+  # Manually triggered (the warehouse page appears"Run workflow"button）
   workflow_dispatch:
   
-  # PR合并自动触发（原逻辑保持）
+  # PRThe merge is automatically triggered (the original logic remains）
   pull_request:
     types: [closed]
     branches: [ "master" ]
 
 jobs:
   build-and-push:
-    # 双条件：手动触发或PR合并
+    # Bi-conditional: manual trigger orPRmerge
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
@@ -25,11 +25,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      # 手动触发时获取完整历史
+      # Get full history when triggered manually
       with:
         fetch-depth: 0
 
-    # 原有Docker构建步骤保持不变...
+    # originalDockerThe build steps remain the same...
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
       

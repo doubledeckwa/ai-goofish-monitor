@@ -51,36 +51,36 @@ function notifyError(title: string, description?: string) {
 async function handleSaveNotifications() {
   try {
     await saveNotificationSettings()
-    notifySuccess('通知设置已保存')
+    notifySuccess('Notification settings saved')
   } catch (e) {
-    notifyError('通知设置保存失败', (e as Error).message)
+    notifyError('Failed to save notification settings', (e as Error).message)
   }
 }
 
 async function handleSaveAi() {
   try {
     await saveAiSettings()
-    notifySuccess('AI 设置已保存')
+    notifySuccess('AI Settings saved')
   } catch (e) {
-    notifyError('AI 设置保存失败', (e as Error).message)
+    notifyError('AI Failed to save settings', (e as Error).message)
   }
 }
 
 async function handleSaveRotation() {
   try {
     await saveRotationSettings()
-    notifySuccess('轮换设置已保存')
+    notifySuccess('Rotation settings saved')
   } catch (e) {
-    notifyError('轮换设置保存失败', (e as Error).message)
+    notifyError('Failed to save rotation settings', (e as Error).message)
   }
 }
 
 async function handleTestAi() {
   try {
     const res = await testAiConnection()
-    notifySuccess('AI 连接测试完成', res.message)
+    notifySuccess('AI Connection test completed', res.message)
   } catch (e) {
-    notifyError('AI 连接测试失败', (e as Error).message)
+    notifyError('AI Connection test failed', (e as Error).message)
   }
 }
 
@@ -103,7 +103,7 @@ async function fetchPrompts() {
 
     selectedPrompt.value = files[0] || null
   } catch (e) {
-    promptError.value = (e as Error).message || '加载 Prompt 列表失败'
+    promptError.value = (e as Error).message || 'load Prompt List failed'
   } finally {
     isPromptLoading.value = false
   }
@@ -111,15 +111,15 @@ async function fetchPrompts() {
 
 async function handleSavePrompt() {
   if (!selectedPrompt.value) {
-    notifyError('请选择 Prompt 文件')
+    notifyError('Please select Prompt document')
     return
   }
   isPromptSaving.value = true
   try {
     const res = await updatePrompt(selectedPrompt.value, promptContent.value)
-    notifySuccess('Prompt 保存成功', res.message)
+    notifySuccess('Prompt Saved successfully', res.message)
   } catch (e) {
-    notifyError('Prompt 保存失败', (e as Error).message)
+    notifyError('Prompt Save failed', (e as Error).message)
   } finally {
     isPromptSaving.value = false
   }
@@ -153,7 +153,7 @@ watch(selectedPrompt, async (value) => {
     const data = await getPromptContent(value)
     promptContent.value = data.content
   } catch (e) {
-    promptError.value = (e as Error).message || '加载 Prompt 内容失败'
+    promptError.value = (e as Error).message || 'load Prompt Content failed'
   } finally {
     isPromptLoading.value = false
   }
@@ -162,7 +162,7 @@ watch(selectedPrompt, async (value) => {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">系统设置</h1>
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">System settings</h1>
     
     <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
       {{ error.message }}
@@ -170,19 +170,19 @@ watch(selectedPrompt, async (value) => {
 
     <Tabs v-model="activeTab" class="w-full">
       <TabsList class="mb-4">
-        <TabsTrigger value="ai">AI 模型</TabsTrigger>
-        <TabsTrigger value="rotation">IP 轮换</TabsTrigger>
-        <TabsTrigger value="notifications">通知推送</TabsTrigger>
-        <TabsTrigger value="status">系统状态</TabsTrigger>
-        <TabsTrigger value="prompts">Prompt 管理</TabsTrigger>
+        <TabsTrigger value="ai">AI Model</TabsTrigger>
+        <TabsTrigger value="rotation">IP rotation</TabsTrigger>
+        <TabsTrigger value="notifications">Push notification</TabsTrigger>
+        <TabsTrigger value="status">System status</TabsTrigger>
+        <TabsTrigger value="prompts">Prompt manage</TabsTrigger>
       </TabsList>
 
       <!-- AI Tab -->
       <TabsContent value="ai">
         <Card>
           <CardHeader>
-            <CardTitle>AI 模型设置</CardTitle>
-            <CardDescription>配置用于商品分析的大语言模型。</CardDescription>
+            <CardTitle>AI Model settings</CardTitle>
+            <CardDescription>Configuring large language models for product analysis。</CardDescription>
           </CardHeader>
           <CardContent v-if="isReady" class="space-y-4">
             <div class="grid gap-2">
@@ -194,27 +194,27 @@ watch(selectedPrompt, async (value) => {
               <Input
                 v-model="aiSettings.OPENAI_API_KEY"
                 type="password"
-                placeholder="留空表示不修改"
+                placeholder="Leave blank to indicate no changes"
               />
               <p class="text-xs text-gray-500">
-                {{ systemStatus?.env_file.openai_api_key_set ? '已配置' : '未配置' }}，为安全起见不回显。
+                {{ systemStatus?.env_file.openai_api_key_set ? 'configured' : 'Not configured' }}，Not echoed for security reasons。
               </p>
             </div>
             <div class="grid gap-2">
-              <Label>模型名称</Label>
+              <Label>Model name</Label>
               <Input v-model="aiSettings.OPENAI_MODEL_NAME" placeholder="gpt-3.5-turbo" />
             </div>
             <div class="grid gap-2">
-              <Label>代理地址 (可选)</Label>
+              <Label>proxy address (Optional)</Label>
               <Input v-model="aiSettings.PROXY_URL" placeholder="http://127.0.0.1:7890" />
             </div>
           </CardContent>
           <CardContent v-else class="py-8 text-sm text-gray-500">
-            正在加载 AI 配置...
+            Loading AI Configuration...
           </CardContent>
           <CardFooter v-if="isReady" class="flex gap-2">
-            <Button variant="outline" @click="handleTestAi" :disabled="isSaving">测试连接</Button>
-            <Button @click="handleSaveAi" :disabled="isSaving">保存 AI 设置</Button>
+            <Button variant="outline" @click="handleTestAi" :disabled="isSaving">test connection</Button>
+            <Button @click="handleSaveAi" :disabled="isSaving">save AI set up</Button>
           </CardFooter>
         </Card>
       </TabsContent>
@@ -223,31 +223,31 @@ watch(selectedPrompt, async (value) => {
       <TabsContent value="rotation">
         <Card>
           <CardHeader>
-            <CardTitle>IP 代理轮换</CardTitle>
-            <CardDescription>配置代理池与轮换策略。</CardDescription>
+            <CardTitle>IP Agent rotation</CardTitle>
+            <CardDescription>Configure agent pool and rotation strategy。</CardDescription>
           </CardHeader>
           <CardContent v-if="isReady" class="space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="font-medium">代理轮换</h3>
-                <p class="text-sm text-gray-500">使用代理池进行 IP 轮换。</p>
+                <h3 class="font-medium">Agent rotation</h3>
+                <p class="text-sm text-gray-500">Use proxy pool IP rotation。</p>
               </div>
               <Switch v-model:checked="rotationSettings.PROXY_ROTATION_ENABLED" />
             </div>
             <div class="grid gap-2">
-              <Label>轮换模式</Label>
+              <Label>rotation mode</Label>
               <Select v-model="rotationSettings.PROXY_ROTATION_MODE">
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择轮换模式" />
+                  <SelectValue placeholder="Please select rotation mode" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="per_task">按任务固定</SelectItem>
-                  <SelectItem value="on_failure">失败后轮换</SelectItem>
+                  <SelectItem value="per_task">Fixed by task</SelectItem>
+                  <SelectItem value="on_failure">Rotate after failure</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div class="grid gap-2">
-              <Label>代理池 (逗号分隔)</Label>
+              <Label>proxy pool (comma separated)</Label>
               <Textarea
                 v-model="rotationSettings.PROXY_POOL"
                 class="min-h-[120px]"
@@ -256,20 +256,20 @@ watch(selectedPrompt, async (value) => {
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div class="grid gap-2">
-                <Label>重试上限</Label>
+                <Label>Retry limit</Label>
                 <Input v-model.number="rotationSettings.PROXY_ROTATION_RETRY_LIMIT" type="number" min="1" />
               </div>
               <div class="grid gap-2">
-                <Label>黑名单 TTL (秒)</Label>
+                <Label>blacklist TTL (Second)</Label>
                 <Input v-model.number="rotationSettings.PROXY_BLACKLIST_TTL" type="number" min="0" />
               </div>
             </div>
           </CardContent>
           <CardContent v-else class="py-8 text-sm text-gray-500">
-            正在加载轮换配置...
+            Loading rotation configuration...
           </CardContent>
           <CardFooter v-if="isReady" class="flex gap-2">
-            <Button @click="handleSaveRotation" :disabled="isSaving">保存轮换设置</Button>
+            <Button @click="handleSaveRotation" :disabled="isSaving">Save rotation settings</Button>
           </CardFooter>
         </Card>
       </TabsContent>
@@ -278,8 +278,8 @@ watch(selectedPrompt, async (value) => {
       <TabsContent value="notifications">
         <Card>
           <CardHeader>
-            <CardTitle>通知推送设置</CardTitle>
-            <CardDescription>配置爬虫任务完成后的消息推送渠道。</CardDescription>
+            <CardTitle>Notification push settings</CardTitle>
+            <CardDescription>Configure the message push channel after the crawler task is completed。</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             <div class="grid gap-2">
@@ -301,7 +301,7 @@ watch(selectedPrompt, async (value) => {
               </div>
             </div>
             <div class="grid gap-2">
-              <Label>企业微信 Bot URL</Label>
+              <Label>Enterprise WeChat Bot URL</Label>
               <Input v-model="notificationSettings.WX_BOT_URL" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." />
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -316,12 +316,12 @@ watch(selectedPrompt, async (value) => {
             </div>
             <div class="border-t pt-4 space-y-4">
               <div class="grid gap-2">
-                <Label>通用 Webhook URL</Label>
+                <Label>Universal Webhook URL</Label>
                 <Input v-model="notificationSettings.WEBHOOK_URL" placeholder="https://your-webhook-url.com/endpoint" />
               </div>
               <div class="grid grid-cols-2 gap-4">
                 <div class="grid gap-2">
-                  <Label>Webhook 方法</Label>
+                  <Label>Webhook method</Label>
                   <Select
                     :model-value="notificationSettings.WEBHOOK_METHOD || 'POST'"
                     @update:model-value="(value) => notificationSettings.WEBHOOK_METHOD = value as string"
@@ -336,7 +336,7 @@ watch(selectedPrompt, async (value) => {
                   </Select>
                 </div>
                 <div class="grid gap-2">
-                  <Label>Webhook 内容类型</Label>
+                  <Label>Webhook Content type</Label>
                   <Select
                     :model-value="notificationSettings.WEBHOOK_CONTENT_TYPE || 'JSON'"
                     @update:model-value="(value) => notificationSettings.WEBHOOK_CONTENT_TYPE = value as string"
@@ -352,25 +352,25 @@ watch(selectedPrompt, async (value) => {
                 </div>
               </div>
               <div class="grid gap-2">
-                <Label>Webhook 请求头 (JSON)</Label>
-                <Textarea v-model="notificationSettings.WEBHOOK_HEADERS" placeholder='例如: {"Authorization": "Bearer token"}' />
+                <Label>Webhook Request header (JSON)</Label>
+                <Textarea v-model="notificationSettings.WEBHOOK_HEADERS" placeholder='For example: {"Authorization": "Bearer token"}' />
               </div>
               <div class="grid gap-2">
-                <Label>Webhook Query 参数 (JSON)</Label>
-                <Textarea v-model="notificationSettings.WEBHOOK_QUERY_PARAMETERS" placeholder='例如: {"param1": "value1"}' />
+                <Label>Webhook Query parameter (JSON)</Label>
+                <Textarea v-model="notificationSettings.WEBHOOK_QUERY_PARAMETERS" placeholder='For example: {"param1": "value1"}' />
               </div>
               <div class="grid gap-2">
-                <Label>Webhook Body (支持变量)</Label>
-                <Textarea v-model="notificationSettings.WEBHOOK_BODY" placeholder='例如: {"message": "${content}"}' />
+                <Label>Webhook Body (Support variables)</Label>
+                <Textarea v-model="notificationSettings.WEBHOOK_BODY" placeholder='For example: {"message": "${content}"}' />
               </div>
             </div>
              <div class="flex items-center space-x-2 mt-2">
               <Switch id="pcurl" v-model="notificationSettings.PCURL_TO_MOBILE" />
-              <Label for="pcurl">将商品链接转换为手机端链接</Label>
+              <Label for="pcurl">Convert product links to mobile links</Label>
             </div>
           </CardContent>
           <CardFooter>
-            <Button @click="handleSaveNotifications" :disabled="isSaving">保存通知设置</Button>
+            <Button @click="handleSaveNotifications" :disabled="isSaving">Save notification settings</Button>
           </CardFooter>
         </Card>
       </TabsContent>
@@ -379,9 +379,9 @@ watch(selectedPrompt, async (value) => {
       <TabsContent value="status">
         <Card>
           <CardHeader>
-            <CardTitle>系统运行状态</CardTitle>
+            <CardTitle>System running status</CardTitle>
             <div class="flex justify-end">
-                <Button variant="outline" size="sm" @click="refreshStatus" :disabled="isLoading">刷新状态</Button>
+                <Button variant="outline" size="sm" @click="refreshStatus" :disabled="isLoading">refresh status</Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -389,11 +389,11 @@ watch(selectedPrompt, async (value) => {
               <!-- Scraper Process Status -->
               <div class="flex items-center justify-between border-b pb-4">
                 <div>
-                  <h3 class="font-medium">爬虫进程</h3>
-                  <p class="text-sm text-gray-500">当前是否有任务正在执行抓取</p>
+                  <h3 class="font-medium">crawler process</h3>
+                  <p class="text-sm text-gray-500">Is there any task currently executing the crawl?</p>
                 </div>
                 <span :class="systemStatus.scraper_running ? 'text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full' : 'text-gray-500 bg-gray-100 px-3 py-1 rounded-full'">
-                  {{ systemStatus.scraper_running ? '运行中' : '空闲' }}
+                  {{ systemStatus.scraper_running ? 'Running' : 'idle' }}
                 </span>
               </div>
 
@@ -401,11 +401,11 @@ watch(selectedPrompt, async (value) => {
               <div>
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="font-medium">环境变量配置</h3>
-                        <p class="text-sm text-gray-500">检查 .env 配置文件中的关键项</p>
+                        <h3 class="font-medium">Environment variable configuration</h3>
+                        <p class="text-sm text-gray-500">examine .env Key items in the configuration file</p>
                     </div>
                     <span :class="systemStatus.env_file.exists ? 'text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full' : 'text-red-600 font-bold bg-red-50 px-3 py-1 rounded-full'">
-                        {{ systemStatus.env_file.exists ? '已加载' : '缺失' }}
+                        {{ systemStatus.env_file.exists ? 'Loaded' : 'Missing' }}
                     </span>
                 </div>
                 
@@ -414,16 +414,16 @@ watch(selectedPrompt, async (value) => {
                         <div class="flex justify-between items-center">
                             <span class="font-medium text-sm">OpenAI API Key</span>
                             <span class="text-xs font-bold" :class="systemStatus.env_file.openai_api_key_set ? 'text-green-700' : 'text-yellow-700'">
-                                {{ systemStatus.env_file.openai_api_key_set ? '已配置' : '未配置' }}
+                                {{ systemStatus.env_file.openai_api_key_set ? 'configured' : 'Not configured' }}
                             </span>
                         </div>
                     </div>
                     
                     <div class="p-3 border rounded-lg" :class="(systemStatus.env_file.ntfy_topic_url_set || systemStatus.env_file.gotify_url_set || systemStatus.env_file.bark_url_set) ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'">
                          <div class="flex justify-between items-center">
-                            <span class="font-medium text-sm">通知渠道</span>
+                            <span class="font-medium text-sm">notification channel</span>
                              <span class="text-xs font-bold" :class="(systemStatus.env_file.ntfy_topic_url_set || systemStatus.env_file.gotify_url_set || systemStatus.env_file.bark_url_set) ? 'text-green-700' : 'text-gray-500'">
-                                {{ (systemStatus.env_file.ntfy_topic_url_set || systemStatus.env_file.gotify_url_set || systemStatus.env_file.bark_url_set) ? '已配置' : '未配置' }}
+                                {{ (systemStatus.env_file.ntfy_topic_url_set || systemStatus.env_file.gotify_url_set || systemStatus.env_file.bark_url_set) ? 'configured' : 'Not configured' }}
                             </span>
                         </div>
                          <div class="text-xs text-gray-500 mt-1">
@@ -431,14 +431,14 @@ watch(selectedPrompt, async (value) => {
                                 systemStatus.env_file.ntfy_topic_url_set ? 'Ntfy' : '',
                                 systemStatus.env_file.gotify_url_set ? 'Gotify' : '',
                                 systemStatus.env_file.bark_url_set ? 'Bark' : ''
-                            ].filter(Boolean).join(', ') || '无' }}
+                            ].filter(Boolean).join(', ') || 'none' }}
                         </div>
                     </div>
                 </div>
               </div>
             </div>
             <div v-else class="text-center py-8 text-gray-500">
-                正在获取系统状态...
+                Getting system status...
             </div>
           </CardContent>
         </Card>
@@ -448,8 +448,8 @@ watch(selectedPrompt, async (value) => {
       <TabsContent value="prompts">
         <Card>
           <CardHeader>
-            <CardTitle>Prompt 管理</CardTitle>
-            <CardDescription>在线编辑 prompts 目录下的 Prompt 文件。</CardDescription>
+            <CardTitle>Prompt manage</CardTitle>
+            <CardDescription>Online editing prompts under the directory Prompt document。</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             <div v-if="promptError" class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded">
@@ -457,13 +457,13 @@ watch(selectedPrompt, async (value) => {
             </div>
 
             <div class="grid gap-2">
-              <Label>选择 Prompt 文件</Label>
+              <Label>choose Prompt document</Label>
               <Select
                 :model-value="selectedPrompt || undefined"
                 @update:model-value="(value) => selectedPrompt = value as string"
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="请选择一个 Prompt 文件..." />
+                  <SelectValue placeholder="Please select one Prompt document..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem v-for="file in promptFiles" :key="file" :value="file">
@@ -472,23 +472,23 @@ watch(selectedPrompt, async (value) => {
                 </SelectContent>
               </Select>
               <p v-if="!promptFiles.length && !isPromptLoading" class="text-sm text-gray-500">
-                没有找到 Prompt 文件。
+                not found Prompt document。
               </p>
             </div>
 
             <div class="grid gap-2">
-              <Label>Prompt 内容</Label>
+              <Label>Prompt content</Label>
               <Textarea
                 v-model="promptContent"
                 class="min-h-[240px]"
                 :disabled="!selectedPrompt || isPromptLoading"
-                placeholder="请选择一个 Prompt 文件进行编辑..."
+                placeholder="Please select one Prompt file for editing..."
               />
             </div>
           </CardContent>
           <CardFooter>
             <Button :disabled="isPromptSaving || !selectedPrompt" @click="handleSavePrompt">
-              {{ isPromptSaving ? '保存中...' : '保存更改' }}
+              {{ isPromptSaving ? 'Saving...' : 'Save changes' }}
             </Button>
           </CardFooter>
         </Card>

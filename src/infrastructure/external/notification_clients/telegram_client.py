@@ -1,5 +1,5 @@
 """
-Telegram 通知客户端
+Telegram Notify client
 """
 import asyncio
 import requests
@@ -8,7 +8,7 @@ from .base import NotificationClient
 
 
 class TelegramClient(NotificationClient):
-    """Telegram 通知客户端"""
+    """Telegram Notify client"""
 
     def __init__(self, bot_token: str = None, chat_id: str = None):
         super().__init__(enabled=bool(bot_token and chat_id))
@@ -16,18 +16,18 @@ class TelegramClient(NotificationClient):
         self.chat_id = chat_id
 
     async def send(self, product_data: Dict, reason: str) -> bool:
-        """发送 Telegram 通知"""
+        """send Telegram notify"""
         if not self.is_enabled():
             return False
 
         try:
             msg_data = self._format_message(product_data, reason)
 
-            telegram_message = f"🚨 <b>新推荐!</b>\n\n"
+            telegram_message = f"🚨 <b>New recommendations!</b>\n\n"
             telegram_message += f"<b>{msg_data['title'][:50]}...</b>\n\n"
-            telegram_message += f"💰 价格: {msg_data['price']}\n"
-            telegram_message += f"📝 原因: {msg_data['reason']}\n"
-            telegram_message += f"💻 <a href='{msg_data['link']}'>查看商品</a>"
+            telegram_message += f"💰 price: {msg_data['price']}\n"
+            telegram_message += f"📝 reason: {msg_data['reason']}\n"
+            telegram_message += f"💻 <a href='{msg_data['link']}'>View product</a>"
 
             telegram_api_url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
 
@@ -52,5 +52,5 @@ class TelegramClient(NotificationClient):
             response.raise_for_status()
             return True
         except Exception as e:
-            print(f"Telegram 通知发送失败: {e}")
+            print(f"Telegram Notification failed to send: {e}")
             return False

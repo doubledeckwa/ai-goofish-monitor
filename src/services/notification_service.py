@@ -1,6 +1,6 @@
 """
-通知服务
-统一管理所有通知渠道
+notification service
+Unified management of all notification channels
 """
 import asyncio
 from typing import Dict, List
@@ -8,31 +8,31 @@ from src.infrastructure.external.notification_clients.base import NotificationCl
 
 
 class NotificationService:
-    """通知服务"""
+    """notification service"""
 
     def __init__(self, clients: List[NotificationClient]):
         self.clients = [client for client in clients if client.is_enabled()]
 
     async def send_notification(self, product_data: Dict, reason: str) -> Dict[str, bool]:
         """
-        发送通知到所有启用的渠道
+        Send notifications to all enabled channels
 
         Args:
-            product_data: 商品数据
-            reason: 推荐原因
+            product_data: Product data
+            reason: Reasons for recommendation
 
         Returns:
-            各渠道发送结果
+            Send results across channels
         """
         if not self.clients:
-            print("警告：未配置任何通知服务")
+            print("Warning: No notification service is configured")
             return {}
 
-        # 并发发送到所有渠道
+        # Send to all channels concurrently
         tasks = [client.send(product_data, reason) for client in self.clients]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 统计结果
+        # Statistical results
         result_dict = {}
         for i, result in enumerate(results):
             client_name = self.clients[i].__class__.__name__
