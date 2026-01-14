@@ -12,10 +12,10 @@ function goAccounts() {
 <template>
   <header class="bg-white h-16 px-6 border-b border-gray-200 flex justify-between items-center flex-shrink-0 shadow-sm z-10">
     <h1 class="text-xl font-semibold text-gray-800">
-      闲鱼智能监控机器人
+      Xianyu intelligent monitoring robot
     </h1>
     <div class="ml-auto">
-      <Button variant="outline" size="sm" @click="goAccounts">闲鱼账号管理</Button>
+      <Button variant="outline" size="sm" @click="goAccounts">Xianyu account management</Button>
     </div>
   </header>
 </template>

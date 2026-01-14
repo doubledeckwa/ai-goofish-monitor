@@ -1,6 +1,6 @@
 """
-桌面启动入口
-使用 PyInstaller 打包后作为单一可执行文件的入口，自动启动 FastAPI 服务并打开浏览器。
+Desktop startup portal
+use PyInstaller After packaging, it serves as the entry point of a single executable file and starts automatically. FastAPI Serve and open browser。
 """
 import os
 import sys
@@ -10,25 +10,25 @@ from pathlib import Path
 
 import uvicorn
 
-# PyInstaller 运行时资源目录：_MEIPASS；未打包时则为当前文件所在目录
+# PyInstaller Runtime resource directory：_MEIPASS；When not packaged, it is the directory where the current file is located.
 BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 
 
 def _prepare_environment() -> None:
-    """确保工作目录和模块路径正确"""
+    """Make sure the working directory and module paths are correct"""
     os.chdir(BASE_DIR)
     if str(BASE_DIR) not in sys.path:
         sys.path.insert(0, str(BASE_DIR))
 
 
 def run_app() -> None:
-    """启动 FastAPI 应用并自动打开浏览器"""
+    """start up FastAPI Apply and automatically open the browser"""
     _prepare_environment()
 
     from src.app import app
     from src.infrastructure.config.settings import settings
 
-    # 先尝试打开浏览器，稍等服务起来
+    # Try opening the browser first and wait for the service to come up.
     url = f"http://127.0.0.1:{settings.server_port}"
     webbrowser.open(url)
     time.sleep(0.5)

@@ -1,8 +1,8 @@
-# 本地运行指南 
+# Local operation guide 
 
-## 🐳 Docker 一键启动 (推荐)
+## 🐳 Docker One click start (recommend)
 
-只需要 **git clone** 后执行一条命令即可启动：
+Just need **git clone** Then execute a command to start：
 
 ```bash
 git clone <your-repo-url>
@@ -12,28 +12,28 @@ cp config.json.example config.json
 docker compose up -d
 ```
 
-- 访问地址：`http://127.0.0.1:8000`
-- 默认账号/密码同下方说明
+- Access address：`http://127.0.0.1:8000`
+- Default account/The password is the same as the description below
 
-### 开发模式 (可选)
+### development mode (Optional)
 
-如果你要开发前端或后端代码，使用开发版 compose：
+If you want to develop front-end or back-end code, use the development version compose：
 
 ```bash
 docker compose -f docker-compose.dev.yaml up -d --build
 ```
 
-## 🛠️ 手动安装步骤 
+## 🛠️ Manual installation steps 
 
-### 第一步：环境准备 (后端 Python)
+### Step One: Environment Preparation (rear end Python)
 
-1.  **克隆项目并进入目录**：
+1.  **Clone the project and go into the directory**：
     ```bash
     git clone <your-repo-url>
     cd ai-goofish-monitor
     ```
 
-2.  **创建并激活虚拟环境** (推荐)：
+2.  **Create and activate a virtual environment** (recommend)：
     - **Linux/macOS**:
       ```bash
       python3 -m venv .venv
@@ -45,39 +45,39 @@ docker compose -f docker-compose.dev.yaml up -d --build
       .venv\Scripts\activate
       ```
 
-3.  **安装 Python 依赖**：
+3.  **Install Python rely**：
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **浏览器准备**：
-    本项目在本地运行时默认通过 `channel="chrome"` 调用您系统中已安装的 **Google Chrome** 或 **Microsoft Edge**。
+4.  **Browser preparation**：
+    This project passes by default when running locally `channel="chrome"` Call the one installed on your system **Google Chrome** or **Microsoft Edge**。
     
-    - 请确保您的电脑已安装其中之一。
-    - **无需** 运行 `playwright install` 下载额外的浏览器内核。
+    - Please make sure your computer has one of these installed。
+    - **No need** run `playwright install` Download additional browser kernels。
 
-### 第二步：编译前端 (Vue3 + Shadcn UI)
+### Step 2: Compile the front end (Vue3 + Shadcn UI)
 
-项目采用前后端分离架构，需要先将前端代码编译打包，后端才能正常提供 Web 界面。
+The project adopts a front-end and back-end separation architecture, and the front-end code needs to be compiled and packaged first.，The backend can provide normal Web interface。
 
-1.  **进入前端目录**：
+1.  **Enter the front-end directory**：
     
     ```bash
     cd web-ui
     ```
     
-2.  **安装 Node.js 依赖**：
+2.  **Install Node.js rely**：
     ```bash
     npm install
     ```
 
-3.  **执行构建打包**：
+3.  **Execute build packaging**：
     
     ```bash
     npm run build
     ```
     
-4.  **将构建产物移动到后端可访问位置**：
+4.  **Move build artifacts to a location accessible on the backend**：
     - **Linux/macOS**:
       ```bash
       rm -rf ../dist && mv dist ../
@@ -87,35 +87,35 @@ docker compose -f docker-compose.dev.yaml up -d --build
       Remove-Item -Recurse -Force ..\dist; Move-Item dist ..\
       ```
 
-5.  **返回根目录**：
+5.  **Return to root directory**：
     ```bash
     cd ..
     ```
 
-### 第三步：配置文件
+### Step 3: Configuration file
 
-1.  **创建 `.env` 文件**：
+1.  **create `.env` document**：
     ```bash
     cp .env.example .env
     ```
-    编辑 `.env` 文件，至少填入 `OPENAI_API_KEY`。如果您没有特定的模型需求，建议保持 `OPENAI_BASE_URL` 为默认或使用您可靠的代理地址。
+    edit `.env` file, fill in at least `OPENAI_API_KEY`。If you have no specific model needs, it is recommended to keep `OPENAI_BASE_URL` as default or use your reliable proxy address。
 
-2.  **创建 `config.json` 文件** (任务配置)：
+2.  **create `config.json` document** (Task configuration)：
     
     ```bash
     cp config.json.example config.json
     ```
 
-### 第四步：启动服务
+### Step 4: Start the service
 
-在项目根目录下，且确保虚拟环境已激活的状态下运行：
+Run in the project root directory and ensure that the virtual environment is activated：
 
 ```bash
 python web_server.py
 ```
 
-- **默认地址**：`http://127.0.0.1:8000`
-- **默认账号**：`admin`
-- **默认密码**：`admin123` (可在 `.env` 中通过 `WEB_USERNAME` 和 `WEB_PASSWORD` 修改)
+- **Default address**：`http://127.0.0.1:8000`
+- **Default account**：`admin`
+- **default password**：`admin123` (Available at `.env` pass `WEB_USERNAME` and `WEB_PASSWORD` Revise)
 
 ## 

@@ -58,16 +58,16 @@ function handleDeleteTask(taskId: number) {
 
 async function handleConfirmDeleteTask() {
   if (!taskToDelete.value) {
-    toast({ title: '未找到要删除的任务', variant: 'destructive' })
+    toast({ title: 'The task to be deleted was not found', variant: 'destructive' })
     isDeleteDialogOpen.value = false
     return
   }
   try {
     await removeTask(taskToDelete.value.id)
-    toast({ title: '任务已删除' })
+    toast({ title: 'Task deleted' })
   } catch (e) {
     toast({
-      title: '删除任务失败',
+      title: 'Delete task failed',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -90,7 +90,7 @@ async function handleCreateTask(data: TaskGenerateRequest) {
   }
   catch (e) {
     toast({
-      title: '创建任务失败',
+      title: 'Failed to create task',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -109,7 +109,7 @@ async function handleUpdateTask(data: TaskUpdate) {
   }
   catch (e) {
     toast({
-      title: '更新任务失败',
+      title: 'Update task failed',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -129,8 +129,8 @@ async function handleRefreshCriteria() {
   if (!criteriaTask.value) return
   if (!criteriaDescription.value.trim()) {
     toast({
-      title: '详细需求不能为空',
-      description: '请填写新的详细需求。',
+      title: 'Detailed requirements cannot be empty',
+      description: 'Please fill in new detailed requirements。',
       variant: 'destructive',
     })
     return
@@ -142,7 +142,7 @@ async function handleRefreshCriteria() {
     isCriteriaDialogOpen.value = false
   } catch (e) {
     toast({
-      title: '重新生成失败',
+      title: 'Regeneration failed',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -156,7 +156,7 @@ async function handleStartTask(taskId: number) {
     await startTask(taskId)
   } catch (e) {
     toast({
-      title: '启动任务失败',
+      title: 'Failed to start task',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -168,7 +168,7 @@ async function handleStopTask(taskId: number) {
     await stopTask(taskId)
   } catch (e) {
     toast({
-      title: '停止任务失败',
+      title: 'Stop task failed',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -183,7 +183,7 @@ async function handleToggleEnabled(task: Task, enabled: boolean) {
   } catch (e) {
     task.enabled = previous
     toast({
-      title: '更新状态失败',
+      title: 'Update status failed',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -195,7 +195,7 @@ async function fetchAccountOptions() {
     accountOptions.value = await listAccounts()
   } catch (e) {
     toast({
-      title: '加载账号列表失败',
+      title: 'Failed to load account list',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -230,19 +230,19 @@ watch(
   <div>
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-800">
-        任务管理
+        task management
       </h1>
 
       <!-- Create Task Dialog -->
       <Dialog v-model:open="isCreateDialogOpen">
         <DialogTrigger as-child>
-          <Button>+ 创建新任务</Button>
+          <Button>+ Create new task</Button>
         </DialogTrigger>
         <DialogContent class="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>创建新监控任务 (AI驱动)</DialogTitle>
+            <DialogTitle>Create a new monitoring task (AIdrive)</DialogTitle>
             <DialogDescription>
-              请填写任务详情。AI将根据你的“详细需求”自动生成分析标准。
+              Please fill in the task details。AIwill be based on your "detailed needs"”Automatically generate analysis standards。
             </DialogDescription>
           </DialogHeader>
           <TaskForm
@@ -253,7 +253,7 @@ watch(
           />
           <DialogFooter>
             <Button type="submit" form="task-form" :disabled="isSubmitting">
-              {{ isSubmitting ? '创建中...' : '创建任务' }}
+              {{ isSubmitting ? 'Creating...' : 'Create tasks' }}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -264,7 +264,7 @@ watch(
     <Dialog v-model:open="isEditDialogOpen">
       <DialogContent class="sm:max-w-[640px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>编辑任务: {{ selectedTask?.task_name }}</DialogTitle>
+          <DialogTitle>Edit task: {{ selectedTask?.task_name }}</DialogTitle>
         </DialogHeader>
         <TaskForm
           v-if="selectedTask"
@@ -275,7 +275,7 @@ watch(
         />
         <DialogFooter>
           <Button type="submit" form="task-form" :disabled="isSubmitting">
-            {{ isSubmitting ? '保存中...' : '保存更改' }}
+            {{ isSubmitting ? 'Saving...' : 'Save changes' }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -285,32 +285,32 @@ watch(
     <Dialog v-model:open="isCriteriaDialogOpen">
       <DialogContent class="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>重新生成 AI 标准</DialogTitle>
+          <DialogTitle>Regenerate AI standard</DialogTitle>
           <DialogDescription>
-            修改详细需求后将重新生成 AI 分析标准。
+            It will be regenerated after modifying the detailed requirements. AI Analytical standards。
           </DialogDescription>
         </DialogHeader>
         <div class="grid gap-3">
-          <label class="text-sm font-medium text-gray-700">详细需求</label>
+          <label class="text-sm font-medium text-gray-700">Detailed requirements</label>
           <Textarea
             v-model="criteriaDescription"
             class="min-h-[140px]"
-            placeholder="请用自然语言详细描述你的购买需求，AI将根据此描述生成分析标准..."
+            placeholder="Please describe your purchase needs in detail in natural language，AIAnalysis criteria will be generated based on this description..."
           />
         </div>
         <DialogFooter>
           <Button variant="outline" @click="isCriteriaDialogOpen = false">
-            取消
+            Cancel
           </Button>
           <Button :disabled="isCriteriaSubmitting" @click="handleRefreshCriteria">
-            {{ isCriteriaSubmitting ? '生成中...' : '重新生成' }}
+            {{ isCriteriaSubmitting ? 'Generating...' : 'Regenerate' }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
     <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-      <strong class="font-bold">出错了!</strong>
+      <strong class="font-bold">something went wrong!</strong>
       <span class="block sm:inline">{{ error.message }}</span>
     </div>
 
@@ -329,14 +329,14 @@ watch(
     <Dialog v-model:open="isDeleteDialogOpen">
       <DialogContent class="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>删除任务</DialogTitle>
+          <DialogTitle>Delete task</DialogTitle>
           <DialogDescription>
-            {{ taskToDelete ? `确定删除任务「${taskToDelete.task_name}」吗？此操作不可恢复。` : '确定删除该任务吗？此操作不可恢复。' }}
+            {{ taskToDelete ? `Confirm to delete task「${taskToDelete.task_name}」? This operation is irreversible。` : 'Are you sure you want to delete this task? This operation is irreversible。' }}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="isDeleteDialogOpen = false">取消</Button>
-          <Button variant="destructive" @click="handleConfirmDeleteTask">确认删除</Button>
+          <Button variant="outline" @click="isDeleteDialogOpen = false">Cancel</Button>
+          <Button variant="destructive" @click="handleConfirmDeleteTask">Confirm deletion</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

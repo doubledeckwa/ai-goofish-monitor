@@ -1,6 +1,6 @@
 """
-统一配置管理模块
-使用 Pydantic 进行类型安全的配置管理
+Unified configuration management module
+use Pydantic Perform type-safe configuration management
 """
 try:
     from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,7 +37,7 @@ else:
 
 
 class AISettings(_EnvSettings):
-    """AI模型配置"""
+    """AIModel configuration"""
     api_key: Optional[str] = _env_field(None, "OPENAI_API_KEY")
     base_url: str = _env_field("", "OPENAI_BASE_URL")
     model_name: str = _env_field("", "OPENAI_MODEL_NAME")
@@ -48,12 +48,12 @@ class AISettings(_EnvSettings):
     skip_analysis: bool = _env_field(False, "SKIP_AI_ANALYSIS")
 
     def is_configured(self) -> bool:
-        """检查AI是否已正确配置"""
+        """examineAIIs it configured correctly?"""
         return bool(self.base_url and self.model_name)
 
 
 class NotificationSettings(_EnvSettings):
-    """通知服务配置"""
+    """Notification service configuration"""
     ntfy_topic_url: Optional[str] = _env_field(None, "NTFY_TOPIC_URL")
     gotify_url: Optional[str] = _env_field(None, "GOTIFY_URL")
     gotify_token: Optional[str] = _env_field(None, "GOTIFY_TOKEN")
@@ -70,7 +70,7 @@ class NotificationSettings(_EnvSettings):
     pcurl_to_mobile: bool = _env_field(True, "PCURL_TO_MOBILE")
 
     def has_any_notification_enabled(self) -> bool:
-        """检查是否配置了任何通知服务"""
+        """Check if any notification services are configured"""
         return any([
             self.ntfy_topic_url,
             self.wx_bot_url,
@@ -82,7 +82,7 @@ class NotificationSettings(_EnvSettings):
 
 
 class ScraperSettings(_EnvSettings):
-    """爬虫相关配置"""
+    """Crawler related configuration"""
     run_headless: bool = _env_field(True, "RUN_HEADLESS")
     login_is_edge: bool = _env_field(False, "LOGIN_IS_EDGE")
     running_in_docker: bool = _env_field(False, "RUNNING_IN_DOCKER")
@@ -90,27 +90,27 @@ class ScraperSettings(_EnvSettings):
 
 
 class AppSettings(_EnvSettings):
-    """应用主配置"""
+    """Apply main configuration"""
     server_port: int = _env_field(8000, "SERVER_PORT")
     web_username: str = _env_field("admin", "WEB_USERNAME")
     web_password: str = _env_field("admin123", "WEB_PASSWORD")
 
-    # 文件路径配置
+    # File path configuration
     config_file: str = "config.json"
     image_save_dir: str = "images"
     task_image_dir_prefix: str = "task_images_"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # 创建必要的目录
+        # Create necessary directories
         os.makedirs(self.image_save_dir, exist_ok=True)
 
 
-# 全局配置实例（单例模式）
+# Global configuration instance (singleton mode）
 _settings_instance = None
 
 def get_settings() -> AppSettings:
-    """获取全局配置实例"""
+    """Get global configuration instance"""
     global _settings_instance
     if _settings_instance is None:
         _settings_instance = AppSettings()
@@ -118,7 +118,7 @@ def get_settings() -> AppSettings:
 
 
 def reload_settings() -> None:
-    """重新加载全局配置实例"""
+    """Reload global configuration instance"""
     global _settings_instance, settings, ai_settings, notification_settings, scraper_settings
     from dotenv import load_dotenv
     from src.infrastructure.config.env_manager import env_manager
@@ -131,7 +131,7 @@ def reload_settings() -> None:
     scraper_settings = ScraperSettings()
 
 
-# 导出便捷访问的配置实例
+# Export configuration instances for easy access
 settings = get_settings()
 ai_settings = AISettings()
 notification_settings = NotificationSettings()

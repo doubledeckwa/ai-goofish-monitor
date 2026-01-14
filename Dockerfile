@@ -9,40 +9,40 @@ RUN npm run build
 # Stage 2: Build the python environment with dependencies
 FROM python:3.11-slim-bookworm AS builder
 
-# 设置环境变量以防止交互式提示
+# Set environment variables to prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 创建虚拟环境
+# Create a virtual environment
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# 安装 Python 依赖到虚拟环境中 (使用国内镜像源加速)
+# Install Python Depend on virtual environment (Use domestic mirror sources to accelerate)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-# 只下载 Playwright 的 Chromium 浏览器，系统依赖在下一阶段安装
+# download only Playwright of Chromium Browser, system dependencies are installed in the next stage
 RUN playwright install chromium
 
 # Stage 3: Create the final, lean image
 FROM python:3.11-slim-bookworm
 
-# 设置工作目录和环境变量
+# Set working directory and environment variables
 WORKDIR /app
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
-# 新增环境变量，用于区分Docker环境和本地环境
+# Added environment variables to distinguishDockerenvironment and local environment
 ENV RUNNING_IN_DOCKER=true
-# 告知 Playwright 在哪里找到浏览器
+# inform Playwright where to find browser
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
-# 设置时区为中国时区
+# Set time zone to China time zone
 ENV TZ=Asia/Shanghai
 
-# 从 builder 阶段复制虚拟环境，这样我们就可以使用 playwright 命令
+# from builder Stage a copy of the virtual environment so we can use playwright Order
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-# 安装所有运行浏览器所需的系统级依赖（包括libzbar0）和网络诊断工具
+# Install all system-level dependencies required to run the browser (includinglibzbar0）and network diagnostic tools
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         tzdata \
@@ -59,22 +59,22 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 从 builder 阶段复制预先下载好的浏览器
+# from builder Staged copying of pre-downloaded browsers
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
-# 复制前端构建产物到 /app/dist
+# Copy the front-end build product to /app/dist
 COPY --from=frontend-builder /web-ui/dist /app/dist
 
-# 复制应用代码
-# .dockerignore 文件会处理排除项-m
+# Copy application code
+# .dockerignore File handles exclusions-m
 COPY . .
 
-# 声明服务运行的端口
+# Declare the port on which the service is running
 EXPOSE 8000
 
-# 使用 tini 作为 init，负责回收孤儿子进程
+# use tini as init，Responsible for recycling orphan child processes
 ENTRYPOINT ["tini", "--"]
 
-# 容器启动时执行的命令
-# 使用新架构的启动方式
+# Commands executed when the container starts
+# How to start using the new architecture
 CMD ["python", "-m", "src.app"]

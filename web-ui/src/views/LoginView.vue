@@ -18,7 +18,7 @@ const route = useRoute()
 
 async function handleLogin() {
   if (!username.value || !password.value) {
-    error.value = '请输入用户名和密码'
+    error.value = 'Please enter username and password'
     return
   }
 
@@ -31,10 +31,10 @@ async function handleLogin() {
       const redirectPath = (route.query.redirect as string) || '/'
       router.push(redirectPath)
     } else {
-      error.value = '登录失败：用户名或密码错误'
+      error.value = 'Login failed: wrong username or password'
     }
   } catch (e) {
-    error.value = '登录过程中发生错误'
+    error.value = 'An error occurred during login'
   } finally {
     isLoading.value = false
   }
@@ -45,19 +45,19 @@ async function handleLogin() {
   <div class="flex items-center justify-center min-h-screen bg-gray-100">
     <Card class="w-full max-w-md">
       <CardHeader>
-        <CardTitle class="text-2xl text-center">系统登录</CardTitle>
+        <CardTitle class="text-2xl text-center">System login</CardTitle>
         <CardDescription class="text-center">
-          请输入您的管理员凭证以继续
+          Please enter your administrator credentials to continue
         </CardDescription>
       </CardHeader>
       <form @submit.prevent="handleLogin">
         <CardContent class="grid gap-4">
           <div class="grid gap-2">
-            <Label for="username">用户名</Label>
+            <Label for="username">username</Label>
             <Input id="username" type="text" v-model="username" placeholder="admin" required />
           </div>
           <div class="grid gap-2">
-            <Label for="password">密码</Label>
+            <Label for="password">password</Label>
             <Input id="password" type="password" v-model="password" required />
           </div>
           <div v-if="error" class="text-sm text-red-500 font-medium">
@@ -66,7 +66,7 @@ async function handleLogin() {
         </CardContent>
         <CardFooter>
           <Button class="w-full" type="submit" :disabled="isLoading">
-            {{ isLoading ? '登录中...' : '登录' }}
+            {{ isLoading ? 'Logging in...' : 'Log in' }}
           </Button>
         </CardFooter>
       </form>

@@ -13,7 +13,7 @@ IMAGE_SAVE_DIR = "images"
 CONFIG_FILE = "config.json"
 os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
 
-# 任务隔离的临时图片目录前缀
+# Temporary image directory prefix for task isolation
 TASK_IMAGE_DIR_PREFIX = "task_images_"
 
 # --- API URL Patterns ---
@@ -57,43 +57,43 @@ IMAGE_DOWNLOAD_HEADERS = {
 }
 
 # --- Client Initialization ---
-# 检查配置是否齐全
+# Check whether the configuration is complete
 if not all([BASE_URL, MODEL_NAME]):
-    print("警告：未在 .env 文件中完整设置 OPENAI_BASE_URL 和 OPENAI_MODEL_NAME。AI相关功能可能无法使用。")
+    print("Warning: not present .env Complete settings in file OPENAI_BASE_URL and OPENAI_MODEL_NAME。AIRelated functions may not be available。")
     client = None
 else:
     try:
         if PROXY_URL:
-            print(f"正在为AI请求使用HTTP/S代理: {PROXY_URL}")
-            # httpx 会自动从环境变量中读取代理设置
+            print(f"working onAIRequest to useHTTP/Sacting: {PROXY_URL}")
+            # httpx Proxy settings are automatically read from environment variables
             os.environ['HTTP_PROXY'] = PROXY_URL
             os.environ['HTTPS_PROXY'] = PROXY_URL
 
-        # openai 客户端内部的 httpx 会自动从环境变量中获取代理配置
+        # openai internal to client httpx Agent configuration will be automatically obtained from environment variables
         client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
     except Exception as e:
-        print(f"初始化 OpenAI 客户端时出错: {e}")
+        print(f"initialization OpenAI An error occurred on the client side: {e}")
         client = None
 
-# 检查AI客户端是否成功初始化
+# examineAIWhether the client initialized successfully
 if not client:
-    # 在 prompt_generator.py 中，如果 client 为 None，会直接报错退出
-    # 在 spider_v2.py 中，AI分析会跳过
-    # 为了保持一致性，这里只打印警告，具体逻辑由调用方处理
+    # exist prompt_generator.py in if client for None，Will directly report an error and exit
+    # exist spider_v2.py middle，AIAnalysis will be skipped
+    # For consistency, only warnings are printed here，The specific logic is handled by the caller
     pass
 
-# 检查关键配置
+# Check key configuration
 if not all([BASE_URL, MODEL_NAME]) and 'prompt_generator.py' in sys.argv[0]:
-    sys.exit("错误：请确保在 .env 文件中完整设置了 OPENAI_BASE_URL 和 OPENAI_MODEL_NAME。(OPENAI_API_KEY 对于某些服务是可选的)")
+    sys.exit("Error: Please make sure the .env Completely set up in the file OPENAI_BASE_URL and OPENAI_MODEL_NAME。(OPENAI_API_KEY Optional for some services)")
 
 def get_ai_request_params(**kwargs):
     """
-    构建AI请求参数，根据ENABLE_THINKING和ENABLE_RESPONSE_FORMAT环境变量决定是否添加相应参数
+    buildAIRequest parameters, according toENABLE_THINKINGandENABLE_RESPONSE_FORMATEnvironment variables determine whether to add corresponding parameters
     """
     if ENABLE_THINKING:
         kwargs["extra_body"] = {"enable_thinking": False}
     
-    # 如果禁用response_format，则移除该参数
+    # If disabledresponse_format，then remove this parameter
     if not ENABLE_RESPONSE_FORMAT and "response_format" in kwargs:
         del kwargs["response_format"]
     

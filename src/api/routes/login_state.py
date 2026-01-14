@@ -1,5 +1,5 @@
 """
-登录状态管理路由
+Login status management routing
 """
 import os
 import json
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/login-state", tags=["login-state"])
 
 
 class LoginStateUpdate(BaseModel):
-    """登录状态更新模型"""
+    """Login status update model"""
     content: str
 
 
@@ -20,33 +20,33 @@ class LoginStateUpdate(BaseModel):
 async def update_login_state(
     data: LoginStateUpdate,
 ):
-    """接收前端发送的登录状态JSON字符串，并保存到 xianyu_state.json"""
+    """Receive the login status sent by the front endJSONstring and save to xianyu_state.json"""
     state_file = "xianyu_state.json"
 
     try:
-        # 验证是否是有效的JSON
+        # Verify if it is validJSON
         json.loads(data.content)
     except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="提供的内容不是有效的JSON格式。")
+        raise HTTPException(status_code=400, detail="The content provided is not validJSONFormat。")
 
     try:
         async with aiofiles.open(state_file, 'w', encoding='utf-8') as f:
             await f.write(data.content)
-        return {"message": f"登录状态文件 '{state_file}' 已成功更新。"}
+        return {"message": f"Login status file '{state_file}' Updated successfully。"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"写入登录状态文件时出错: {e}")
+        raise HTTPException(status_code=500, detail=f"Error writing login status file: {e}")
 
 
 @router.delete("", response_model=dict)
 async def delete_login_state():
-    """删除 xianyu_state.json 文件"""
+    """delete xianyu_state.json document"""
     state_file = "xianyu_state.json"
 
     if os.path.exists(state_file):
         try:
             os.remove(state_file)
-            return {"message": "登录状态文件已成功删除。"}
+            return {"message": "Login status file deleted successfully。"}
         except OSError as e:
-            raise HTTPException(status_code=500, detail=f"删除登录状态文件时出错: {e}")
+            raise HTTPException(status_code=500, detail=f"Error deleting login status file: {e}")
 
-    return {"message": "登录状态文件不存在，无需删除。"}
+    return {"message": "The login status file does not exist and does not need to be deleted.。"}

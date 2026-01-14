@@ -37,29 +37,29 @@ const emit = defineEmits<{
     <Table class="min-w-full">
       <TableHeader class="bg-white/70 backdrop-blur">
         <TableRow class="border-b">
-          <TableHead class="w-[84px] text-center text-slate-600">启用</TableHead>
-          <TableHead class="text-slate-600">任务</TableHead>
-          <TableHead class="text-center text-slate-600">状态</TableHead>
-          <TableHead class="text-center text-slate-600">价格范围</TableHead>
-          <TableHead class="text-center text-slate-600">筛选条件</TableHead>
-          <TableHead class="text-center text-slate-600">最大页数</TableHead>
-          <TableHead class="text-center text-slate-600">AI 标准</TableHead>
-          <TableHead class="text-center text-slate-600">定时规则</TableHead>
-          <TableHead class="text-right text-slate-600">操作</TableHead>
+          <TableHead class="w-[84px] text-center text-slate-600">enable</TableHead>
+          <TableHead class="text-slate-600">Task</TableHead>
+          <TableHead class="text-center text-slate-600">state</TableHead>
+          <TableHead class="text-center text-slate-600">price range</TableHead>
+          <TableHead class="text-center text-slate-600">Filter criteria</TableHead>
+          <TableHead class="text-center text-slate-600">Maximum number of pages</TableHead>
+          <TableHead class="text-center text-slate-600">AI standard</TableHead>
+          <TableHead class="text-center text-slate-600">Timing rules</TableHead>
+          <TableHead class="text-right text-slate-600">operate</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <template v-if="isLoading && tasks.length === 0">
           <TableRow>
             <TableCell :colspan="9" class="h-24 text-center text-muted-foreground">
-              正在加载中...
+              Loading...
             </TableCell>
           </TableRow>
         </template>
         <template v-else-if="tasks.length === 0">
           <TableRow>
             <TableCell :colspan="9" class="h-24 text-center text-muted-foreground">
-              没有找到任何任务。
+              No tasks found。
             </TableCell>
           </TableRow>
         </template>
@@ -81,7 +81,7 @@ const emit = defineEmits<{
                 <div class="flex items-center gap-2">
                   <span class="text-base font-semibold text-slate-900">{{ task.task_name }}</span>
                   <Badge variant="outline" class="border-slate-200 text-xs text-slate-500">
-                    关键词
+                    keywords
                   </Badge>
                   <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700">
                     {{ task.keyword }}
@@ -102,19 +102,19 @@ const emit = defineEmits<{
                     : 'bg-amber-100 text-amber-700 border-0'
                 "
               >
-                {{ task.is_running ? '运行中' : '已停止' }}
+                {{ task.is_running ? 'Running' : 'Stopped' }}
               </Badge>
               <div class="mt-2 text-xs text-slate-500">
-                {{ task.enabled ? '已启用' : '未启用' }}
+                {{ task.enabled ? 'Enabled' : 'Not enabled' }}
               </div>
             </TableCell>
 
             <TableCell class="text-center align-middle">
               <div class="inline-flex flex-col items-center gap-1">
                 <span class="text-sm font-semibold text-slate-800">
-                  {{ task.min_price || '不限' }} - {{ task.max_price || '不限' }}
+                  {{ task.min_price || 'No limit' }} - {{ task.max_price || 'No limit' }}
                 </span>
-                <span class="text-xs text-slate-500">价格范围 (元)</span>
+                <span class="text-xs text-slate-500">price range (Yuan)</span>
               </div>
             </TableCell>
 
@@ -122,24 +122,24 @@ const emit = defineEmits<{
               <div class="flex flex-col items-center gap-2 text-xs text-slate-600">
                 <div class="flex flex-wrap justify-center gap-2">
                   <Badge v-if="task.personal_only" variant="secondary" class="bg-slate-100 text-slate-700 border-0">
-                    个人闲置
+                    Personal idle
                   </Badge>
                   <Badge v-else variant="outline" class="border-slate-200 text-slate-500">
-                    个人/商家不限
+                    personal/No restriction on merchants
                   </Badge>
                   <Badge v-if="task.free_shipping" variant="secondary" class="bg-slate-100 text-slate-700 border-0">
-                    包邮
+                    Free shipping
                   </Badge>
                   <Badge v-else variant="outline" class="border-slate-200 text-slate-500">
-                    运费不限
+                    No limit on shipping costs
                   </Badge>
                 </div>
                 <div class="flex flex-wrap justify-center gap-2">
                   <Badge variant="outline" class="border-slate-200 text-slate-600 bg-white">
-                    新发布：{{ task.new_publish_option || '不筛选' }}
+                    new release：{{ task.new_publish_option || 'No filtering' }}
                   </Badge>
                   <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600" :title="task.region || '—'">
-                    区域：{{ task.region || '—' }}
+                    area：{{ task.region || '—' }}
                   </span>
                 </div>
               </div>
@@ -155,12 +155,12 @@ const emit = defineEmits<{
               <div class="flex flex-col items-center gap-2">
                 <span
                   class="px-2 py-1 rounded-md bg-slate-100 text-xs font-mono text-slate-700 truncate max-w-[170px]"
-                  :title="task.ai_prompt_criteria_file || '暂无标准文件'"
+                  :title="task.ai_prompt_criteria_file || 'No standard document yet'"
                 >
                   {{ (task.ai_prompt_criteria_file || 'N/A').replace('prompts/', '') }}
                 </span>
                 <Button size="sm" variant="outline" class="h-8" @click="emit('refresh-criteria', task)">
-                  重新生成
+                  Regenerate
                 </Button>
               </div>
             </TableCell>
@@ -168,9 +168,9 @@ const emit = defineEmits<{
             <TableCell class="text-center align-middle">
               <div class="flex flex-col items-center gap-1">
                 <span class="text-sm font-medium text-slate-800">
-                  {{ task.cron || '手动触发' }}
+                  {{ task.cron || 'manual trigger' }}
                 </span>
-                <span class="text-xs text-slate-500">定时规则</span>
+                <span class="text-xs text-slate-500">Timing rules</span>
               </div>
             </TableCell>
 
@@ -187,7 +187,7 @@ const emit = defineEmits<{
                   :disabled="!task.enabled"
                   @click="emit('run-task', task.id)"
                 >
-                  <Play class="w-3 h-3 mr-1 fill-current" /> 运行
+                  <Play class="w-3 h-3 mr-1 fill-current" /> run
                 </Button>
                 <Button
                   v-else
@@ -198,20 +198,20 @@ const emit = defineEmits<{
                   @click="emit('stop-task', task.id)"
                 >
                   <template v-if="isStopping(task.id)">
-                    停止中...
+                    Stopping...
                   </template>
                   <template v-else>
-                    <Square class="w-3 h-3 mr-1 fill-current" /> 停止
+                    <Square class="w-3 h-3 mr-1 fill-current" /> stop
                   </template>
                 </Button>
 
                 <div class="w-px h-4 bg-slate-200 mx-1"></div>
 
-                <Button size="icon" variant="ghost" title="编辑" class="hover:bg-blue-50" @click="emit('edit-task', task)">
+                <Button size="icon" variant="ghost" title="edit" class="hover:bg-blue-50" @click="emit('edit-task', task)">
                   <Pencil class="w-4 h-4 text-blue-600" />
                 </Button>
 
-                <Button size="icon" variant="ghost" title="删除" class="text-red-500 hover:text-red-700 hover:bg-red-50" @click="emit('delete-task', task.id)">
+                <Button size="icon" variant="ghost" title="delete" class="text-red-500 hover:text-red-700 hover:bg-red-50" @click="emit('delete-task', task.id)">
                   <Trash2 class="w-4 h-4" />
                 </Button>
               </div>

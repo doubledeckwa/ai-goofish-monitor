@@ -1,6 +1,6 @@
 """
-任务领域模型
-定义任务实体及其业务逻辑
+task domain model
+Define task entities and their business logic
 """
 from pydantic import BaseModel, Field, validator
 from typing import Optional
@@ -8,14 +8,14 @@ from enum import Enum
 
 
 class TaskStatus(str, Enum):
-    """任务状态枚举"""
+    """Task status enum"""
     STOPPED = "stopped"
     RUNNING = "running"
     SCHEDULED = "scheduled"
 
 
 class Task(BaseModel):
-    """任务实体"""
+    """task entity"""
     id: Optional[int] = None
     task_name: str
     enabled: bool
@@ -38,21 +38,21 @@ class Task(BaseModel):
         use_enum_values = True
 
     def can_start(self) -> bool:
-        """检查任务是否可以启动"""
+        """Check if the task can be started"""
         return self.enabled and not self.is_running
 
     def can_stop(self) -> bool:
-        """检查任务是否可以停止"""
+        """Check if the task can be stopped"""
         return self.is_running
 
     def apply_update(self, update: 'TaskUpdate') -> 'Task':
-        """应用更新并返回新的任务实例"""
+        """Apply updates and return new task instance"""
         update_data = update.dict(exclude_unset=True)
         return self.copy(update=update_data)
 
 
 class TaskCreate(BaseModel):
-    """创建任务的DTO"""
+    """create taskDTO"""
     task_name: str
     enabled: bool = True
     keyword: str
@@ -71,7 +71,7 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    """更新任务的DTO"""
+    """update taskDTO"""
     task_name: Optional[str] = None
     enabled: Optional[bool] = None
     keyword: Optional[str] = None
@@ -91,7 +91,7 @@ class TaskUpdate(BaseModel):
 
 
 class TaskGenerateRequest(BaseModel):
-    """AI生成任务的请求DTO"""
+    """AIGenerate task requestDTO"""
     task_name: str
     keyword: str
     description: str
@@ -107,17 +107,17 @@ class TaskGenerateRequest(BaseModel):
 
     @validator('min_price', 'max_price', pre=True)
     def convert_price_to_str(cls, v):
-        """将价格转换为字符串，处理空字符串和数字"""
+        """Convert price to string, handle empty strings and numbers"""
         if v == "" or v == "null" or v == "undefined" or v is None:
             return None
-        # 如果是数字，转换为字符串
+        # If it is a number, convert it to a string
         if isinstance(v, (int, float)):
             return str(v)
         return v
 
     @validator('cron', pre=True)
     def empty_str_to_none(cls, v):
-        """将空字符串转换为 None"""
+        """Convert empty string to None"""
         if v == "" or v == "null" or v == "undefined":
             return None
         return v

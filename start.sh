@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# 闲鱼监控系统本地启动脚本
-# 功能：清理旧构建、安装依赖、构建前端、启动服务
+# Xianyu monitoring system local startup script
+# Feature: Clean up old builds、Install dependencies and build front-end、Start service
 
-set -e  # 遇到错误立即退出
+set -e  # Exit immediately if an error occurs
 
-# 颜色输出
+# Color output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# 获取脚本所在目录
+# Get the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}闲鱼监控系统 - 本地启动脚本${NC}"
+echo -e "${GREEN}Xianyu monitoring system - local startup script${NC}"
 echo -e "${GREEN}========================================${NC}"
 
-# 0. 环境与依赖检查
-echo -e "\n${YELLOW}[1/6] 检查环境与依赖...${NC}"
+# 0. Environment and dependency checks
+echo -e "\n${YELLOW}[1/6] Check environment and dependencies...${NC}"
 
 OS_FAMILY="unknown"
 LINUX_ID=""
@@ -107,25 +107,25 @@ case "$OS_FAMILY" in
 esac
 
 if [ "$has_browser" = false ]; then
-    MISSING_ITEMS+=("浏览器(Chrome 或 Edge)")
+    MISSING_ITEMS+=("Browser(Chrome or Edge)")
 fi
 
 
 print_solution_macos() {
     cat <<'EOF'
-macOS 解决办法:
-1) 安装 Homebrew:
+macOS Solution:
+1) Install Homebrew:
    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-2) 安装 Python 与 Node:
+2) Install Python and Node:
    brew install python@3.11 node
-3) 安装 Playwright:
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
-4) 安装浏览器:
+4) Install browser:
    brew install --cask google-chrome
-   # 或
+   # or
    brew install --cask microsoft-edge
-5) 配置文件（可选）:
+5) Configuration file (optional）:
    cp .env.example .env
    cp config.json.example config.json
 EOF
@@ -133,22 +133,22 @@ EOF
 
 print_solution_linux_deb() {
     cat <<'EOF'
-Linux (Debian/Ubuntu) 解决办法:
-1) 安装 Python 与 pip:
+Linux (Debian/Ubuntu) Solution:
+1) Install Python and pip:
    sudo apt-get update
    sudo apt-get install -y python3 python3-pip python3-venv
-2) 安装 Node.js 与 npm (LTS):
+2) Install Node.js and npm (LTS):
    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
    sudo apt-get install -y nodejs
-3) 安装 Playwright:
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
    python3 -m playwright install-deps chromium
-4) 安装浏览器:
+4) Install browser:
    sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
-   # 或安装 Edge:
+   # or install Edge:
    sudo apt-get install -y microsoft-edge-stable
-5) 配置文件（可选）:
+5) Configuration file (optional）:
    cp .env.example .env
    cp config.json.example config.json
 EOF
@@ -156,20 +156,20 @@ EOF
 
 print_solution_linux_rpm() {
     cat <<'EOF'
-Linux (RHEL/CentOS/Fedora) 解决办法:
-1) 安装 Python 与 pip:
+Linux (RHEL/CentOS/Fedora) Solution:
+1) Install Python and pip:
    sudo dnf install -y python3 python3-pip
-2) 安装 Node.js 与 npm (LTS):
+2) Install Node.js and npm (LTS):
    sudo dnf install -y nodejs
-3) 安装 Playwright:
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
    python3 -m playwright install-deps chromium
-4) 安装浏览器:
+4) Install browser:
    sudo dnf install -y chromium
-   # 或安装 Edge:
+   # or install Edge:
    sudo dnf install -y microsoft-edge-stable
-5) 配置文件（可选）:
+5) Configuration file (optional）:
    cp .env.example .env
    cp config.json.example config.json
 EOF
@@ -177,20 +177,20 @@ EOF
 
 print_solution_linux_arch() {
     cat <<'EOF'
-Linux (Arch) 解决办法:
-1) 安装 Python 与 pip:
+Linux (Arch) Solution:
+1) Install Python and pip:
    sudo pacman -S --noconfirm python python-pip
-2) 安装 Node.js 与 npm:
+2) Install Node.js and npm:
    sudo pacman -S --noconfirm nodejs npm
-3) 安装 Playwright:
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
    python3 -m playwright install-deps chromium
-4) 安装浏览器:
+4) Install browser:
    sudo pacman -S --noconfirm chromium
-   # 或安装 Edge:
+   # or install Edge:
    yay -S microsoft-edge-stable
-5) 配置文件:
+5) Configuration file:
    cp .env.example .env
    cp config.json.example config.json
 EOF
@@ -198,21 +198,21 @@ EOF
 
 print_solution_wsl() {
     cat <<'EOF'
-WSL 解决办法:
-1) 安装 Python 与 pip:
+WSL Solution:
+1) Install Python and pip:
    sudo apt-get update
    sudo apt-get install -y python3 python3-pip python3-venv
-2) 安装 Node.js 与 npm (LTS):
+2) Install Node.js and npm (LTS):
    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
    sudo apt-get install -y nodejs
-3) 安装 Playwright:
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
    python3 -m playwright install-deps chromium
-4) 安装浏览器:
+4) Install browser:
    sudo apt-get install -y chromium-browser || sudo apt-get install -y chromium
-   # 或在 Windows 安装 Chrome/Edge 并在 WSL 使用 Linux 版本浏览器
-5) 配置文件:
+   # or in Windows Install Chrome/Edge And in WSL use Linux version browser
+5) Configuration file:
    cp .env.example .env
    cp config.json.example config.json
 EOF
@@ -220,18 +220,18 @@ EOF
 
 print_solution_windows() {
     cat <<'EOF'
-Windows (PowerShell) 解决办法:
-1) 安装 Python 与 Node:
+Windows (PowerShell) Solution:
+1) Install Python and Node:
    winget install Python.Python.3.11
    winget install OpenJS.NodeJS.LTS
-2) 安装 Playwright:
+2) Install Playwright:
    py -m pip install playwright
    py -m playwright install chromium
-3) 安装浏览器:
+3) Install browser:
    winget install Google.Chrome
-   # 或
+   # or
    winget install Microsoft.Edge
-4) 配置文件（可选）:
+4) Configuration file (optional）:
    Copy-Item .env.example .env
    Copy-Item config.json.example config.json
 EOF
@@ -239,21 +239,21 @@ EOF
 
 print_solution_generic() {
     cat <<'EOF'
-通用解决办法:
-1) 安装 Python 3.10+ 与 pip
-2) 安装 Node.js 与 npm
-3) 安装 Playwright:
+General solution:
+1) Install Python 3.10+ and pip
+2) Install Node.js and npm
+3) Install Playwright:
    python3 -m pip install playwright
    python3 -m playwright install chromium
-4) 安装浏览器 Chrome 或 Edge
-5) 配置文件（可选）:
+4) Install browser Chrome or Edge
+5) Configuration file (optional）:
    cp .env.example .env
    cp config.json.example config.json
 EOF
 }
 
 if [ "${#MISSING_ITEMS[@]}" -ne 0 ]; then
-    echo -e "${RED}✗ 检测到缺失的环境/依赖:${NC}"
+    echo -e "${RED}✗ Missing environment detected/rely:${NC}"
     for item in "${MISSING_ITEMS[@]}"; do
         echo "  - $item"
     done
@@ -284,65 +284,65 @@ if [ "${#MISSING_ITEMS[@]}" -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${GREEN}✓ 环境与依赖检查通过${NC}"
+echo -e "${GREEN}✓ Environment and dependency check passed${NC}"
 
-# 1. 清理旧的 dist 目录
-echo -e "\n${YELLOW}[2/6] 清理旧的构建产物...${NC}"
+# 1. Clean out the old ones dist Table of contents
+echo -e "\n${YELLOW}[2/6] Clean up old build artifacts...${NC}"
 if [ -d "dist" ]; then
     rm -rf dist
-    echo -e "${GREEN}✓ 已删除旧的 dist 目录${NC}"
+    echo -e "${GREEN}✓ Old one deleted dist Table of contents${NC}"
 else
-    echo -e "${GREEN}✓ dist 目录不存在，跳过清理${NC}"
+    echo -e "${GREEN}✓ dist Directory does not exist, skip cleaning${NC}"
 fi
 
-# 2. 检查并安装 Python 依赖
-echo -e "\n${YELLOW}[3/6] 检查 Python 依赖...${NC}"
+# 2. Check and install Python rely
+echo -e "\n${YELLOW}[3/6] examine Python rely...${NC}"
 if [ ! -f "requirements.txt" ]; then
-    echo -e "${RED}✗ 错误: requirements.txt 文件不存在${NC}"
+    echo -e "${RED}✗ mistake: requirements.txt File does not exist${NC}"
     exit 1
 fi
 
-echo "正在安装 Python 依赖..."
+echo "Installing Python rely..."
 python3 -m pip install -r requirements.txt --quiet
-echo -e "${GREEN}✓ Python 依赖安装完成${NC}"
+echo -e "${GREEN}✓ Python Dependency installation completed${NC}"
 
-# 3. 构建前端
-echo -e "\n${YELLOW}[4/6] 构建前端项目...${NC}"
+# 3. Build the front end
+echo -e "\n${YELLOW}[4/6] Build front-end project...${NC}"
 if [ ! -d "web-ui" ]; then
-    echo -e "${RED}✗ 错误: web-ui 目录不存在${NC}"
+    echo -e "${RED}✗ mistake: web-ui Directory does not exist${NC}"
     exit 1
 fi
 
 cd web-ui
 
-# 检查 node_modules 是否存在
+# examine node_modules exists
 if [ ! -d "node_modules" ]; then
-    echo "首次运行，正在安装前端依赖..."
+    echo "Running for the first time, installing front-end dependencies..."
     npm install
 fi
 
-echo "正在构建前端..."
+echo "Building frontend..."
 npm run build
 
 if [ ! -d "dist" ]; then
-    echo -e "${RED}✗ 错误: 前端构建失败，dist 目录未生成${NC}"
+    echo -e "${RED}✗ mistake: Frontend build failed，dist Directory not generated${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✓ 前端构建完成${NC}"
+echo -e "${GREEN}✓ Front-end build completed${NC}"
 
-# 4. 复制构建产物到项目根目录
-echo -e "\n${YELLOW}[5/6] 复制构建产物...${NC}"
+# 4. Copy the build product to the project root directory
+echo -e "\n${YELLOW}[5/6] Copy the build product...${NC}"
 cd "$SCRIPT_DIR"
 cp -r web-ui/dist ./
-echo -e "${GREEN}✓ 构建产物已复制到项目根目录${NC}"
+echo -e "${GREEN}✓ The build products have been copied to the project root directory${NC}"
 
-# 5. 启动后端服务
-echo -e "\n${YELLOW}[6/6] 启动后端服务...${NC}"
+# 5. Start backend service
+echo -e "\n${YELLOW}[6/6] Start backend service...${NC}"
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}服务启动中...${NC}"
-echo -e "${GREEN}访问地址: http://localhost:8000${NC}"
-echo -e "${GREEN}API 文档: http://localhost:8000/docs${NC}"
+echo -e "${GREEN}Service starting...${NC}"
+echo -e "${GREEN}Access address: http://localhost:8000${NC}"
+echo -e "${GREEN}API document: http://localhost:8000/docs${NC}"
 echo -e "${GREEN}========================================${NC}\n"
 
 python3 -m src.app

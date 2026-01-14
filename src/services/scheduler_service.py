@@ -1,6 +1,6 @@
 """
-调度服务
-负责管理定时任务的调度
+Dispatch service
+Responsible for managing the scheduling of scheduled tasks
 """
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -10,27 +10,27 @@ from src.services.process_service import ProcessService
 
 
 class SchedulerService:
-    """调度服务"""
+    """Dispatch service"""
 
     def __init__(self, process_service: ProcessService):
         self.scheduler = AsyncIOScheduler(timezone="Asia/Shanghai")
         self.process_service = process_service
 
     def start(self):
-        """启动调度器"""
+        """Start scheduler"""
         if not self.scheduler.running:
             self.scheduler.start()
-            print("调度器已启动")
+            print("Scheduler started")
 
     def stop(self):
-        """停止调度器"""
+        """Stop scheduler"""
         if self.scheduler.running:
             self.scheduler.shutdown()
-            print("调度器已停止")
+            print("Scheduler has stopped")
 
     async def reload_jobs(self, tasks: List[Task]):
-        """重新加载所有定时任务"""
-        print("正在重新加载定时任务...")
+        """Reload all scheduled tasks"""
+        print("Reloading scheduled tasks...")
         self.scheduler.remove_all_jobs()
 
         for task in tasks:
@@ -45,13 +45,13 @@ class SchedulerService:
                         name=f"Scheduled: {task.task_name}",
                         replace_existing=True
                     )
-                    print(f"  -> 已为任务 '{task.task_name}' 添加定时规则: '{task.cron}'")
+                    print(f"  -> Already tasked '{task.task_name}' Add timing rules: '{task.cron}'")
                 except ValueError as e:
-                    print(f"  -> [警告] 任务 '{task.task_name}' 的 Cron 表达式无效: {e}")
+                    print(f"  -> [warn] Task '{task.task_name}' of Cron Invalid expression: {e}")
 
-        print("定时任务加载完成")
+        print("Scheduled task loading completed")
 
     async def _run_task(self, task_id: int, task_name: str):
-        """执行定时任务"""
-        print(f"定时任务触发: 正在为任务 '{task_name}' 启动爬虫...")
+        """Execute scheduled tasks"""
+        print(f"Scheduled task trigger: working on task '{task_name}' Start the crawler...")
         await self.process_service.start_task(task_id, task_name)
