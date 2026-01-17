@@ -33,6 +33,7 @@ class Task(BaseModel):
     new_publish_option: Optional[str] = None
     region: Optional[str] = None
     is_running: bool = False
+    is_public: bool = False
 
     class Config:
         use_enum_values = True
@@ -68,6 +69,7 @@ class TaskCreate(BaseModel):
     free_shipping: bool = True
     new_publish_option: Optional[str] = None
     region: Optional[str] = None
+    is_public: bool = False
 
 
 class TaskUpdate(BaseModel):
@@ -88,6 +90,7 @@ class TaskUpdate(BaseModel):
     new_publish_option: Optional[str] = None
     region: Optional[str] = None
     is_running: Optional[bool] = None
+    is_public: Optional[bool] = None
 
 
 class TaskGenerateRequest(BaseModel):

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts
+from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts, public, users
 from src.api.dependencies import set_process_service
 from src.services.task_service import TaskService
 from src.services.process_service import ProcessService
@@ -62,6 +62,8 @@ app = FastAPI(
 )
 
 # Register route
+app.include_router(public.router)
+app.include_router(users.router)
 app.include_router(tasks.router)
 app.include_router(logs.router)
 app.include_router(settings.router)

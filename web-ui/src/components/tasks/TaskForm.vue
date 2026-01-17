@@ -25,32 +25,34 @@ const emit = defineEmits<{
 const form = ref<EmittedData>({})
 
 // Initialize form based on mode and initialData
-watchEffect(() => {
-  if (props.mode === 'edit' && props.initialData) {
-    form.value = {
-      ...props.initialData,
-      account_state_file: props.initialData.account_state_file || '',
-      free_shipping: props.initialData.free_shipping ?? true,
-      new_publish_option: props.initialData.new_publish_option || '__none__',
-      region: props.initialData.region || '',
-    }
-  } else {
-    form.value = {
-      task_name: '',
-      keyword: '',
-      description: '',
-      max_pages: 3,
-      personal_only: true,
-      min_price: undefined,
-      max_price: undefined,
-      cron: '',
-      account_state_file: props.defaultAccount || '',
-      free_shipping: true,
-      new_publish_option: '__none__',
-      region: '',
-    }
-  }
-})
+  watchEffect(() => {
+   if (props.mode === 'edit' && props.initialData) {
+     form.value = {
+       ...props.initialData,
+       account_state_file: props.initialData.account_state_file || '',
+       free_shipping: props.initialData.free_shipping ?? true,
+       new_publish_option: props.initialData.new_publish_option || '__none__',
+       region: props.initialData.region || '',
+       is_public: props.initialData.is_public ?? false,
+     }
+   } else {
+     form.value = {
+       task_name: '',
+       keyword: '',
+       description: '',
+       max_pages: 3,
+       personal_only: true,
+       min_price: undefined,
+       max_price: undefined,
+       cron: '',
+       account_state_file: props.defaultAccount || '',
+       free_shipping: true,
+       new_publish_option: '__none__',
+       region: '',
+       is_public: false,
+     }
+   }
+ })
 
 function handleSubmit() {
   // Basic validation
@@ -163,16 +165,23 @@ function handleSubmit() {
           </Select>
         </div>
       </div>
-      <div class="grid grid-cols-4 items-center gap-4">
-        <Label class="text-right">Area filter(Leave blank by default)</Label>
-        <div class="col-span-3 space-y-1">
-          <Input
-            v-model="form.region as any"
-            placeholder="For example： Zhejiang/Hangzhou/Binjiang District or Zhejiang/Hangzhou/All Hangzhou or Shanghai/Xuhui District"
-          />
-          <p class="text-xs text-gray-500">Regional filtering will result in a small number of products that meet the conditions</p>
-        </div>
-      </div>
-    </div>
-  </form>
-</template>
+       <div class="grid grid-cols-4 items-center gap-4">
+         <Label class="text-right">Area filter(Leave blank by default)</Label>
+         <div class="col-span-3 space-y-1">
+           <Input
+             v-model="form.region as any"
+             placeholder="For example： Zhejiang/Hangzhou/Binjiang District or Zhejiang/Hangzhou/All Hangzhou or Shanghai/Xuhui District"
+           />
+           <p class="text-xs text-gray-500">Regional filtering will result in a small number of products that meet the conditions</p>
+         </div>
+       </div>
+       <div class="grid grid-cols-4 items-center gap-4">
+         <Label class="text-right">Publish to marketplace</Label>
+         <div class="col-span-3 flex items-center gap-2">
+           <Switch v-model="form.is_public" />
+           <p class="text-sm text-gray-600">Show products from this task on public marketplace</p>
+         </div>
+       </div>
+     </div>
+   </form>
+ </template>
