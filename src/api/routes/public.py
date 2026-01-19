@@ -145,7 +145,8 @@ async def get_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    if product."Task name" not in public_task_names:
+    task_name = getattr(product, "Task name", "")
+    if task_name not in public_task_names:
         raise HTTPException(status_code=403, detail="Product not available publicly")
 
     if current_user:

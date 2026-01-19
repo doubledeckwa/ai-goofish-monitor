@@ -4,7 +4,7 @@ export interface ProductInfo {
   "Product title": string;
   "Current selling price": string;
   "Product original price"?: string;
-  "“"Want" number of people"?: string | number;
+  want_number_of_people?: string | number;
   "Product tag"?: string[];
   "Shipping area"?: string;
   "Seller nickname"?: string;
