@@ -11,4 +11,5 @@ src/__pycache__/
 dist/
 state/
 config.json
-prompts/
+prompts/src/venv/
+venv/

@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function setLoading(isLoading) {
     extractBtn.disabled = isLoading;
-    extractBtn.textContent = isLoading ? '采集中，请稍候...' : '1.点击获取环境+登录状态';
+    extractBtn.textContent = isLoading ? 'Collecting, please wait....' : '1.Click to get the environment+Login status';
   }
 
   function updateStatus(message, isSuccess = false) {
@@ -28,34 +28,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function captureSnapshot() {
     setLoading(true);
-    updateStatus('正在采集浏览器环境与登录状态...');
+    updateStatus('Collecting browser environment and login status...');
     stateOutput.value = '';
 
     chrome.runtime.sendMessage({ type: 'captureSnapshot' }, (response) => {
       setLoading(false);
 
       if (chrome.runtime.lastError) {
-        updateStatus('通信失败: ' + chrome.runtime.lastError.message);
+        updateStatus('Communication failed: ' + chrome.runtime.lastError.message);
         return;
       }
       if (!response || !response.ok) {
-        updateStatus('采集失败: ' + (response?.error || '未知错误'));
+        updateStatus('Collection failed: ' + (response?.error || 'unknown error'));
         return;
       }
 
       renderSnapshot(response.data);
-      updateStatus('采集完成，已生成JSON', true);
+      updateStatus('Collection completed, generatedJSON', true);
     });
   }
 
   function copySnapshot() {
     if (!stateOutput.value) {
-      updateStatus('没有可复制的数据');
+      updateStatus('No data to copy');
       return;
     }
     navigator.clipboard.writeText(stateOutput.value)
-      .then(() => updateStatus('已复制到剪贴板', true))
-      .catch(err => updateStatus('复制失败: ' + err));
+      .then(() => updateStatus('Copied to clipboard', true))
+      .catch(err => updateStatus('Copy failed: ' + err));
   }
 
   extractBtn.addEventListener('click', captureSnapshot);

@@ -12,33 +12,33 @@ from src.scraper import scrape_xianyu
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="闲鱼商品监控脚本，支持多任务配置和实时AI分析。",
+        description="Xianyu product monitoring script supports multi-task configuration and real-timeAIanalyze。",
         epilog="""
-使用示例:
-  # 运行 config.json 中定义的所有任务
+Usage example:
+  # run config.json All tasks defined in
   python spider_v2.py
 
-  # 只运行名为 "Sony A7M4" 的任务 (通常由调度器调用)
+  # Only run names named "Sony A7M4" task (Usually called by the scheduler)
   python spider_v2.py --task-name "Sony A7M4"
 
-  # 调试模式: 运行所有任务，但每个任务只处理前3个新发现的商品
+  # debug mode: Run all tasks, but each task only processes the first3newly discovered items
   python spider_v2.py --debug-limit 3
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--debug-limit", type=int, default=0, help="调试模式：每个任务仅处理前 N 个新商品（0 表示无限制）")
-    parser.add_argument("--config", type=str, default="config.json", help="指定任务配置文件路径（默认为 config.json）")
-    parser.add_argument("--task-name", type=str, help="只运行指定名称的单个任务 (用于定时任务调度)")
+    parser.add_argument("--debug-limit", type=int, default=0, help="Debug mode: Each task only processes the first N new items（0 means unlimited）")
+    parser.add_argument("--config", type=str, default="config.json", help="Specify the task configuration file path (default is config.json）")
+    parser.add_argument("--task-name", type=str, help="Run only a single task with the specified name (Used for scheduled task scheduling)")
     args = parser.parse_args()
 
     if not os.path.exists(args.config):
-        sys.exit(f"错误: 配置文件 '{args.config}' 不存在。")
+        sys.exit(f"mistake: Configuration file '{args.config}' does not exist。")
 
     try:
         with open(args.config, 'r', encoding='utf-8') as f:
             tasks_config = json.load(f)
     except (json.JSONDecodeError, IOError) as e:
-        sys.exit(f"错误: 读取或解析配置文件 '{args.config}' 失败: {e}")
+        sys.exit(f"mistake: Read or parse configuration files '{args.config}' fail: {e}")
 
     def has_bound_account(tasks: list) -> bool:
         for task in tasks:
@@ -57,10 +57,10 @@ async def main():
 
     if not os.path.exists(STATE_FILE) and not has_bound_account(tasks_config) and not has_any_state_file():
         sys.exit(
-            f"错误: 未找到登录状态文件。请在 state/ 中添加账号或配置 account_state_file。"
+            f"mistake: Login status file not found. please state/ Add account or configuration in account_state_file。"
         )
 
-    # 读取所有prompt文件内容
+    # read allpromptFile content
     for task in tasks_config:
         if task.get("enabled", False) and task.get("ai_prompt_base_file") and task.get("ai_prompt_criteria_file"):
             try:
@@ -69,65 +69,65 @@ async def main():
                 with open(task["ai_prompt_criteria_file"], 'r', encoding='utf-8') as f_criteria:
                     criteria_text = f_criteria.read()
                 
-                # 动态组合成最终的Prompt
+                # dynamically combined into the finalPrompt
                 task['ai_prompt_text'] = base_prompt.replace("{{CRITERIA_SECTION}}", criteria_text)
                 
-                # 验证生成的prompt是否有效
+                # Verify the generatedpromptIs it valid?
                 if len(task['ai_prompt_text']) < 100:
-                    print(f"警告: 任务 '{task['task_name']}' 生成的prompt过短 ({len(task['ai_prompt_text'])} 字符)，可能存在问题。")
+                    print(f"warn: Task '{task['task_name']}' generatedprompttoo short ({len(task['ai_prompt_text'])} character)，There may be a problem。")
                 elif "{{CRITERIA_SECTION}}" in task['ai_prompt_text']:
-                    print(f"警告: 任务 '{task['task_name']}' 的prompt中仍包含占位符，替换可能失败。")
+                    print(f"warn: Task '{task['task_name']}' ofpromptstill contains placeholders, replacement may fail。")
                 else:
-                    print(f"✅ 任务 '{task['task_name']}' 的prompt生成成功，长度: {len(task['ai_prompt_text'])} 字符")
+                    print(f"✅ Task '{task['task_name']}' ofpromptGenerated successfully, length: {len(task['ai_prompt_text'])} character")
 
             except FileNotFoundError as e:
-                print(f"警告: 任务 '{task['task_name']}' 的prompt文件缺失: {e}，该任务的AI分析将被跳过。")
+                print(f"warn: Task '{task['task_name']}' ofpromptFile missing: {e}，of this taskAIAnalysis will be skipped。")
                 task['ai_prompt_text'] = ""
             except Exception as e:
-                print(f"错误: 任务 '{task['task_name']}' 处理prompt文件时发生异常: {e}，该任务的AI分析将被跳过。")
+                print(f"mistake: Task '{task['task_name']}' deal withpromptException occurred while file: {e}，of this taskAIAnalysis will be skipped。")
                 task['ai_prompt_text'] = ""
         elif task.get("enabled", False) and task.get("ai_prompt_file"):
             try:
                 with open(task["ai_prompt_file"], 'r', encoding='utf-8') as f:
                     task['ai_prompt_text'] = f.read()
-                print(f"✅ 任务 '{task['task_name']}' 的prompt文件读取成功，长度: {len(task['ai_prompt_text'])} 字符")
+                print(f"✅ Task '{task['task_name']}' ofpromptFile read successfully, length: {len(task['ai_prompt_text'])} character")
             except FileNotFoundError:
-                print(f"警告: 任务 '{task['task_name']}' 的prompt文件 '{task['ai_prompt_file']}' 未找到，该任务的AI分析将被跳过。")
+                print(f"warn: Task '{task['task_name']}' ofpromptdocument '{task['ai_prompt_file']}' Not found, the task'sAIAnalysis will be skipped。")
                 task['ai_prompt_text'] = ""
             except Exception as e:
-                print(f"错误: 任务 '{task['task_name']}' 读取prompt文件时发生异常: {e}，该任务的AI分析将被跳过。")
+                print(f"mistake: Task '{task['task_name']}' readpromptException occurred while file: {e}，of this taskAIAnalysis will be skipped。")
                 task['ai_prompt_text'] = ""
 
-    print("\n--- 开始执行监控任务 ---")
+    print("\n--- Start monitoring tasks ---")
     if args.debug_limit > 0:
-        print(f"** 调试模式已激活，每个任务最多处理 {args.debug_limit} 个新商品 **")
+        print(f"** Debug mode is activated, each task processes up to {args.debug_limit} new items **")
     
     if args.task_name:
-        print(f"** 定时任务模式：只执行任务 '{args.task_name}' **")
+        print(f"** Scheduled task mode: only execute tasks '{args.task_name}' **")
 
     print("--------------------")
 
     active_task_configs = []
     if args.task_name:
-        # 如果指定了任务名称，只查找该任务
+        # If a task name is specified, only that task is found
         task_found = next((task for task in tasks_config if task.get('task_name') == args.task_name), None)
         if task_found:
             if task_found.get("enabled", False):
                 active_task_configs.append(task_found)
             else:
-                print(f"任务 '{args.task_name}' 已被禁用，跳过执行。")
+                print(f"Task '{args.task_name}' Disabled, skipping execution。")
         else:
-            print(f"错误：在配置文件中未找到名为 '{args.task_name}' 的任务。")
+            print(f"Error: The file named '{args.task_name}' task。")
             return
     else:
-        # 否则，按原计划加载所有启用的任务
+        # Otherwise, load all enabled tasks as originally planned
         active_task_configs = [task for task in tasks_config if task.get("enabled", False)]
 
     if not active_task_configs:
-        print("没有需要执行的任务，程序退出。")
+        print("There are no tasks to be performed and the program exits.。")
         return
 
-    # 为每个启用的任务创建一个异步执行协程
+    # Create an asynchronous execution coroutine for each enabled task
     stop_event = asyncio.Event()
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
@@ -138,12 +138,12 @@ async def main():
 
     tasks = []
     for task_conf in active_task_configs:
-        print(f"-> 任务 '{task_conf['task_name']}' 已加入执行队列。")
+        print(f"-> Task '{task_conf['task_name']}' Joined the execution queue。")
         tasks.append(asyncio.create_task(scrape_xianyu(task_config=task_conf, debug_limit=args.debug_limit)))
 
     async def _shutdown_watcher():
         await stop_event.wait()
-        print("\n收到终止信号，正在优雅退出，取消所有爬虫任务...")
+        print("\nReceived termination signal and exiting gracefully，Cancel all crawler tasks...")
         for t in tasks:
             if not t.done():
                 t.cancel()
@@ -151,20 +151,20 @@ async def main():
     shutdown_task = asyncio.create_task(_shutdown_watcher())
 
     try:
-        # 并发执行所有任务
+        # Execute all tasks concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
     finally:
         shutdown_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await shutdown_task
 
-    print("\n--- 所有任务执行完毕 ---")
+    print("\n--- All tasks completed ---")
     for i, result in enumerate(results):
         task_name = active_task_configs[i]['task_name']
         if isinstance(result, Exception):
-            print(f"任务 '{task_name}' 因异常而终止: {result}")
+            print(f"Task '{task_name}' Terminate due to exception: {result}")
         else:
-            print(f"任务 '{task_name}' 正常结束，本次运行共处理了 {result} 个新商品。")
+            print(f"Task '{task_name}' Ended normally, this run processed a total of {result} new items。")
 
 if __name__ == "__main__":
     asyncio.run(main())

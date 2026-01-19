@@ -10,7 +10,7 @@ from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 import requests
 
-# 设置标准输出编码为UTF-8，解决Windows控制台编码问题
+# Set standard output encoding toUTF-8，solveWindowsConsole encoding issue
 if sys.platform.startswith('win'):
     import codecs
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
@@ -43,23 +43,23 @@ from src.utils import convert_goofish_link, retry_on_failure
 
 
 def safe_print(text):
-    """安全的打印函数，处理编码错误"""
+    """Safe printing functions that handle encoding errors"""
     try:
         print(text)
     except UnicodeEncodeError:
-        # 如果遇到编码错误，尝试用ASCII编码并忽略无法编码的字符
+        # If you encounter encoding errors, try usingASCIIEncode and ignore unencodable characters
         try:
             print(text.encode('ascii', errors='ignore').decode('ascii'))
         except:
-            # 如果还是失败，打印一个简化的消息
-            print("[输出包含无法显示的字符]")
+            # If it still fails, print a simplified message
+            print("[Output contains characters that cannot be displayed]")
 
 
 @retry_on_failure(retries=2, delay=3)
 async def _download_single_image(url, save_path):
-    """一个带重试的内部函数，用于异步下载单个图片。"""
+    """An internal function with retries for asynchronously downloading a single image。"""
     loop = asyncio.get_running_loop()
-    # 使用 run_in_executor 运行同步的 requests 代码，避免阻塞事件循环
+    # use run_in_executor run synchronized requests code to avoid blocking the event loop
     response = await loop.run_in_executor(
         None,
         lambda: requests.get(url, headers=IMAGE_DOWNLOAD_HEADERS, timeout=20, stream=True)
@@ -72,11 +72,11 @@ async def _download_single_image(url, save_path):
 
 
 async def download_all_images(product_id, image_urls, task_name="default"):
-    """异步下载一个商品的所有图片。如果图片已存在则跳过。支持任务隔离。"""
+    """Download all images of a product asynchronously. Skip if image already exists。Support task isolation。"""
     if not image_urls:
         return []
 
-    # 为每个任务创建独立的图片目录
+    # Create separate image directories for each task
     task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
     os.makedirs(task_image_dir, exist_ok=True)
 
@@ -98,31 +98,31 @@ async def download_all_images(product_id, image_urls, task_name="default"):
             save_path = os.path.join(task_image_dir, file_name)
 
             if os.path.exists(save_path):
-                safe_print(f"   [图片] 图片 {i + 1}/{total_images} 已存在，跳过下载: {os.path.basename(save_path)}")
+                safe_print(f"   [picture] picture {i + 1}/{total_images} Already exists, skip download: {os.path.basename(save_path)}")
                 saved_paths.append(save_path)
                 continue
 
-            safe_print(f"   [图片] 正在下载图片 {i + 1}/{total_images}: {url}")
+            safe_print(f"   [picture] Downloading pictures {i + 1}/{total_images}: {url}")
             if await _download_single_image(url, save_path):
-                safe_print(f"   [图片] 图片 {i + 1}/{total_images} 已成功下载到: {os.path.basename(save_path)}")
+                safe_print(f"   [picture] picture {i + 1}/{total_images} Successfully downloaded to: {os.path.basename(save_path)}")
                 saved_paths.append(save_path)
         except Exception as e:
-            safe_print(f"   [图片] 处理图片 {url} 时发生错误，已跳过此图: {e}")
+            safe_print(f"   [picture] Process pictures {url} An error occurred and this image has been skipped: {e}")
 
     return saved_paths
 
 
 def cleanup_task_images(task_name):
-    """清理指定任务的图片目录"""
+    """Clean up the picture directory of the specified task"""
     task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
     if os.path.exists(task_image_dir):
         try:
             shutil.rmtree(task_image_dir)
-            safe_print(f"   [清理] 已删除任务 '{task_name}' 的临时图片目录: {task_image_dir}")
+            safe_print(f"   [clean up] Task deleted '{task_name}' Temporary picture directory: {task_image_dir}")
         except Exception as e:
-            safe_print(f"   [清理] 删除任务 '{task_name}' 的临时图片目录时出错: {e}")
+            safe_print(f"   [clean up] Delete task '{task_name}' An error occurred while creating the temporary image directory: {e}")
     else:
-        safe_print(f"   [清理] 任务 '{task_name}' 的临时图片目录不存在: {task_image_dir}")
+        safe_print(f"   [clean up] Task '{task_name}' The temporary picture directory does not exist: {task_image_dir}")
 
 
 def cleanup_ai_logs(logs_dir: str, keep_days: int = 1) -> None:
@@ -138,23 +138,23 @@ def cleanup_ai_logs(logs_dir: str, keep_days: int = 1) -> None:
             if timestamp < cutoff:
                 os.remove(os.path.join(logs_dir, filename))
     except Exception as e:
-        safe_print(f"   [日志] 清理AI日志时出错: {e}")
+        safe_print(f"   [log] clean upAIError while logging: {e}")
 
 
 def encode_image_to_base64(image_path):
-    """将本地图片文件编码为 Base64 字符串。"""
+    """Encode local image files to Base64 string。"""
     if not image_path or not os.path.exists(image_path):
         return None
     try:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        safe_print(f"编码图片时出错: {e}")
+        safe_print(f"Error while encoding image: {e}")
         return None
 
 
 def validate_ai_response_format(parsed_response):
-    """验证AI响应的格式是否符合预期结构"""
+    """verifyAIWhether the response is formatted according to the expected structure"""
     required_fields = [
         "prompt_version",
         "is_recommended",
@@ -163,30 +163,30 @@ def validate_ai_response_format(parsed_response):
         "criteria_analysis"
     ]
 
-    # 检查顶层字段
+    # Check top-level fields
     for field in required_fields:
         if field not in parsed_response:
-            safe_print(f"   [AI分析] 警告：响应缺少必需字段 '{field}'")
+            safe_print(f"   [AIanalyze] Warning: Response is missing a required field '{field}'")
             return False
 
-    # 检查criteria_analysis是否为字典且不为空
+    # examinecriteria_analysisWhether it is a dictionary and not empty
     criteria_analysis = parsed_response.get("criteria_analysis", {})
     if not isinstance(criteria_analysis, dict) or not criteria_analysis:
-        safe_print("   [AI分析] 警告：criteria_analysis必须是非空字典")
+        safe_print("   [AIanalyze] warn：criteria_analysisMust be a non-empty dictionary")
         return False
 
-    # 检查seller_type字段（所有商品都需要）
+    # examineseller_typeField (required for all products）
     if "seller_type" not in criteria_analysis:
-        safe_print("   [AI分析] 警告：criteria_analysis缺少必需字段 'seller_type'")
+        safe_print("   [AIanalyze] warn：criteria_analysisMissing required field 'seller_type'")
         return False
 
-    # 检查数据类型
+    # Check data type
     if not isinstance(parsed_response.get("is_recommended"), bool):
-        safe_print("   [AI分析] 警告：is_recommended字段不是布尔类型")
+        safe_print("   [AIanalyze] warn：is_recommendedField is not of type boolean")
         return False
 
     if not isinstance(parsed_response.get("risk_tags"), list):
-        safe_print("   [AI分析] 警告：risk_tags字段不是列表类型")
+        safe_print("   [AIanalyze] warn：risk_tagsField is not a list type")
         return False
 
     return True
@@ -194,26 +194,26 @@ def validate_ai_response_format(parsed_response):
 
 @retry_on_failure(retries=3, delay=5)
 async def send_ntfy_notification(product_data, reason):
-    """当发现推荐商品时，异步发送一个高优先级的 ntfy.sh 通知。"""
+    """When a recommended product is found, a high-priority message is sent asynchronously ntfy.sh notify。"""
     if not NTFY_TOPIC_URL and not WX_BOT_URL and not (GOTIFY_URL and GOTIFY_TOKEN) and not BARK_URL and not (TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID) and not WEBHOOK_URL:
-        safe_print("警告：未在 .env 文件中配置任何通知服务 (NTFY_TOPIC_URL, WX_BOT_URL, GOTIFY_URL/TOKEN, BARK_URL, TELEGRAM_BOT_TOKEN/CHAT_ID, WEBHOOK_URL)，跳过通知。")
+        safe_print("Warning: not present .env Configure any notification services in the file (NTFY_TOPIC_URL, WX_BOT_URL, GOTIFY_URL/TOKEN, BARK_URL, TELEGRAM_BOT_TOKEN/CHAT_ID, WEBHOOK_URL)，Skip notification。")
         return
 
-    title = product_data.get('商品标题', 'N/A')
-    price = product_data.get('当前售价', 'N/A')
-    link = product_data.get('商品链接', '#')
+    title = product_data.get('Product title', 'N/A')
+    price = product_data.get('Current selling price', 'N/A')
+    link = product_data.get('Product link', '#')
     if PCURL_TO_MOBILE:
         mobile_link = convert_goofish_link(link)
-        message = f"价格: {price}\n原因: {reason}\n手机端链接: {mobile_link}\n电脑端链接: {link}"
+        message = f"price: {price}\nreason: {reason}\nMobile link: {mobile_link}\nPC link: {link}"
     else:
-        message = f"价格: {price}\n原因: {reason}\n链接: {link}"
+        message = f"price: {price}\nreason: {reason}\nLink: {link}"
 
-    notification_title = f"🚨 新推荐! {title[:30]}..."
+    notification_title = f"🚨 New recommendations! {title[:30]}..."
 
-    # --- 发送 ntfy 通知 ---
+    # --- send ntfy notify ---
     if NTFY_TOPIC_URL:
         try:
-            safe_print(f"   -> 正在发送 ntfy 通知到: {NTFY_TOPIC_URL}")
+            safe_print(f"   -> Sending ntfy Notified: {NTFY_TOPIC_URL}")
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
@@ -228,14 +228,14 @@ async def send_ntfy_notification(product_data, reason):
                     timeout=10
                 )
             )
-            safe_print("   -> ntfy 通知发送成功。")
+            safe_print("   -> ntfy Notification sent successfully。")
         except Exception as e:
-            safe_print(f"   -> 发送 ntfy 通知失败: {e}")
+            safe_print(f"   -> send ntfy Notification failed: {e}")
 
-    # --- 发送 Gotify 通知 ---
+    # --- send Gotify notify ---
     if GOTIFY_URL and GOTIFY_TOKEN:
         try:
-            safe_print(f"   -> 正在发送 Gotify 通知到: {GOTIFY_URL}")
+            safe_print(f"   -> Sending Gotify Notified: {GOTIFY_URL}")
             # Gotify uses multipart/form-data
             payload = {
                 'title': (None, notification_title),
@@ -255,32 +255,32 @@ async def send_ntfy_notification(product_data, reason):
                 )
             )
             response.raise_for_status()
-            safe_print("   -> Gotify 通知发送成功。")
+            safe_print("   -> Gotify Notification sent successfully。")
         except requests.exceptions.RequestException as e:
-            safe_print(f"   -> 发送 Gotify 通知失败: {e}")
+            safe_print(f"   -> send Gotify Notification failed: {e}")
         except Exception as e:
-            safe_print(f"   -> 发送 Gotify 通知时发生未知错误: {e}")
+            safe_print(f"   -> send Gotify An unknown error occurred while notifying: {e}")
 
-    # --- 发送 Bark 通知 ---
+    # --- send Bark notify ---
     if BARK_URL:
         try:
-            safe_print(f"   -> 正在发送 Bark 通知...")
+            safe_print(f"   -> Sending Bark notify...")
 
             bark_payload = {
                 "title": notification_title,
                 "body": message,
                 "level": "timeSensitive",
-                "group": "闲鱼监控"
+                "group": "Xianyu monitoring"
             }
 
             link_to_use = convert_goofish_link(link) if PCURL_TO_MOBILE else link
             bark_payload["url"] = link_to_use
 
             # Add icon if available
-            main_image = product_data.get('商品主图链接')
+            main_image = product_data.get('Product main image link')
             if not main_image:
                 # Fallback to image list if main image not present
-                image_list = product_data.get('商品图片列表', [])
+                image_list = product_data.get('Product picture list', [])
                 if image_list:
                     main_image = image_list[0]
 
@@ -299,32 +299,32 @@ async def send_ntfy_notification(product_data, reason):
                 )
             )
             response.raise_for_status()
-            safe_print("   -> Bark 通知发送成功。")
+            safe_print("   -> Bark Notification sent successfully。")
         except requests.exceptions.RequestException as e:
-            safe_print(f"   -> 发送 Bark 通知失败: {e}")
+            safe_print(f"   -> send Bark Notification failed: {e}")
         except Exception as e:
-            safe_print(f"   -> 发送 Bark 通知时发生未知错误: {e}")
+            safe_print(f"   -> send Bark An unknown error occurred while notifying: {e}")
 
-    # --- 发送企业微信机器人通知 ---
+    # --- Send enterprise WeChat robot notifications ---
     if WX_BOT_URL:
-        # 将消息转换为Markdown格式，使链接可点击
+        # Convert message toMarkdownFormat to make the link clickable
         lines = message.split('\n')
         markdown_content = f"## {notification_title}\n\n"
 
         for line in lines:
-            if line.startswith('手机端链接:') or line.startswith('电脑端链接:') or line.startswith('链接:'):
-                # 提取链接部分并转换为Markdown超链接
+            if line.startswith('Mobile link:') or line.startswith('PC link:') or line.startswith('Link:'):
+                # Extract the link part and convert toMarkdownhyperlink
                 if ':' in line:
                     label, url = line.split(':', 1)
                     url = url.strip()
                     if url and url != '#':
                         markdown_content += f"- **{label}:** [{url}]({url})\n"
                     else:
-                        markdown_content += f"- **{label}:** 暂无链接\n"
+                        markdown_content += f"- **{label}:** No link yet\n"
                 else:
                     markdown_content += f"- {line}\n"
             else:
-                # 其他行保持原样
+                # Leave other lines as is
                 if line:
                     markdown_content += f"- {line}\n"
                 else:
@@ -338,7 +338,7 @@ async def send_ntfy_notification(product_data, reason):
         }
 
         try:
-            safe_print(f"   -> 正在发送企业微信通知到: {WX_BOT_URL}")
+            safe_print(f"   -> Sending corporate WeChat notification to: {WX_BOT_URL}")
             headers = { "Content-Type": "application/json" }
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(
@@ -352,33 +352,33 @@ async def send_ntfy_notification(product_data, reason):
             )
             response.raise_for_status()
             result = response.json()
-            safe_print(f"   -> 企业微信通知发送成功。响应: {result}")
+            safe_print(f"   -> The corporate WeChat notification was sent successfully. response: {result}")
         except requests.exceptions.RequestException as e:
-            safe_print(f"   -> 发送企业微信通知失败: {e}")
+            safe_print(f"   -> Failed to send corporate WeChat notification: {e}")
         except Exception as e:
-            safe_print(f"   -> 发送企业微信通知时发生未知错误: {e}")
+            safe_print(f"   -> An unknown error occurred while sending corporate WeChat notifications: {e}")
 
-    # --- 发送 Telegram 机器人通知 ---
+    # --- send Telegram Bot notifications ---
     if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
         try:
-            safe_print(f"   -> 正在发送 Telegram 通知...")
+            safe_print(f"   -> Sending Telegram notify...")
             
-            # 构建 Telegram API URL
+            # build Telegram API URL
             telegram_api_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             
-            # 格式化消息内容
-            telegram_message = f"🚨 <b>新推荐!</b>\n\n"
+            # Format message content
+            telegram_message = f"🚨 <b>New recommendations!</b>\n\n"
             telegram_message += f"<b>{title[:50]}...</b>\n\n"
-            telegram_message += f"💰 价格: {price}\n"
-            telegram_message += f"📝 原因: {reason}\n"
+            telegram_message += f"💰 price: {price}\n"
+            telegram_message += f"📝 reason: {reason}\n"
             
-            # 添加链接
+            # Add link
             if PCURL_TO_MOBILE:
                 mobile_link = convert_goofish_link(link)
-                telegram_message += f"📱 <a href='{mobile_link}'>手机端链接</a>\n"
-            telegram_message += f"💻 <a href='{link}'>电脑端链接</a>"
+                telegram_message += f"📱 <a href='{mobile_link}'>Mobile link</a>\n"
+            telegram_message += f"💻 <a href='{link}'>PC link</a>"
             
-            # 构建请求负载
+            # Build request payload
             telegram_payload = {
                 "chat_id": TELEGRAM_CHAT_ID,
                 "text": telegram_message,
@@ -400,55 +400,55 @@ async def send_ntfy_notification(product_data, reason):
             response.raise_for_status()
             result = response.json()
             if result.get("ok"):
-                safe_print("   -> Telegram 通知发送成功。")
+                safe_print("   -> Telegram Notification sent successfully。")
             else:
-                safe_print(f"   -> Telegram 通知发送失败: {result.get('description', '未知错误')}")
+                safe_print(f"   -> Telegram Notification failed to send: {result.get('description', 'unknown error')}")
         except requests.exceptions.RequestException as e:
-            safe_print(f"   -> 发送 Telegram 通知失败: {e}")
+            safe_print(f"   -> send Telegram Notification failed: {e}")
         except Exception as e:
-            safe_print(f"   -> 发送 Telegram 通知时发生未知错误: {e}")
+            safe_print(f"   -> send Telegram An unknown error occurred while notifying: {e}")
 
-    # --- 发送通用 Webhook 通知 ---
+    # --- send universal Webhook notify ---
     if WEBHOOK_URL:
         try:
-            safe_print(f"   -> 正在发送通用 Webhook 通知到: {WEBHOOK_URL}")
+            safe_print(f"   -> Sending general Webhook Notified: {WEBHOOK_URL}")
 
-            # 替换占位符
+            # replace placeholder
             def replace_placeholders(template_str):
                 if not template_str:
                     return ""
-                # 对内容进行JSON转义，避免换行符和特殊字符破坏JSON格式
-                safe_title = json.dumps(notification_title, ensure_ascii=False)[1:-1]  # 去掉外层引号
-                safe_content = json.dumps(message, ensure_ascii=False)[1:-1]  # 去掉外层引号
-                # 同时支持旧的${title}${content}和新的{{title}}{{content}}格式
+                # perform contentJSONEscape to avoid breaking newlines and special charactersJSONFormat
+                safe_title = json.dumps(notification_title, ensure_ascii=False)[1:-1]  # Remove outer quotes
+                safe_content = json.dumps(message, ensure_ascii=False)[1:-1]  # Remove outer quotes
+                # Also supports old${title}${content}and new{{title}}{{content}}Format
                 return template_str.replace("${title}", safe_title).replace("${content}", safe_content).replace("{{title}}", safe_title).replace("{{content}}", safe_content)
 
-            # 准备请求头
+            # Prepare request header
             headers = {}
             if WEBHOOK_HEADERS:
                 try:
                     headers = json.loads(WEBHOOK_HEADERS)
                 except json.JSONDecodeError:
-                    safe_print(f"   -> [警告] Webhook 请求头格式错误，请检查 .env 中的 WEBHOOK_HEADERS。")
+                    safe_print(f"   -> [warn] Webhook The request header format is wrong, please check .env in WEBHOOK_HEADERS。")
 
             loop = asyncio.get_running_loop()
 
             if WEBHOOK_METHOD == "GET":
-                # 准备查询参数
+                # Prepare query parameters
                 final_url = WEBHOOK_URL
                 if WEBHOOK_QUERY_PARAMETERS:
                     try:
                         params_str = replace_placeholders(WEBHOOK_QUERY_PARAMETERS)
                         params = json.loads(params_str)
 
-                        # 解析原始URL并追加新参数
+                        # parse rawURLand append new parameters
                         url_parts = list(urlparse(final_url))
                         query = dict(parse_qsl(url_parts[4]))
                         query.update(params)
                         url_parts[4] = urlencode(query)
                         final_url = urlunparse(url_parts)
                     except json.JSONDecodeError:
-                        safe_print(f"   -> [警告] Webhook 查询参数格式错误，请检查 .env 中的 WEBHOOK_QUERY_PARAMETERS。")
+                        safe_print(f"   -> [warn] Webhook Query parameter format is wrong, please check .env in WEBHOOK_QUERY_PARAMETERS。")
 
                 response = await loop.run_in_executor(
                     None,
@@ -456,23 +456,23 @@ async def send_ntfy_notification(product_data, reason):
                 )
 
             elif WEBHOOK_METHOD == "POST":
-                # 准备URL（处理查询参数）
+                # PrepareURL（Handle query parameters）
                 final_url = WEBHOOK_URL
                 if WEBHOOK_QUERY_PARAMETERS:
                     try:
                         params_str = replace_placeholders(WEBHOOK_QUERY_PARAMETERS)
                         params = json.loads(params_str)
 
-                        # 解析原始URL并追加新参数
+                        # parse rawURLand append new parameters
                         url_parts = list(urlparse(final_url))
                         query = dict(parse_qsl(url_parts[4]))
                         query.update(params)
                         url_parts[4] = urlencode(query)
                         final_url = urlunparse(url_parts)
                     except json.JSONDecodeError:
-                        safe_print(f"   -> [警告] Webhook 查询参数格式错误，请检查 .env 中的 WEBHOOK_QUERY_PARAMETERS。")
+                        safe_print(f"   -> [warn] Webhook Query parameter format is wrong, please check .env in WEBHOOK_QUERY_PARAMETERS。")
 
-                # 准备请求体
+                # Prepare request body
                 data = None
                 json_payload = None
 
@@ -484,46 +484,46 @@ async def send_ntfy_notification(product_data, reason):
                             if 'Content-Type' not in headers and 'content-type' not in headers:
                                 headers['Content-Type'] = 'application/json; charset=utf-8'
                         elif WEBHOOK_CONTENT_TYPE == "FORM":
-                            data = json.loads(body_str)  # requests会处理url-encoding
+                            data = json.loads(body_str)  # requestsWill handle iturl-encoding
                             if 'Content-Type' not in headers and 'content-type' not in headers:
                                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
                         else:
-                            safe_print(f"   -> [警告] 不支持的 WEBHOOK_CONTENT_TYPE: {WEBHOOK_CONTENT_TYPE}。")
+                            safe_print(f"   -> [warn] Not supported WEBHOOK_CONTENT_TYPE: {WEBHOOK_CONTENT_TYPE}。")
                     except json.JSONDecodeError:
-                        safe_print(f"   -> [警告] Webhook 请求体格式错误，请检查 .env 中的 WEBHOOK_BODY。")
+                        safe_print(f"   -> [warn] Webhook The request body format is wrong, please check .env in WEBHOOK_BODY。")
 
                 response = await loop.run_in_executor(
                     None,
                     lambda: requests.post(final_url, headers=headers, json=json_payload, data=data, timeout=15)
                 )
             else:
-                safe_print(f"   -> [警告] 不支持的 WEBHOOK_METHOD: {WEBHOOK_METHOD}。")
+                safe_print(f"   -> [warn] Not supported WEBHOOK_METHOD: {WEBHOOK_METHOD}。")
                 return
 
             response.raise_for_status()
-            safe_print(f"   -> Webhook 通知发送成功。状态码: {response.status_code}")
+            safe_print(f"   -> Webhook Notification sent successfully. status code: {response.status_code}")
 
         except requests.exceptions.RequestException as e:
-            safe_print(f"   -> 发送 Webhook 通知失败: {e}")
+            safe_print(f"   -> send Webhook Notification failed: {e}")
         except Exception as e:
-            safe_print(f"   -> 发送 Webhook 通知时发生未知错误: {e}")
+            safe_print(f"   -> send Webhook An unknown error occurred while notifying: {e}")
 
 
 @retry_on_failure(retries=3, delay=5)
 async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
-    """将完整的商品JSON数据和所有图片发送给 AI 进行分析（异步）。"""
+    """complete productJSONData and all images are sent to AI Perform analysis (asynchronous）。"""
     if not client:
-        safe_print("   [AI分析] 错误：AI客户端未初始化，跳过分析。")
+        safe_print("   [AIanalyze] mistake：AIThe client is not initialized and analysis is skipped.。")
         return None
 
-    item_info = product_data.get('商品信息', {})
-    product_id = item_info.get('商品ID', 'N/A')
+    item_info = product_data.get('Product information', {})
+    product_id = item_info.get('commodityID', 'N/A')
 
-    safe_print(f"\n   [AI分析] 开始分析商品 #{product_id} (含 {len(image_paths or [])} 张图片)...")
-    safe_print(f"   [AI分析] 标题: {item_info.get('商品标题', '无')}")
+    safe_print(f"\n   [AIanalyze] Start analyzing products #{product_id} (Contains {len(image_paths or [])} pictures)...")
+    safe_print(f"   [AIanalyze] title: {item_info.get('Product title', 'none')}")
 
     if not prompt_text:
-        safe_print("   [AI分析] 错误：未提供AI分析所需的prompt文本。")
+        safe_print("   [AIanalyze] Error: Not providedAIrequired for analysisprompttext。")
         return None
 
     product_details_json = json.dumps(product_data, ensure_ascii=False, indent=2)
@@ -533,11 +533,11 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
         safe_print("\n--- [AI DEBUG] ---")
         safe_print("--- PRODUCT DATA (JSON) ---")
         safe_print(product_details_json)
-        safe_print("--- PROMPT TEXT (完整内容) ---")
+        safe_print("--- PROMPT TEXT (full content) ---")
         safe_print(prompt_text)
         safe_print("-------------------\n")
 
-    combined_text_prompt = f"""请基于你的专业知识和我的要求，分析以下完整的商品JSON数据：
+    combined_text_prompt = f"""Please analyze the complete offer below based on your expertise and my requirementsJSONdata：
 
 ```json
     {product_details_json}
@@ -547,7 +547,7 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
 """
     user_content_list = []
 
-    # 先添加图片内容
+    # Add image content first
     if image_paths:
         for path in image_paths:
             base64_image = encode_image_to_base64(path)
@@ -555,52 +555,52 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                 user_content_list.append(
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}})
 
-    # 再添加文本内容
+    # Add text content
     user_content_list.append({"type": "text", "text": combined_text_prompt})
 
     messages = [{"role": "user", "content": user_content_list}]
 
-    # 保存最终传输内容到日志文件
+    # Save final transfer content to log file
     try:
-        # 创建logs文件夹
+        # createlogsfolder
         logs_dir = os.path.join("logs", "ai")
         os.makedirs(logs_dir, exist_ok=True)
         cleanup_ai_logs(logs_dir, keep_days=1)
 
-        # 生成日志文件名（当前时间）
+        # Generate log file name (current time）
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"{current_time}.log"
         log_filepath = os.path.join(logs_dir, log_filename)
 
-        task_name = product_data.get("任务名称") or product_data.get("任务名") or "unknown"
+        task_name = product_data.get("Task name") or product_data.get("Task name") or "unknown"
         log_payload = {
             "timestamp": current_time,
             "task_name": task_name,
             "product_id": product_id,
-            "title": item_info.get("商品标题", "无"),
+            "title": item_info.get("Product title", "none"),
             "image_count": len(image_paths or []),
         }
         log_content = json.dumps(log_payload, ensure_ascii=False)
 
-        # 写入日志文件
+        # Write to log file
         with open(log_filepath, 'w', encoding='utf-8') as f:
             f.write(log_content)
 
-        safe_print(f"   [日志] AI分析请求已保存到: {log_filepath}")
+        safe_print(f"   [log] AIAnalysis request saved to: {log_filepath}")
 
     except Exception as e:
-        safe_print(f"   [日志] 保存AI分析日志时出错: {e}")
+        safe_print(f"   [log] saveAIAn error occurred while parsing the log: {e}")
 
-    # 增强的AI调用，包含更严格的格式控制和重试机制
+    # enhancedAICall, including stricter format control and retry mechanism
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            # 根据重试次数调整参数
-            current_temperature = 0.1 if attempt == 0 else 0.05  # 重试时使用更低的温度
+            # Adjust parameters based on the number of retries
+            current_temperature = 0.1 if attempt == 0 else 0.05  # Use lower temperature when retrying
 
             from src.config import get_ai_request_params
             
-            # 构建请求参数，根据ENABLE_RESPONSE_FORMAT决定是否使用response_format
+            # Build request parameters, based onENABLE_RESPONSE_FORMATdecide whether to useresponse_format
             request_params = {
                 "model": MODEL_NAME,
                 "messages": messages,
@@ -608,7 +608,7 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                 "max_tokens": 4000
             }
             
-            # 只有启用response_format时才添加该参数
+            # Only enableresponse_formatThis parameter is added only when
             if ENABLE_RESPONSE_FORMAT:
                 request_params["response_format"] = {"type": "json_object"}
             
@@ -616,40 +616,40 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                 **get_ai_request_params(**request_params)
             )
 
-            # 兼容不同API响应格式，检查response是否为字符串
+            # Compatible with differentAPIresponse format, checkresponseWhether it is a string
             if hasattr(response, 'choices'):
                 ai_response_content = response.choices[0].message.content
             else:
-                # 如果response是字符串，则直接使用
+                # ifresponseis a string, use it directly
                 ai_response_content = response
 
             if AI_DEBUG_MODE:
-                safe_print(f"\n--- [AI DEBUG] 第{attempt + 1}次尝试 ---")
+                safe_print(f"\n--- [AI DEBUG] No.{attempt + 1}attempts ---")
                 safe_print("--- RAW AI RESPONSE ---")
                 safe_print(ai_response_content)
                 safe_print("---------------------\n")
 
-            # 尝试直接解析JSON
+            # Try to parse directlyJSON
             try:
                 parsed_response = json.loads(ai_response_content)
 
-                # 验证响应格式
+                # Verify response format
                 if validate_ai_response_format(parsed_response):
-                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试成功，响应格式验证通过")
+                    safe_print(f"   [AIanalyze] No.{attempt + 1}Successful attempts, response format verification passed")
                     return parsed_response
                 else:
-                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试格式验证失败")
+                    safe_print(f"   [AIanalyze] No.{attempt + 1}Format validation failed in attempts")
                     if attempt < max_retries - 1:
-                        safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                        safe_print(f"   [AIanalyze] Prepare for Chapter{attempt + 2}retries...")
                         continue
                     else:
-                        safe_print("   [AI分析] 所有重试完成，使用最后一次结果")
+                        safe_print("   [AIanalyze] All retries are completed and the last result is used")
                         return parsed_response
 
             except json.JSONDecodeError:
-                safe_print(f"   [AI分析] 第{attempt + 1}次尝试JSON解析失败，尝试清理响应内容...")
+                safe_print(f"   [AIanalyze] No.{attempt + 1}attemptsJSONParsing failed, try to clean response content...")
 
-                # 清理可能的Markdown代码块标记
+                # Clean up possibleMarkdowncode block tag
                 cleaned_content = ai_response_content.strip()
                 if cleaned_content.startswith('```json'):
                     cleaned_content = cleaned_content[7:]
@@ -659,7 +659,7 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                     cleaned_content = cleaned_content[:-3]
                 cleaned_content = cleaned_content.strip()
 
-                # 寻找JSON对象边界
+                # looking forJSONobject bounds
                 json_start_index = cleaned_content.find('{')
                 json_end_index = cleaned_content.rfind('}')
 
@@ -668,34 +668,34 @@ async def get_ai_analysis(product_data, image_paths=None, prompt_text=""):
                     try:
                         parsed_response = json.loads(json_str)
                         if validate_ai_response_format(parsed_response):
-                            safe_print(f"   [AI分析] 第{attempt + 1}次尝试清理后成功")
+                            safe_print(f"   [AIanalyze] No.{attempt + 1}Cleanup succeeded after attempts")
                             return parsed_response
                         else:
                             if attempt < max_retries - 1:
-                                safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                                safe_print(f"   [AIanalyze] Prepare for Chapter{attempt + 2}retries...")
                                 continue
                             else:
-                                safe_print("   [AI分析] 所有重试完成，使用清理后的结果")
+                                safe_print("   [AIanalyze] All retries complete, use cleaned results")
                                 return parsed_response
                     except json.JSONDecodeError as e:
-                        safe_print(f"   [AI分析] 第{attempt + 1}次尝试清理后JSON解析仍然失败: {e}")
+                        safe_print(f"   [AIanalyze] No.{attempt + 1}After attempts to cleanJSONParsing still fails: {e}")
                         if attempt < max_retries - 1:
-                            safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                            safe_print(f"   [AIanalyze] Prepare for Chapter{attempt + 2}retries...")
                             continue
                         else:
                             raise e
                 else:
-                    safe_print(f"   [AI分析] 第{attempt + 1}次尝试无法在响应中找到有效的JSON对象")
+                    safe_print(f"   [AIanalyze] No.{attempt + 1}attempts failed to find a validJSONobject")
                     if attempt < max_retries - 1:
-                        safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                        safe_print(f"   [AIanalyze] Prepare for Chapter{attempt + 2}retries...")
                         continue
                     else:
                         raise json.JSONDecodeError("No valid JSON object found", ai_response_content, 0)
 
         except Exception as e:
-            safe_print(f"   [AI分析] 第{attempt + 1}次尝试AI调用失败: {e}")
+            safe_print(f"   [AIanalyze] No.{attempt + 1}attemptsAICall failed: {e}")
             if attempt < max_retries - 1:
-                safe_print(f"   [AI分析] 准备第{attempt + 2}次重试...")
+                safe_print(f"   [AIanalyze] Prepare for Chapter{attempt + 2}retries...")
                 continue
             else:
                 raise e

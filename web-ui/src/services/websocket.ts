@@ -8,15 +8,15 @@ class WebSocketService {
   private shouldConnect = false;
 
   constructor() {
-    // 延迟连接，等待认证完成
-    // 只有在已登录时才尝试连接
+    // Delay the connection and wait for authentication to complete
+    // Only try to connect if you are logged in
     if (localStorage.getItem('auth_logged_in') === 'true') {
       this.connect();
     }
   }
 
   public start() {
-    // 手动启动 WebSocket 连接
+    // Manual start WebSocket connect
     this.shouldConnect = true;
     if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
       this.connect();
@@ -24,7 +24,7 @@ class WebSocketService {
   }
 
   public stop() {
-    // 停止 WebSocket 连接
+    // stop WebSocket connect
     this.shouldConnect = false;
     if (this.ws) {
       this.ws.close();
@@ -66,7 +66,7 @@ class WebSocketService {
         this.isConnected = false;
         this.emit('disconnected', { isConnected: false });
       }
-      // 只有在 shouldConnect 为 true 或已登录时才重连
+      // only in shouldConnect for true Or reconnect only when logged in
       if (this.shouldConnect || localStorage.getItem('auth_logged_in') === 'true') {
         setTimeout(() => this.connect(), this.reconnectInterval);
       }

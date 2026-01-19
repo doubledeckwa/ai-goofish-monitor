@@ -40,11 +40,11 @@ const options = computed(() => {
 })
 
 const selectedLabel = computed(() => {
-  if (!props.isReady) return '加载任务名称...'
-  if (options.value.length === 0) return '暂无结果，请先运行任务'
-  if (!props.selectedFile) return '请选择任务结果'
+  if (!props.isReady) return 'Load task name...'
+  if (options.value.length === 0) return 'No results yet, please run the task first'
+  if (!props.selectedFile) return 'Please select task results'
   const match = options.value.find((option) => option.value === props.selectedFile)
-  return match ? match.label : '任务名称：未命名'
+  return match ? match.label : 'Task name: Unnamed'
 })
 
 const labelClass = computed(() => {
@@ -94,9 +94,9 @@ const emit = defineEmits<{
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="crawl_time">按爬取时间</SelectItem>
-        <SelectItem value="publish_time">按发布时间</SelectItem>
-        <SelectItem value="price">按价格</SelectItem>
+        <SelectItem value="crawl_time">By crawl time</SelectItem>
+        <SelectItem value="publish_time">by release time</SelectItem>
+        <SelectItem value="price">by price</SelectItem>
       </SelectContent>
     </Select>
 
@@ -108,8 +108,8 @@ const emit = defineEmits<{
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="desc">降序</SelectItem>
-        <SelectItem value="asc">升序</SelectItem>
+        <SelectItem value="desc">descending order</SelectItem>
+        <SelectItem value="asc">Ascending order</SelectItem>
       </SelectContent>
     </Select>
 
@@ -119,11 +119,11 @@ const emit = defineEmits<{
         :model-value="props.recommendedOnly"
         @update:modelValue="(value) => emit('update:recommendedOnly', value === true)"
       />
-      <Label for="recommended-only" class="cursor-pointer">仅看AI推荐</Label>
+      <Label for="recommended-only" class="cursor-pointer">Just watchAIrecommend</Label>
     </div>
 
     <Button @click="emit('refresh')" :disabled="props.isLoading">
-      刷新
+      refresh
     </Button>
 
     <Button
@@ -131,7 +131,7 @@ const emit = defineEmits<{
       @click="emit('delete')"
       :disabled="props.isLoading || !props.selectedFile"
     >
-      删除结果
+      Delete results
     </Button>
   </div>
 </template>

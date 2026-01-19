@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "task_name": "applewatch S10",
+    "enabled": true,
+    "keyword": "applewatch S10",
+    "description": "90% new, complete with charging cable packaging box，No obvious bumps, the seller has excellent credit",
+    "max_pages": 10,
+    "personal_only": true,
+    "min_price": "8000",
+    "max_price": "2000",
+    "cron": null,
+    "ai_prompt_base_file": "prompts/base_prompt.txt",
+    "ai_prompt_criteria_file": "prompts/applewatch_s10_criteria.txt",
+    "account_state_file": "state/acc1.json",
+    "free_shipping": true,
+    "new_publish_option": "14within days",
+    "region": "Jiangsu/Nanjing/All Nanjing",
+    "is_running": false
+  }
+]

@@ -12,7 +12,7 @@ import { RouterLink } from 'vue-router'
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
-            任务管理
+            task management
           </RouterLink>
         </li>
         <li>
@@ -21,7 +21,7 @@ import { RouterLink } from 'vue-router'
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
-            账号管理
+            Account management
           </RouterLink>
         </li>
         <li>
@@ -30,7 +30,7 @@ import { RouterLink } from 'vue-router'
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
-            结果查看
+            View results
           </RouterLink>
         </li>
         <li>
@@ -39,7 +39,7 @@ import { RouterLink } from 'vue-router'
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
-            运行日志
+            Run log
           </RouterLink>
         </li>
         <li>
@@ -48,7 +48,7 @@ import { RouterLink } from 'vue-router'
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
-            系统设置
+            System settings
           </RouterLink>
         </li>
       </ul>

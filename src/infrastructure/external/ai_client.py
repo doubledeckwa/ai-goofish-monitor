@@ -1,6 +1,6 @@
 """
-AI 客户端封装
-提供统一的 AI 调用接口
+AI client encapsulation
+Provide a unified AI Call interface
 """
 import os
 import json
@@ -14,7 +14,7 @@ from src.infrastructure.config.env_manager import env_manager
 
 
 class AIClient:
-    """AI 客户端封装"""
+    """AI client encapsulation"""
 
     def __init__(self):
         self.settings: Optional[AISettings] = None
@@ -30,14 +30,14 @@ class AIClient:
         self.client = self._initialize_client()
 
     def _initialize_client(self) -> Optional[AsyncOpenAI]:
-        """初始化 OpenAI 客户端"""
+        """initialization OpenAI client"""
         if not self.settings or not self.settings.is_configured():
-            print("警告：AI 配置不完整，AI 功能将不可用")
+            print("warn：AI Incomplete configuration，AI Features will be unavailable")
             return None
 
         try:
             if self.settings.proxy_url:
-                print(f"正在为 AI 请求使用代理: {self.settings.proxy_url}")
+                print(f"working on AI Request to use proxy: {self.settings.proxy_url}")
                 os.environ['HTTP_PROXY'] = self.settings.proxy_url
                 os.environ['HTTPS_PROXY'] = self.settings.proxy_url
 
@@ -46,23 +46,23 @@ class AIClient:
                 base_url=self.settings.base_url
             )
         except Exception as e:
-            print(f"初始化 AI 客户端失败: {e}")
+            print(f"initialization AI Client failed: {e}")
             return None
 
     def is_available(self) -> bool:
-        """检查 AI 客户端是否可用"""
+        """examine AI Is the client available?"""
         return self.client is not None
 
     @staticmethod
     def encode_image(image_path: str) -> Optional[str]:
-        """将图片编码为 Base64"""
+        """Encode the image as Base64"""
         if not image_path or not os.path.exists(image_path):
             return None
         try:
             with open(image_path, "rb") as f:
                 return base64.b64encode(f.read()).decode('utf-8')
         except Exception as e:
-            print(f"编码图片失败: {e}")
+            print(f"Failed to encode image: {e}")
             return None
 
     async def analyze(
@@ -72,18 +72,18 @@ class AIClient:
         prompt_text: str
     ) -> Optional[Dict]:
         """
-        分析商品数据
+        Analyze product data
 
         Args:
-            product_data: 商品数据
-            image_paths: 图片路径列表
-            prompt_text: 分析提示词
+            product_data: Product data
+            image_paths: Image path list
+            prompt_text: Analyze prompt words
 
         Returns:
-            分析结果
+            Analyze results
         """
         if not self.is_available():
-            print("AI 客户端不可用")
+            print("AI Client is unavailable")
             return None
 
         try:
@@ -91,13 +91,13 @@ class AIClient:
             response = await self._call_ai(messages)
             return self._parse_response(response)
         except Exception as e:
-            print(f"AI 分析失败: {e}")
+            print(f"AI Analysis failed: {e}")
             return None
 
     def _build_messages(self, product_data: Dict, image_paths: List[str], prompt_text: str) -> List[Dict]:
-        """构建 AI 消息"""
+        """build AI information"""
         product_json = json.dumps(product_data, ensure_ascii=False, indent=2)
-        text_prompt = f"""请基于你的专业知识和我的要求，分析以下完整的商品JSON数据：
+        text_prompt = f"""Please analyze the complete offer below based on your expertise and my requirementsJSONdata：
 
 ```json
 {product_json}
@@ -107,7 +107,7 @@ class AIClient:
 """
         user_content = []
 
-        # 先添加图片
+        # Add pictures first
         for path in image_paths:
             base64_img = self.encode_image(path)
             if base64_img:
@@ -116,13 +116,13 @@ class AIClient:
                     "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}
                 })
 
-        # 再添加文本
+        # Add more text
         user_content.append({"type": "text", "text": text_prompt})
 
         return [{"role": "user", "content": user_content}]
 
     async def _call_ai(self, messages: List[Dict]) -> str:
-        """调用 AI API"""
+        """call AI API"""
         request_params = {
             "model": self.settings.model_name,
             "messages": messages,
@@ -130,7 +130,7 @@ class AIClient:
             "max_tokens": 4000
         }
 
-        # 根据配置添加可选参数
+        # Add optional parameters based on configuration
         if self.settings.enable_response_format:
             request_params["response_format"] = {"type": "json_object"}
 
@@ -139,18 +139,18 @@ class AIClient:
 
         response = await self.client.chat.completions.create(**request_params)
 
-        # 兼容不同 API 响应格式
+        # Compatible with different API response format
         if hasattr(response, 'choices'):
             return response.choices[0].message.content
         return response
 
     def _parse_response(self, response_text: str) -> Optional[Dict]:
-        """解析 AI 响应"""
+        """parse AI response"""
         try:
-            # 直接解析 JSON
+            # Direct analysis JSON
             return json.loads(response_text)
         except json.JSONDecodeError:
-            # 清理 Markdown 代码块标记
+            # clean up Markdown code block tag
             cleaned = response_text.strip()
             if cleaned.startswith('```json'):
                 cleaned = cleaned[7:]
@@ -160,7 +160,7 @@ class AIClient:
                 cleaned = cleaned[:-3]
             cleaned = cleaned.strip()
 
-            # 提取 JSON 对象
+            # extract JSON object
             start = cleaned.find('{')
             end = cleaned.rfind('}')
             if start != -1 and end != -1 and end > start:
@@ -170,5 +170,5 @@ class AIClient:
                 except json.JSONDecodeError:
                     pass
 
-            print(f"无法解析 AI 响应: {response_text[:100]}")
+            print(f"Unable to parse AI response: {response_text[:100]}")
             return None

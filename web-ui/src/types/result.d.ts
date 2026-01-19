@@ -1,37 +1,37 @@
 // Based on the data structure from web_server.py and scraper.py
 
 export interface ProductInfo {
-  "商品标题": string;
-  "当前售价": string;
-  "商品原价"?: string;
-  "“想要”人数"?: string | number;
-  "商品标签"?: string[];
-  "发货地区"?: string;
-  "卖家昵称"?: string;
-  "商品链接": string;
-  "发布时间"?: string;
-  "商品ID": string;
-  "商品图片列表"?: string[];
-  "商品主图链接"?: string;
-  "浏览量"?: string | number;
+  "Product title": string;
+  "Current selling price": string;
+  "Product original price"?: string;
+  want_number_of_people?: string | number;
+  "Product tag"?: string[];
+  "Shipping area"?: string;
+  "Seller nickname"?: string;
+  "Product link": string;
+  "Release time"?: string;
+  "commodityID": string;
+  "Product picture list"?: string[];
+  "Product main image link"?: string;
+  "Views"?: string | number;
 }
 
 export interface SellerInfo {
-  "卖家昵称"?: string;
-  "卖家头像链接"?: string;
-  "卖家个性签名"?: string;
-  "卖家在售/已售商品数"?: string;
-  "卖家收到的评价总数"?: string;
-  "卖家信用等级"?: string;
-  "买家信用等级"?: string;
-  "卖家芝麻信用"?: string;
-  "卖家注册时长"?: string;
-  "作为卖家的好评数"?: string;
-  "作为卖家的好评率"?: string;
-  "作为买家的好评数"?: string;
-  "作为买家的好评率"?: string;
-  "卖家发布的商品列表"?: any[]; // Define more strictly if needed
-  "卖家收到的评价列表"?: any[]; // Define more strictly if needed
+  "Seller nickname"?: string;
+  "Seller avatar link"?: string;
+  "Seller's personalized signature"?: string;
+  "Seller is selling/Number of items sold"?: string;
+  "The total number of reviews the seller has received"?: string;
+  "Seller credit rating"?: string;
+  "Buyer credit rating"?: string;
+  "Seller Sesame Credit"?: string;
+  "Seller registration time"?: string;
+  "Number of positive reviews as a seller"?: string;
+  "Positive rating as a seller"?: string;
+  "Number of positive reviews as a buyer"?: string;
+  "Positive rating as a buyer"?: string;
+  "Product list posted by seller"?: any[]; // Define more strictly if needed
+  "List of reviews received by the seller"?: any[]; // Define more strictly if needed
 }
 
 export interface AiAnalysis {
@@ -44,10 +44,10 @@ export interface AiAnalysis {
 }
 
 export interface ResultItem {
-  "爬取时间": string;
-  "搜索关键字": string;
-  "任务名称": string;
-  "商品信息": ProductInfo;
-  "卖家信息": SellerInfo;
+  "Crawl time": string;
+  "Search keywords": string;
+  "Task name": string;
+  "Product information": ProductInfo;
+  "Seller information": SellerInfo;
   ai_analysis: AiAnalysis;
 }

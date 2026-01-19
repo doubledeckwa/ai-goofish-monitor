@@ -1,5 +1,5 @@
 """
-Bark 通知客户端
+Bark Notify client
 """
 import asyncio
 import requests
@@ -8,14 +8,14 @@ from .base import NotificationClient
 
 
 class BarkClient(NotificationClient):
-    """Bark 通知客户端"""
+    """Bark Notify client"""
 
     def __init__(self, bark_url: str = None):
         super().__init__(enabled=bool(bark_url))
         self.bark_url = bark_url
 
     async def send(self, product_data: Dict, reason: str) -> bool:
-        """发送 Bark 通知"""
+        """send Bark notify"""
         if not self.is_enabled():
             return False
 
@@ -23,17 +23,17 @@ class BarkClient(NotificationClient):
             msg_data = self._format_message(product_data, reason)
 
             bark_payload = {
-                "title": f"🚨 新推荐! {msg_data['title'][:30]}...",
-                "body": f"价格: {msg_data['price']}\n原因: {msg_data['reason']}",
+                "title": f"🚨 New recommendations! {msg_data['title'][:30]}...",
+                "body": f"price: {msg_data['price']}\nreason: {msg_data['reason']}",
                 "url": msg_data['link'],
                 "level": "timeSensitive",
-                "group": "闲鱼监控"
+                "group": "Xianyu monitoring"
             }
 
-            # 添加商品主图
-            main_image = product_data.get('商品主图链接')
+            # Add product main image
+            main_image = product_data.get('Product main image link')
             if not main_image:
-                image_list = product_data.get('商品图片列表', [])
+                image_list = product_data.get('Product picture list', [])
                 if image_list:
                     main_image = image_list[0]
 
@@ -54,5 +54,5 @@ class BarkClient(NotificationClient):
             response.raise_for_status()
             return True
         except Exception as e:
-            print(f"Bark 通知发送失败: {e}")
+            print(f"Bark Notification failed to send: {e}")
             return False

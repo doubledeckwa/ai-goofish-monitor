@@ -174,7 +174,7 @@ export function useResults() {
       const taskName = taskNameByKeyword.value[keyword]
       return {
         value: file,
-        label: `任务名称：${taskName || '未命名'}`,
+        label: `Task name：${taskName || 'Unnamed'}`,
       }
     })
   )

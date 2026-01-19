@@ -1,6 +1,6 @@
 """
-FastAPI 依赖注入
-提供服务实例的创建和管理
+FastAPI dependency injection
+Provides creation and management of service instances
 """
 from fastapi import Depends
 from src.services.task_service import TaskService
@@ -15,25 +15,25 @@ from src.infrastructure.external.notification_clients.telegram_client import Tel
 from src.infrastructure.config.settings import notification_settings
 
 
-# 全局 ProcessService 实例（将在 app.py 中设置）
+# overall situation ProcessService instance (will be in app.py Medium settings）
 _process_service_instance = None
 
 
 def set_process_service(service: ProcessService):
-    """设置全局 ProcessService 实例"""
+    """Set global ProcessService Example"""
     global _process_service_instance
     _process_service_instance = service
 
 
-# 服务依赖注入
+# Service dependency injection
 def get_task_service() -> TaskService:
-    """获取任务管理服务实例"""
+    """Get task management service instance"""
     repository = JsonTaskRepository()
     return TaskService(repository)
 
 
 def get_notification_service() -> NotificationService:
-    """获取通知服务实例"""
+    """Get notification service instance"""
     clients = [
         NtfyClient(notification_settings.ntfy_topic_url),
         BarkClient(notification_settings.bark_url),
@@ -46,13 +46,13 @@ def get_notification_service() -> NotificationService:
 
 
 def get_ai_service() -> AIAnalysisService:
-    """获取AI分析服务实例"""
+    """getAIAnalysis service instance"""
     ai_client = AIClient()
     return AIAnalysisService(ai_client)
 
 
 def get_process_service() -> ProcessService:
-    """获取进程管理服务实例"""
+    """Get the process management service instance"""
     if _process_service_instance is None:
-        raise RuntimeError("ProcessService 未初始化")
+        raise RuntimeError("ProcessService not initialized")
     return _process_service_instance

@@ -1,13 +1,13 @@
 """
-新架构的主应用入口
-整合所有路由和服务
+The main application entrance of the new architecture
+Integrate all routes and services
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts
+from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts, public, users
 from src.api.dependencies import set_process_service
 from src.services.task_service import TaskService
 from src.services.process_service import ProcessService
@@ -15,21 +15,21 @@ from src.services.scheduler_service import SchedulerService
 from src.infrastructure.persistence.json_task_repository import JsonTaskRepository
 
 
-# 全局服务实例
+# Global service instance
 process_service = ProcessService()
 scheduler_service = SchedulerService(process_service)
 
-# 设置全局 ProcessService 实例供依赖注入使用
+# Set global ProcessService Instance used for dependency injection
 set_process_service(process_service)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    # 启动时
-    print("正在启动应用...")
+    """Application life cycle management"""
+    # On startup
+    print("Starting application...")
 
-    # 重置所有任务状态为停止
+    # Reset all task status to stopped
     task_repo = JsonTaskRepository()
     task_service = TaskService(task_repo)
     tasks_list = await task_service.get_all_tasks()
@@ -38,30 +38,32 @@ async def lifespan(app: FastAPI):
         if task.is_running:
             await task_service.update_task_status(task.id, False)
 
-    # 加载定时任务
+    # Load scheduled tasks
     await scheduler_service.reload_jobs(tasks_list)
     scheduler_service.start()
 
-    print("应用启动完成")
+    print("Application startup completed")
 
     yield
 
-    # 关闭时
-    print("正在关闭应用...")
+    # when closed
+    print("Closing application...")
     scheduler_service.stop()
     await process_service.stop_all()
-    print("应用已关闭")
+    print("App is closed")
 
 
-# 创建 FastAPI 应用
+# create FastAPI application
 app = FastAPI(
-    title="闲鱼智能监控机器人",
-    description="基于AI的闲鱼商品监控系统",
+    title="Xianyu intelligent monitoring robot",
+    description="based onAIXianyu product monitoring system",
     version="2.0.0",
     lifespan=lifespan
 )
 
-# 注册路由
+# Register route
+app.include_router(public.router)
+app.include_router(users.router)
 app.include_router(tasks.router)
 app.include_router(logs.router)
 app.include_router(settings.router)
@@ -71,25 +73,25 @@ app.include_router(login_state.router)
 app.include_router(websocket.router)
 app.include_router(accounts.router)
 
-# 挂载静态文件
-# 旧的静态文件目录（用于截图等）
+# Mount static files
+# Old static files directory (for screenshots etc.）
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# 挂载 Vue 3 前端构建产物
-# 注意：需要在所有 API 路由之后挂载，以避免覆盖 API 路由
+# mount Vue 3 Front-end build product
+# NOTE: Required at all API Mount after routing to avoid overwriting API routing
 import os
 if os.path.exists("dist"):
     app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
 
 
-# 健康检查端点
+# health check endpoint
 @app.get("/health")
 async def health_check():
-    """健康检查（无需认证）"""
-    return {"status": "healthy", "message": "服务正常运行"}
+    """Health check (no certification required）"""
+    return {"status": "healthy", "message": "Service is running normally"}
 
 
-# 认证状态检查端点
+# Authentication status check endpoint
 from fastapi import Request, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -102,45 +104,45 @@ class LoginRequest(BaseModel):
 
 @app.post("/auth/status")
 async def auth_status(payload: LoginRequest):
-    """检查认证状态"""
+    """Check certification status"""
     if payload.username == settings.web_username and payload.password == settings.web_password:
         return {"authenticated": True, "username": payload.username}
-    raise HTTPException(status_code=401, detail="认证失败")
+    raise HTTPException(status_code=401, detail="Authentication failed")
 
 
-# 主页路由 - 服务 Vue 3 SPA
+# Home route - Serve Vue 3 SPA
 from fastapi.responses import JSONResponse
 
 @app.get("/")
 async def read_root(request: Request):
-    """提供 Vue 3 SPA 的主页面"""
+    """supply Vue 3 SPA 's main page"""
     if os.path.exists("dist/index.html"):
         return FileResponse("dist/index.html")
     else:
         return JSONResponse(
             status_code=500,
-            content={"error": "前端构建产物不存在，请先运行 cd web-ui && npm run build"}
+            content={"error": "The front-end build product does not exist, please run it first cd web-ui && npm run build"}
         )
 
 
-# Catch-all 路由 - 处理所有前端路由（必须放在最后）
+# Catch-all routing - Handles all front-end routing (must be placed last）
 @app.get("/{full_path:path}")
 async def serve_spa(request: Request, full_path: str):
     """
-    Catch-all 路由，将所有非 API 请求重定向到 index.html
-    这样可以支持 Vue Router 的 HTML5 History 模式
+    Catch-all routing, all non- API Requests are redirected to index.html
+    This can support Vue Router of HTML5 History model
     """
-    # 如果请求的是静态资源（如 favicon.ico），返回 404
+    # If the request is for a static resource (e.g. favicon.ico），return 404
     if full_path.endswith(('.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.css', '.js', '.json')):
-        return JSONResponse(status_code=404, content={"error": "资源未找到"})
+        return JSONResponse(status_code=404, content={"error": "Resource not found"})
 
-    # 其他所有路径都返回 index.html，让前端路由处理
+    # All other paths return index.html，Let the front-end routing handle it
     if os.path.exists("dist/index.html"):
         return FileResponse("dist/index.html")
     else:
         return JSONResponse(
             status_code=500,
-            content={"error": "前端构建产物不存在，请先运行 cd web-ui && npm run build"}
+            content={"error": "The front-end build product does not exist, please run it first cd web-ui && npm run build"}
         )
 
 
@@ -148,5 +150,5 @@ if __name__ == "__main__":
     import uvicorn
     from src.infrastructure.config.settings import settings
 
-    print(f"启动新架构应用，端口: {settings.server_port}")
+    print(f"Start new architecture application, port: {settings.server_port}")
     uvicorn.run(app, host="0.0.0.0", port=settings.server_port)

@@ -1,6 +1,6 @@
 """
-环境变量管理器
-负责读取和更新 .env 文件
+Environment variable manager
+Responsible for reading and updating .env document
 """
 import os
 from typing import Dict, List, Optional
@@ -8,19 +8,19 @@ from pathlib import Path
 
 
 class EnvManager:
-    """环境变量管理器"""
+    """Environment variable manager"""
 
     def __init__(self, env_file: str = ".env"):
         self.env_file = Path(env_file)
         self._ensure_env_file_exists()
 
     def _ensure_env_file_exists(self):
-        """确保 .env 文件存在"""
+        """make sure .env File exists"""
         if not self.env_file.exists():
             self.env_file.touch()
 
     def read_env(self) -> Dict[str, str]:
-        """读取所有环境变量"""
+        """Read all environment variables"""
         env_vars = {}
         if not self.env_file.exists():
             return env_vars
@@ -28,11 +28,11 @@ class EnvManager:
         with open(self.env_file, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                # 跳过空行和注释
+                # Skip empty lines and comments
                 if not line or line.startswith('#'):
                     continue
 
-                # 解析键值对
+                # Parse key-value pairs
                 if '=' in line:
                     key, value = line.split('=', 1)
                     env_vars[key.strip()] = value.strip()
@@ -45,46 +45,46 @@ class EnvManager:
         return env_vars.get(key, default)
 
     def update_values(self, updates: Dict[str, str]) -> bool:
-        """批量更新环境变量"""
+        """Update environment variables in batches"""
         try:
-            # 读取现有配置
+            # Read existing configuration
             existing_vars = self.read_env()
 
-            # 更新值
+            # update value
             existing_vars.update(updates)
 
-            # 写回文件
+            # write back file
             return self._write_env(existing_vars)
         except Exception as e:
-            print(f"更新环境变量失败: {e}")
+            print(f"Failed to update environment variables: {e}")
             return False
 
     def set_value(self, key: str, value: str) -> bool:
-        """设置单个环境变量"""
+        """Set a single environment variable"""
         return self.update_values({key: value})
 
     def delete_keys(self, keys: List[str]) -> bool:
-        """删除指定的环境变量"""
+        """Delete the specified environment variable"""
         try:
             existing_vars = self.read_env()
             for key in keys:
                 existing_vars.pop(key, None)
             return self._write_env(existing_vars)
         except Exception as e:
-            print(f"删除环境变量失败: {e}")
+            print(f"Failed to delete environment variables: {e}")
             return False
 
     def _write_env(self, env_vars: Dict[str, str]) -> bool:
-        """写入环境变量到文件"""
+        """Write environment variables to file"""
         try:
             with open(self.env_file, 'w', encoding='utf-8') as f:
                 for key, value in env_vars.items():
                     f.write(f"{key}={value}\n")
             return True
         except Exception as e:
-            print(f"写入 .env 文件失败: {e}")
+            print(f"write .env File failed: {e}")
             return False
 
 
-# 全局实例
+# global instance
 env_manager = EnvManager()

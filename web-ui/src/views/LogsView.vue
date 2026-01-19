@@ -87,10 +87,10 @@ function openClearDialog() {
 async function handleClearLogs() {
   try {
     await clearLogs()
-    toast({ title: '日志已清空' })
+    toast({ title: 'The log has been cleared' })
   } catch (e) {
     toast({
-      title: '清空日志失败',
+      title: 'Failed to clear logs',
       description: (e as Error).message,
       variant: 'destructive',
     })
@@ -104,16 +104,16 @@ async function handleClearLogs() {
   <div class="h-[calc(100vh-100px)] flex flex-col">
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold text-gray-800">运行日志</h1>
+        <h1 class="text-2xl font-bold text-gray-800">Run log</h1>
         <div class="flex items-center gap-2">
-          <Label class="text-sm text-gray-600">任务</Label>
+          <Label class="text-sm text-gray-600">Task</Label>
           <Select v-model="selectedTaskId">
             <SelectTrigger class="w-[240px]">
-              <SelectValue placeholder="请选择任务" />
+              <SelectValue placeholder="Please select a task" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="task in tasks" :key="task.id" :value="String(task.id)">
-                {{ task.task_name }}{{ task.is_running ? '（运行中）' : '' }}
+                {{ task.task_name }}{{ task.is_running ? '（Running）' : '' }}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -122,21 +122,21 @@ async function handleClearLogs() {
       
       <div class="flex items-center gap-4">
         <Button variant="outline" size="sm" :disabled="!selectedTaskId" @click="fetchLogs">
-          刷新
+          refresh
         </Button>
 
         <div class="flex items-center space-x-2">
           <Switch id="auto-refresh" :model-value="isAutoRefresh" @update:model-value="toggleAutoRefresh" />
-          <Label for="auto-refresh">自动刷新</Label>
+          <Label for="auto-refresh">Auto refresh</Label>
         </div>
 
         <div class="flex items-center space-x-2">
           <Switch id="auto-scroll" v-model="autoScroll" />
-          <Label for="auto-scroll">自动滚动</Label>
+          <Label for="auto-scroll">autoscroll</Label>
         </div>
 
         <Button variant="destructive" size="sm" :disabled="!selectedTaskId" @click="openClearDialog">
-          清空日志
+          Clear log
         </Button>
       </div>
     </div>
@@ -154,14 +154,14 @@ async function handleClearLogs() {
     <Dialog v-model:open="isClearDialogOpen">
       <DialogContent class="sm:max-w-[420px]">
         <DialogHeader>
-          <DialogTitle>清空任务日志</DialogTitle>
+          <DialogTitle>Clear task log</DialogTitle>
           <DialogDescription>
-            此操作不可恢复，确定要清空当前任务日志吗？
+            This operation is irreversible. Are you sure you want to clear the current task log?？
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="isClearDialogOpen = false">取消</Button>
-          <Button variant="destructive" @click="handleClearLogs">确认清空</Button>
+          <Button variant="outline" @click="isClearDialogOpen = false">Cancel</Button>
+          <Button variant="destructive" @click="handleClearLogs">Confirm clearing</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
