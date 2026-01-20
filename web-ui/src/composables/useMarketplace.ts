@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { PaginatedProducts, ProductPublic, ProductFilter, Category } from '@/types/product'
+import type { ProductPublic, ProductFilter, Category } from '@/types/product'
 import { getProducts, getProductById, getCategories } from '@/api/public'
 
 export function useMarketplace() {
@@ -12,7 +12,7 @@ export function useMarketplace() {
   const error = ref<Error | null>(null)
 
   const filters = ref<ProductFilter>({
-    search: undefined,
+    search: '',
     min_price: undefined,
     max_price: undefined,
     task_name: undefined,
@@ -74,7 +74,7 @@ export function useMarketplace() {
 
   function resetFilters() {
     filters.value = {
-      search: undefined,
+      search: '',
       min_price: undefined,
       max_price: undefined,
       task_name: undefined,

@@ -1,43 +1,56 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import SearchBar from '@/components/marketplace/SearchBar.vue'
-import CategorySidebar from '@/components/marketplace/CategorySidebar.vue'
-import ProductCard from '@/components/marketplace/ProductCard.vue'
-import { Button } from '@/components/ui/button'
-import { useMarketplace } from '@/composables/useMarketplace'
-import { useUser } from '@/composables/useUser'
+import { onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
+import SearchBar from "@/components/marketplace/SearchBar.vue";
+import CategorySidebar from "@/components/marketplace/CategorySidebar.vue";
+import ProductCard from "@/components/marketplace/ProductCard.vue";
+import { Button } from "@/components/ui/button";
+import { useMarketplace } from "@/composables/useMarketplace";
 
-const route = useRoute()
-const { products, categories, totalItems, isLoading, error, filters, hasMore, loadCategories, loadProducts, loadMoreProducts, updateFilters } = useMarketplace()
-const { currentUser } = useUser()
+const route = useRoute();
+const {
+  products,
+  categories,
+  totalItems,
+  isLoading,
+  error,
+  filters,
+  hasMore,
+  loadCategories,
+  loadProducts,
+  loadMoreProducts,
+  updateFilters,
+} = useMarketplace();
 
 onMounted(async () => {
-  await loadCategories()
+  await loadCategories();
 
-  const category = route.query.category as string
+  const category = route.query.category as string;
   if (category) {
-    updateFilters({ task_name: category })
+    updateFilters({ task_name: category });
   }
 
-  await loadProducts()
-})
+  await loadProducts();
+});
 
-watch(() => route.query.category, async (newCategory) => {
-  updateFilters({ task_name: newCategory ? String(newCategory) : undefined })
-  await loadProducts()
-})
+watch(
+  () => route.query.category,
+  async (newCategory) => {
+    updateFilters({ task_name: newCategory ? String(newCategory) : undefined });
+    await loadProducts();
+  },
+);
 
 async function handleSearch() {
-  await loadProducts()
+  await loadProducts();
 }
 
 async function handleLoadMore() {
-  await loadMoreProducts()
+  await loadMoreProducts();
 }
 
 function handleFavoriteToggled() {
-  loadProducts(false)
+  loadProducts(false);
 }
 </script>
 
@@ -48,23 +61,25 @@ function handleFavoriteToggled() {
         <CategorySidebar
           :categories="categories"
           :selected-category="filters.task_name || null"
-          @category-selected="(cat) => updateFilters({ task_name: cat || undefined })"
+          @category-selected="
+            (cat) => updateFilters({ task_name: cat || undefined })
+          "
         />
       </aside>
 
       <div class="flex-1">
         <div class="mb-6">
-          <SearchBar
-            v-model="filters.search"
-            @search="handleSearch"
-          />
+          <SearchBar v-model="filters.search" @search="handleSearch" />
         </div>
 
         <div v-if="error" class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
           {{ error.message }}
         </div>
 
-        <div v-if="isLoading && products.length === 0" class="text-center py-12">
+        <div
+          v-if="isLoading && products.length === 0"
+          class="text-center py-12"
+        >
           <div class="text-gray-500">Loading products...</div>
         </div>
 
@@ -73,7 +88,9 @@ function handleFavoriteToggled() {
         </div>
 
         <div v-else>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
             <ProductCard
               v-for="product in products"
               :key="product.id"
@@ -87,9 +104,7 @@ function handleFavoriteToggled() {
           </div>
 
           <div v-else-if="hasMore" class="text-center mt-8">
-            <Button @click="handleLoadMore">
-              Load More
-            </Button>
+            <Button @click="handleLoadMore"> Load More </Button>
           </div>
         </div>
 

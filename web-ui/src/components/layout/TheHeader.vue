@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 const router = useRouter()
 
 function goAccounts() {
-  router.push('/accounts')
+  router.push('/admin/accounts')
 }
 </script>
 

@@ -80,10 +80,23 @@ const emit = defineEmits<{
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
                   <span class="text-base font-semibold text-slate-900">{{ task.task_name }}</span>
-                  <Badge variant="outline" class="border-slate-200 text-xs text-slate-500">
-                    keywords
+                  <Badge 
+                    variant="outline" 
+                    :class="task.task_type === 'seller_monitoring' ? 'border-blue-200 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-500'"
+                    class="text-xs"
+                  >
+                    {{ task.task_type === 'seller_monitoring' ? 'Seller' : 'Keyword' }}
                   </Badge>
-                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700">
+                  <span 
+                    v-if="task.task_type === 'seller_monitoring'" 
+                    class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-mono text-blue-700"
+                  >
+                    ID: {{ task.seller_id }}
+                  </span>
+                  <span 
+                    v-else
+                    class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-mono text-slate-700"
+                  >
                     {{ task.keyword }}
                   </span>
                 </div>

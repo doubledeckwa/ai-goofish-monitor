@@ -8,7 +8,7 @@ import { RouterLink } from 'vue-router'
       <ul>
         <li>
           <RouterLink
-            to="/tasks"
+            to="/admin/tasks"
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
@@ -17,7 +17,7 @@ import { RouterLink } from 'vue-router'
         </li>
         <li>
           <RouterLink
-            to="/accounts"
+            to="/admin/accounts"
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
@@ -26,7 +26,7 @@ import { RouterLink } from 'vue-router'
         </li>
         <li>
           <RouterLink
-            to="/results"
+            to="/admin/results"
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
@@ -35,7 +35,7 @@ import { RouterLink } from 'vue-router'
         </li>
         <li>
           <RouterLink
-            to="/logs"
+            to="/admin/logs"
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >
@@ -44,7 +44,7 @@ import { RouterLink } from 'vue-router'
         </li>
         <li>
           <RouterLink
-            to="/settings"
+            to="/admin/settings"
             class="block px-6 py-3 text-gray-700 border-r-4 border-transparent hover:bg-blue-50"
             active-class="!border-blue-500 !text-blue-600 !font-semibold bg-blue-50"
           >

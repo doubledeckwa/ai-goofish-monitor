@@ -28,7 +28,7 @@ async function handleLogin() {
   try {
     const success = await login(username.value, password.value)
     if (success) {
-      const redirectPath = (route.query.redirect as string) || '/'
+      const redirectPath = (route.query.redirect as string) || '/admin/tasks'
       router.push(redirectPath)
     } else {
       error.value = 'Login failed: wrong username or password'

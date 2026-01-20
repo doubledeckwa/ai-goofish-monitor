@@ -14,14 +14,23 @@ class TaskStatus(str, Enum):
     SCHEDULED = "scheduled"
 
 
+class TaskType(str, Enum):
+    """Task type enum"""
+    KEYWORD_SEARCH = "keyword_search"
+    SELLER_MONITORING = "seller_monitoring"
+
+
 class Task(BaseModel):
     """task entity"""
     id: Optional[int] = None
     task_name: str
     enabled: bool
-    keyword: str
+    task_type: TaskType = TaskType.KEYWORD_SEARCH
+    keyword: Optional[str] = None
+    seller_id: Optional[str] = None
     description: Optional[str] = ""
     max_pages: int
+    max_products_per_run: Optional[int] = None
     personal_only: bool
     min_price: Optional[str] = None
     max_price: Optional[str] = None
@@ -34,6 +43,24 @@ class Task(BaseModel):
     region: Optional[str] = None
     is_running: bool = False
     is_public: bool = False
+    
+    @validator('keyword')
+    def validate_keyword_for_type(cls, v, values):
+        """Validate that keyword is provided for keyword_search tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        if task_type == TaskType.KEYWORD_SEARCH and not v:
+            raise ValueError('keyword is required for keyword_search tasks')
+        return v
+    
+    @validator('seller_id')
+    def validate_seller_id_for_type(cls, v, values):
+        """Validate that seller_id is provided for seller_monitoring tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        print(values)
+        if task_type == TaskType.SELLER_MONITORING and not v:
+            raise ValueError('seller_id is required for seller_monitoring tasks')
+        return v
+        
 
     class Config:
         use_enum_values = True
@@ -56,9 +83,12 @@ class TaskCreate(BaseModel):
     """create taskDTO"""
     task_name: str
     enabled: bool = True
-    keyword: str
+    task_type: TaskType = TaskType.KEYWORD_SEARCH
+    keyword: Optional[str] = None
+    seller_id: Optional[str] = None
     description: Optional[str] = ""
     max_pages: int = 3
+    max_products_per_run: Optional[int] = None
     personal_only: bool = True
     min_price: Optional[str] = None
     max_price: Optional[str] = None
@@ -70,15 +100,34 @@ class TaskCreate(BaseModel):
     new_publish_option: Optional[str] = None
     region: Optional[str] = None
     is_public: bool = False
+    
+    @validator('keyword')
+    def validate_keyword_for_type(cls, v, values):
+        """Validate that keyword is provided for keyword_search tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        if task_type == TaskType.KEYWORD_SEARCH and not v:
+            raise ValueError('keyword is required for keyword_search tasks')
+        return v
+    
+    @validator('seller_id')
+    def validate_seller_id_for_type(cls, v, values):
+        """Validate that seller_id is provided for seller_monitoring tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        if task_type == TaskType.SELLER_MONITORING and not v:
+            raise ValueError('seller_id is required for seller_monitoring tasks')
+        return v
 
 
 class TaskUpdate(BaseModel):
     """update taskDTO"""
     task_name: Optional[str] = None
     enabled: Optional[bool] = None
+    task_type: Optional[TaskType] = None
     keyword: Optional[str] = None
+    seller_id: Optional[str] = None
     description: Optional[str] = None
     max_pages: Optional[int] = None
+    max_products_per_run: Optional[int] = None
     personal_only: Optional[bool] = None
     min_price: Optional[str] = None
     max_price: Optional[str] = None
@@ -96,17 +145,36 @@ class TaskUpdate(BaseModel):
 class TaskGenerateRequest(BaseModel):
     """AIGenerate task requestDTO"""
     task_name: str
-    keyword: str
+    task_type: TaskType = TaskType.KEYWORD_SEARCH
+    keyword: Optional[str] = None
+    seller_id: Optional[str] = None
     description: str
     personal_only: bool = True
     min_price: Optional[str] = None
     max_price: Optional[str] = None
     max_pages: int = 3
+    max_products_per_run: Optional[int] = None
     cron: Optional[str] = None
     account_state_file: Optional[str] = None
     free_shipping: bool = True
     new_publish_option: Optional[str] = None
     region: Optional[str] = None
+
+    @validator('keyword')
+    def validate_keyword_for_type(cls, v, values):
+        """Validate that keyword is provided for keyword_search tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        if task_type == TaskType.KEYWORD_SEARCH and not v:
+            raise ValueError('keyword is required for keyword_search tasks')
+        return v
+    
+    @validator('seller_id')
+    def validate_seller_id_for_type(cls, v, values):
+        """Validate that seller_id is provided for seller_monitoring tasks"""
+        task_type = values.get('task_type', TaskType.KEYWORD_SEARCH)
+        if task_type == TaskType.SELLER_MONITORING and not v:
+            raise ValueError('seller_id is required for seller_monitoring tasks')
+        return v
 
     @validator('min_price', 'max_price', pre=True)
     def convert_price_to_str(cls, v):

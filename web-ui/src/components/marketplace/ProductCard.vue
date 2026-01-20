@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import type { ProductPublic } from '@/types/product'
 import { RouterLink } from 'vue-router'
-import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-vue-next'
 import { useFavorites } from '@/composables/useFavorites'
 import { useUser } from '@/composables/useUser'

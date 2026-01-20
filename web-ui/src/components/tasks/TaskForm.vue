@@ -29,6 +29,10 @@ const form = ref<EmittedData>({})
    if (props.mode === 'edit' && props.initialData) {
      form.value = {
        ...props.initialData,
+       task_type: props.initialData.task_type || 'keyword_search',
+       keyword: props.initialData.keyword || '',
+       seller_id: props.initialData.seller_id || '',
+       max_products_per_run: props.initialData.max_products_per_run || undefined,
        account_state_file: props.initialData.account_state_file || '',
        free_shipping: props.initialData.free_shipping ?? true,
        new_publish_option: props.initialData.new_publish_option || '__none__',
@@ -38,9 +42,12 @@ const form = ref<EmittedData>({})
    } else {
      form.value = {
        task_name: '',
+       task_type: 'keyword_search',
        keyword: '',
+       seller_id: '',
        description: '',
        max_pages: 3,
+       max_products_per_run: undefined,
        personal_only: true,
        min_price: undefined,
        max_price: undefined,
@@ -56,10 +63,29 @@ const form = ref<EmittedData>({})
 
 function handleSubmit() {
   // Basic validation
-  if (!form.value.task_name || !form.value.keyword || !form.value.description) {
+  if (!form.value.task_name || !form.value.description) {
     toast({
       title: 'Incomplete information',
-      description: 'Task name, keywords and detailed requirements cannot be empty。',
+      description: 'Task name and detailed requirements cannot be empty。',
+      variant: 'destructive',
+    })
+    return
+  }
+  
+  // Task type specific validation
+  if (form.value.task_type === 'seller_monitoring' && !form.value.seller_id) {
+    toast({
+      title: 'Seller ID required',
+      description: 'Please enter the seller ID for monitoring。',
+      variant: 'destructive',
+    })
+    return
+  }
+  
+  if (form.value.task_type === 'keyword_search' && !form.value.keyword) {
+    toast({
+      title: 'Keyword required',
+      description: 'Please enter search keyword。',
       variant: 'destructive',
     })
     return
@@ -93,9 +119,48 @@ function handleSubmit() {
         <Label for="task-name" class="text-right">Task name</Label>
         <Input id="task-name" v-model="form.task_name" class="col-span-3" placeholder="Example: Sony A7M4 camera" required />
       </div>
+      
       <div class="grid grid-cols-4 items-center gap-4">
+        <Label class="text-right">Task type</Label>
+        <div class="col-span-3">
+          <Select v-model="form.task_type">
+            <SelectTrigger>
+              <SelectValue placeholder="Select task type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="keyword_search">Search by keyword</SelectItem>
+              <SelectItem value="seller_monitoring">Monitor seller</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      
+      <div v-if="form.task_type === 'keyword_search'" class="grid grid-cols-4 items-center gap-4">
         <Label for="keyword" class="text-right">Search keywords</Label>
-        <Input id="keyword" v-model="form.keyword" class="col-span-3" placeholder="For example：a7m4" required />
+        <Input id="keyword" v-model="form.keyword" class="col-span-3" placeholder="For example：a7m4" />
+      </div>
+      
+      <div v-if="form.task_type === 'seller_monitoring'" class="grid grid-cols-4 items-center gap-4">
+        <Label for="seller-id" class="text-right">Seller ID</Label>
+        <Input 
+          id="seller-id" 
+          v-model="form.seller_id" 
+          class="col-span-3" 
+          placeholder="Example: 1234567890" 
+        />
+      </div>
+      
+      <div v-if="form.task_type === 'seller_monitoring'" class="grid grid-cols-4 items-center gap-4">
+        <Label for="max-products" class="text-right">Max products per run</Label>
+        <div class="col-span-3 space-y-2">
+          <Input 
+            id="max-products" 
+            v-model.number="form.max_products_per_run" 
+            type="number"
+            placeholder="Leave empty for unlimited (e.g., 10)" 
+          />
+          <p class="text-xs text-gray-500">Limit how many new products to analyze per run. Useful for sellers with many products.</p>
+        </div>
       </div>
       <div class="grid grid-cols-4 items-center gap-4">
         <Label for="description" class="text-right">Detailed requirements</Label>

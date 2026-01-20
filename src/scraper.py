@@ -280,11 +280,280 @@ async def scrape_user_profile(context, user_id: str) -> dict:
     return profile_data
 
 
+def load_seen_products(task_name: str) -> set:
+    """
+    Load previously seen product IDs from file
+    
+    Args:
+        task_name: Name of the task
+    
+    Returns:
+        Set of product IDs that have been processed
+    """
+    state_dir = "state"
+    os.makedirs(state_dir, exist_ok=True)
+    seen_file = os.path.join(state_dir, f"seen_products_{task_name.replace(' ', '_')}.json")
+    
+    if os.path.exists(seen_file):
+        try:
+            with open(seen_file, 'r', encoding='utf-8') as f:
+                return set(json.load(f))
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"   [warn] Failed to load seen products file: {e}")
+            return set()
+    return set()
+
+
+def save_seen_products(task_name: str, seen_products: set) -> None:
+    """
+    Save seen product IDs to file
+    
+    Args:
+        task_name: Name of the task
+        seen_products: Set of product IDs to save
+    """
+    state_dir = "state"
+    os.makedirs(state_dir, exist_ok=True)
+    seen_file = os.path.join(state_dir, f"seen_products_{task_name.replace(' ', '_')}.json")
+    
+    try:
+        with open(seen_file, 'w', encoding='utf-8') as f:
+            json.dump(list(seen_products), f, ensure_ascii=False, indent=2)
+        print(f"   [Seller Monitoring] Saved {len(seen_products)} seen product IDs")
+    except IOError as e:
+        print(f"   [Error] Failed to save seen products: {e}")
+
+
+async def scrape_seller_products(
+    context,
+    seller_id: str,
+    task_name: str,
+    task_config: dict,
+    seen_products: set,
+    output_filename: str
+):
+    """
+    Monitor all products from a specific seller
+    Uses scrape_user_profile to collect all products with pagination
+    
+    Args:
+        context: Playwright browser context
+        seller_id: Seller ID on Xianyu
+        task_name: Task name
+        task_config: Task configuration
+        seen_products: Set of already processed product IDs
+        output_filename: Output JSONL file path
+    
+    Returns:
+        Number of new products processed
+    """
+    print(f"   [Seller Monitoring] Starting monitoring for seller {seller_id}...")
+    
+    # 1. Collect seller profile (includes ALL products via pagination)
+    user_profile = await scrape_user_profile(context, seller_id)
+    
+    # 2. Get product list (already includes all products after scrolling)
+    products_list = user_profile.get("Product list posted by seller", [])
+    print(f"   [Seller Monitoring] Found {len(products_list)} total products from seller")
+    
+    # 3. Filter only new products (status "On sale")
+    new_products = []
+    on_sale_count = 0
+    for product in products_list:
+        if product.get('Product status') == 'On sale':
+            on_sale_count += 1
+            product_id = str(product.get('commodityID', ''))
+            if product_id and product_id not in seen_products:
+                new_products.append(product)
+                seen_products.add(product_id)
+    
+    print(f"   [Seller Monitoring] {on_sale_count} products on sale, {len(new_products)} are new")
+    
+    # 3.5. Limit products per run if specified
+    max_products = task_config.get('max_products_per_run')
+    if max_products and max_products > 0 and len(new_products) > max_products:
+        print(f"   [Seller Monitoring] Limiting to {max_products} products per run")
+        new_products = new_products[:max_products]
+    
+    # 4. Collect detailed information for each new product
+    ai_prompt_text = task_config.get('ai_prompt_text', '')
+    processed_count = 0
+    
+    for idx, product in enumerate(new_products, 1):
+        print(f"   [Seller Monitoring] Processing new product {idx}/{len(new_products)}: {product.get('Product title', 'N/A')}")
+        detail_page = await context.new_page()
+        try:
+            product_id = product.get('commodityID')
+            product_link = f"https://www.goofish.com/item?id={product_id}"
+            
+            # Navigate to product page and collect details
+            async with detail_page.expect_response(
+                lambda r: DETAIL_API_URL_PATTERN in r.url,
+                timeout=25000
+            ) as detail_info:
+                await detail_page.goto(product_link, wait_until="domcontentloaded", timeout=25000)
+            
+            detail_response = await detail_info.value
+            detail_json = await detail_response.json()
+            
+            # Parse product details
+            main_data = await safe_get(detail_json, 'data', 'mainData', default={})
+            seller_do = await safe_get(detail_json, 'data', 'sellerDO', default={})
+            
+            # Build complete product record
+            item_title = await safe_get(main_data, "title", default="Unknown")
+            item_price = await safe_get(main_data, "price", default="0")
+            item_images = await safe_get(main_data, "images", default=[])
+            item_desc = await safe_get(main_data, "desc", default="")
+            
+            reg_days_raw = await safe_get(seller_do, 'userRegDay', default=0)
+            registration_duration_text = format_registration_days(reg_days_raw)
+            zhima_credit_text = await safe_get(seller_do, 'zhimaLevelInfo', 'levelName')
+            
+            # Add seller profile info
+            user_profile['Seller Sesame Credit'] = zhima_credit_text
+            user_profile['Seller registration time'] = registration_duration_text
+            
+            product_record = {
+                "Product information": {
+                    "Product link": product_link,
+                    "Product title": item_title,
+                    "Product price": item_price,
+                    "Product main image": item_images[0] if item_images else "",
+                    "Product description": item_desc,
+                    "Product images": item_images,
+                    "Product status": product.get('Product status'),
+                },
+                "Seller information": user_profile,
+                "Task name": task_name,
+                "Crawl time": datetime.now().isoformat()
+            }
+            
+            # AI analysis
+            if ai_prompt_text and not SKIP_AI_ANALYSIS:
+                print(f"   [AI Analysis] Analyzing product...")
+                
+                # Download images
+                task_image_dir = f"{TASK_IMAGE_DIR_PREFIX}{task_name.replace(' ', '_')}"
+                os.makedirs(task_image_dir, exist_ok=True)
+                
+                image_paths = await download_all_images(item_images[:3], task_image_dir)
+                
+                try:
+                    ai_result = await get_ai_analysis(
+                        product_record=product_record,
+                        image_paths=image_paths,
+                        ai_prompt_text=ai_prompt_text
+                    )
+                    
+                    product_record["AI analysis results"] = ai_result
+                    
+                    # Send notification if recommended
+                    is_recommended = ai_result.get("is_recommended", False)
+                    if is_recommended:
+                        print(f"   [AI Recommendation] Product recommended! Sending notification...")
+                        await send_ntfy_notification(product_record, task_config)
+                    
+                except Exception as e:
+                    print(f"   [AI Error] AI analysis failed: {e}")
+                    product_record["AI analysis results"] = {"error": str(e)}
+            
+            # Save to JSONL
+            await save_to_jsonl(product_record, output_filename)
+            processed_count += 1
+            
+            # Small delay between products
+            await random_sleep(1, 2)
+            
+        except Exception as e:
+            print(f"   [Error] Failed to process product {product.get('commodityID')}: {e}")
+        finally:
+            await detail_page.close()
+    
+    print(f"   [Seller Monitoring] Successfully processed {processed_count} new products")
+    return processed_count
+
+
 async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
     """
     【core executor】
     Asynchronously crawl Xianyu product data based on single task configuration，and conduct real-time, independent analysis of each newly discovered itemAIAnalysis and Notification。
+    
+    Supports two task types:
+    - keyword_search: Search by keyword (default)
+    - seller_monitoring: Monitor all products from a specific seller
     """
+    # Check task type and route to appropriate handler
+    task_type = task_config.get('task_type', 'keyword_search')
+    task_name = task_config.get('task_name', 'unnamed_task')
+    
+    if task_type == 'seller_monitoring':
+        print(f"LOG: Task '{task_name}' is a seller monitoring task")
+        seller_id = task_config.get('seller_id')
+        if not seller_id:
+            print(f"ERROR: seller_id is required for seller_monitoring tasks")
+            return
+        
+        # Load seen products
+        seen_products = load_seen_products(task_name)
+        print(f"LOG: Loaded {len(seen_products)} previously seen products")
+        
+        # Prepare output filename
+        output_filename = os.path.join("jsonl", f"seller_{seller_id}_{task_name.replace(' ', '_')}.jsonl")
+        
+        # Get rotation settings and account
+        rotation_settings = _get_rotation_settings(task_config)
+        forced_account = task_config.get("account_state_file") or None
+        if isinstance(forced_account, str) and not forced_account.strip():
+            forced_account = None
+        if forced_account:
+            rotation_settings["account_enabled"] = False
+        account_items = load_state_files(rotation_settings["account_state_dir"])
+        if not forced_account and os.path.exists(STATE_FILE):
+            account_items = [STATE_FILE]
+        if not forced_account and not os.path.exists(STATE_FILE) and account_items:
+            rotation_settings["account_enabled"] = True
+        
+        # Setup browser context
+        async with async_playwright() as p:
+            context_options = _default_context_options()
+            
+            # Load account state if available
+            if forced_account:
+                print(f"LOG: Using forced account: {forced_account}")
+                with open(forced_account, "r", encoding="utf-8") as f:
+                    storage_state = json.load(f)
+                context_options["storage_state"] = storage_state
+            elif account_items:
+                print(f"LOG: Using first available account: {account_items[0]}")
+                with open(account_items[0], "r", encoding="utf-8") as f:
+                    storage_state = json.load(f)
+                context_options["storage_state"] = storage_state
+            
+            browser = await p.chromium.launch(headless=RUN_HEADLESS)
+            context = await browser.new_context(**context_options)
+            
+            try:
+                # Run seller monitoring
+                await scrape_seller_products(
+                    context=context,
+                    seller_id=seller_id,
+                    task_name=task_name,
+                    task_config=task_config,
+                    seen_products=seen_products,
+                    output_filename=output_filename
+                )
+                
+                # Save seen products
+                save_seen_products(task_name, seen_products)
+                
+            finally:
+                await context.close()
+                await browser.close()
+        
+        return
+    
+    # Original keyword search logic
     keyword = task_config['keyword']
     max_pages = task_config.get('max_pages', 1)
     personal_only = task_config.get('personal_only', False)

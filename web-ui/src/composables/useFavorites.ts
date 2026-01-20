@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import type { Favorite, FavoriteRequest, PaginatedFavorites } from '@/types/user'
 import { addFavorite, removeFavorite, toggleFavorite, getFavorites } from '@/api/user'
 import { useUser } from './useUser'

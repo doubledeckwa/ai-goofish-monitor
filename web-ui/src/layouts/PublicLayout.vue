@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { Search, User, LogOut, Heart } from 'lucide-vue-next'
+import { User, LogOut, Heart } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useUser } from '@/composables/useUser'
 

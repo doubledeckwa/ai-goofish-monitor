@@ -63,7 +63,7 @@ function openDeleteDialog(name: string) {
 }
 
 function goCreateTask(name: string) {
-  router.push({ path: '/tasks', query: { account: name, create: '1' } })
+  router.push({ path: '/admin/tasks', query: { account: name, create: '1' } })
 }
 
 async function handleCreateAccount() {

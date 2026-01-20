@@ -5,6 +5,7 @@ openai
 fastapi
 uvicorn[standard]
 pydantic-settings
+email-validator
 jinja2
 aiofiles
 python-socks

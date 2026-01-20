@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MainLayout from '@/layouts/MainLayout.vue'
 import PublicLayout from '@/layouts/PublicLayout.vue'
 import { useAuth } from '@/composables/useAuth'
-import { useUser } from '@/composables/useUser'
 
 const routes = [
   // Public routes
@@ -101,7 +100,6 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const { isAuthenticated } = useAuth()
-  const { isAuthenticated: isUserAuthenticated } = useUser()
 
   // Set document title
   document.title = `${to.meta.title} - Marketplace` || 'Marketplace'

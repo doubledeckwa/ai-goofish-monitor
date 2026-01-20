@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { Heart } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { useFavorites } from '@/composables/useFavorites'
 import { useUser } from '@/composables/useUser'
 
 const props = defineProps<{
@@ -16,7 +15,6 @@ const emit = defineEmits<{
 }>()
 
 const { isAuthenticated } = useUser()
-const { toggleProductFavorite } = useFavorites()
 
 const buttonSize = computed(() => {
   switch (props.size) {

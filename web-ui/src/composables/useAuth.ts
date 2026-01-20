@@ -31,11 +31,11 @@ export function useAuth() {
     // stop WebSocket connect
     wsService.stop()
 
-    // Redirect to login if using router
+    // Redirect to admin login
     if (router) {
-      router.push('/login')
+      router.push('/admin/login')
     } else {
-      window.location.href = '/login'
+      window.location.href = '/admin/login'
     }
   }
 

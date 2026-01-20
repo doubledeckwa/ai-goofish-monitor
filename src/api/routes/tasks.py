@@ -54,15 +54,23 @@ async def generate_task(
     service: TaskService = Depends(get_task_service),
 ):
     """use AI Generate analysis criteria and create new tasks"""
-    print(f"receive AI Task generation request: {req.task_name}")
+    print(f"receive AI Task generation request: {req.task_name} (type: {req.task_type})")
 
     try:
-        # 1. Generate unique file names
-        safe_keyword = "".join(
-            c for c in req.keyword.lower().replace(' ', '_')
-            if c.isalnum() or c in "_-"
-        ).rstrip()
-        output_filename = f"prompts/{safe_keyword}_criteria.txt"
+        # 1. Generate unique file names based on task type
+        if req.task_type == "seller_monitoring":
+            if not req.seller_id:
+                raise HTTPException(status_code=400, detail="seller_id is required for seller_monitoring tasks")
+            safe_identifier = f"seller_{req.seller_id}"
+        else:
+            if not req.keyword:
+                raise HTTPException(status_code=400, detail="keyword is required for keyword_search tasks")
+            safe_identifier = "".join(
+                c for c in req.keyword.lower().replace(' ', '_')
+                if c.isalnum() or c in "_-"
+            ).rstrip()
+        
+        output_filename = f"prompts/{safe_identifier}_criteria.txt"
         print(f"Generated file path: {output_filename}")
 
         # 2. call AI Generate analysis criteria
@@ -93,9 +101,12 @@ async def generate_task(
         task_create = TaskCreate(
             task_name=req.task_name,
             enabled=True,
+            task_type=req.task_type,
             keyword=req.keyword,
+            seller_id=req.seller_id,
             description=req.description,
             max_pages=req.max_pages,
+            max_products_per_run=req.max_products_per_run,
             personal_only=req.personal_only,
             min_price=req.min_price,
             max_price=req.max_price,

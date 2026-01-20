@@ -4,9 +4,11 @@ import { Search, X, Filter } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
-const props = defineProps<{
-  modelValue: string
-}>()
+const props = withDefaults(defineProps<{
+  modelValue?: string
+}>(), {
+  modelValue: ''
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -20,7 +22,7 @@ watch(searchQuery, (newValue) => {
 })
 
 watch(() => props.modelValue, (newValue) => {
-  searchQuery.value = newValue
+  searchQuery.value = newValue || ''
 })
 
 function handleSearch() {

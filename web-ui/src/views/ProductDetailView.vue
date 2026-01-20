@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import FavoriteButton from '@/components/marketplace/FavoriteButton.vue'
 import { useProductDetail } from '@/composables/useMarketplace'
-import { useFavorites } from '@/composables/useFavorites'
 
 const route = useRoute()
 const router = useRouter()
 const { product, isLoading, error, loadProduct } = useProductDetail()
-const { toggleProductFavorite } = useFavorites()
 
 const productId = computed(() => route.params.id as string)
 
@@ -28,7 +26,6 @@ const images = computed(() => {
 const price = computed(() => product.value?.['Product information']['Current selling price'])
 const originalPrice = computed(() => product.value?.['Product information']['Product original price'])
 const title = computed(() => product.value?.['Product information']['Product title'])
-const sellerName = computed(() => product.value?.['Seller information']['Seller nickname'])
 const productLink = computed(() => product.value?.['Product information']['Product link'])
 const publishTime = computed(() => product.value?.['Product information']['Release time'])
 const views = computed(() => product.value?.['Product information']['Views'])
