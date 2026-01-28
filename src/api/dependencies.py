@@ -3,6 +3,7 @@ FastAPI dependency injection
 Provides creation and management of service instances
 """
 from fastapi import Depends
+from typing import Optional
 from src.services.task_service import TaskService
 from src.services.notification_service import NotificationService
 from src.services.ai_service import AIAnalysisService
@@ -17,6 +18,30 @@ from src.infrastructure.config.settings import notification_settings
 
 # overall situation ProcessService instance (will be in app.py Medium settings）
 _process_service_instance = None
+
+
+def get_current_user_optional(token: Optional[str] = None):
+    """Get current user from optional token"""
+    if not token:
+        return None
+    user_service = UserService()
+    return user_service.get_current_user(token)
+
+
+def get_current_user_required(token: str):
+    """Get current user from required token"""
+    user_service = UserService()
+    user = user_service.get_current_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return user
+
+
+# Import UserService for auth functionality
+try:
+    from src.services.user_service import UserService
+except ImportError:
+    UserService = None
 
 
 def set_process_service(service: ProcessService):

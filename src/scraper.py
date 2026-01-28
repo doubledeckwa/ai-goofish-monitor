@@ -1096,7 +1096,7 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                                 except PlaywrightTimeoutError:
                                     log_time("Regional filtering submission timed out, continue execution。")
                             else:
-                                print("LOG: Area not found pop-up window "ViewXX"Baby" button，Skip submission。")
+                                print("LOG: Area not found pop-up window \"ViewXX\\\"Baby\\\" button,FF0CSkip submission。")
                         else:
                             print("LOG: Region filter trigger not found。")
                     except PlaywrightTimeoutError:
