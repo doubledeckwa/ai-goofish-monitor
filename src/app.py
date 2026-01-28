@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts, public, users
+from src.api.routes import tasks, logs, settings, prompts, results, login_state, websocket, accounts, public, users, feature_toggles
 from src.api.dependencies import set_process_service
 from src.services.task_service import TaskService
 from src.services.process_service import ProcessService
@@ -72,6 +72,7 @@ app.include_router(results.router)
 app.include_router(login_state.router)
 app.include_router(websocket.router)
 app.include_router(accounts.router)
+app.include_router(feature_toggles.router)
 
 # Mount static files
 # Old static files directory (for screenshots etc.）

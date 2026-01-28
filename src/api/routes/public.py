@@ -15,6 +15,7 @@ from src.services.favorite_service import FavoriteService
 from src.services.task_service import TaskService
 from src.api.dependencies import get_task_service
 from src.infrastructure.persistence.json_task_repository import JsonTaskRepository
+from src.infrastructure.config.feature_toggles import feature_toggle_manager, FeatureToggle
 
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -165,6 +166,12 @@ async def get_product(
 @router.post("/register", response_model=TokenResponse)
 async def register(user_request: UserRegisterRequest):
     """Register new user"""
+    if not feature_toggle_manager.is_enabled(FeatureToggle.USER_REGISTRATION):
+        raise HTTPException(
+            status_code=503, 
+            detail="User registration is temporarily disabled"
+        )
+    
     try:
         user_create = UserCreate(
             username=user_request.username,
@@ -180,6 +187,12 @@ async def register(user_request: UserRegisterRequest):
 @router.post("/login", response_model=TokenResponse)
 async def login(user_request: UserLogin):
     """Login user"""
+    if not feature_toggle_manager.is_enabled(FeatureToggle.USER_LOGIN):
+        raise HTTPException(
+            status_code=503,
+            detail="User authentication is temporarily disabled"
+        )
+    
     user_service = UserService()
     result = await user_service.login(user_request)
     if not result:

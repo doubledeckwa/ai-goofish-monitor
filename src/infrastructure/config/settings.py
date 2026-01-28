@@ -20,7 +20,7 @@ def _env_field(default, env_name: str, **kwargs):
 
 
 if _USING_PYDANTIC_SETTINGS:
-    class _EnvSettings(BaseSettings):
+    class EnvSettings(BaseSettings):
         model_config = SettingsConfigDict(
             env_file=".env",
             env_file_encoding="utf-8",
@@ -28,7 +28,7 @@ if _USING_PYDANTIC_SETTINGS:
             protected_namespaces=(),
         )
 else:
-    class _EnvSettings(BaseSettings):
+    class EnvSettings(BaseSettings):
         class Config:
             env_file = ".env"
             env_file_encoding = "utf-8"
@@ -36,7 +36,7 @@ else:
             protected_namespaces = ()
 
 
-class AISettings(_EnvSettings):
+class AISettings(EnvSettings):
     """AIModel configuration"""
     api_key: Optional[str] = _env_field(None, "OPENAI_API_KEY")
     base_url: str = _env_field("", "OPENAI_BASE_URL")
@@ -52,7 +52,7 @@ class AISettings(_EnvSettings):
         return bool(self.base_url and self.model_name)
 
 
-class NotificationSettings(_EnvSettings):
+class NotificationSettings(EnvSettings):
     """Notification service configuration"""
     ntfy_topic_url: Optional[str] = _env_field(None, "NTFY_TOPIC_URL")
     gotify_url: Optional[str] = _env_field(None, "GOTIFY_URL")
@@ -81,7 +81,7 @@ class NotificationSettings(_EnvSettings):
         ])
 
 
-class ScraperSettings(_EnvSettings):
+class ScraperSettings(EnvSettings):
     """Crawler related configuration"""
     run_headless: bool = _env_field(True, "RUN_HEADLESS")
     login_is_edge: bool = _env_field(False, "LOGIN_IS_EDGE")
@@ -89,7 +89,42 @@ class ScraperSettings(_EnvSettings):
     state_file: str = _env_field("xianyu_state.json", "STATE_FILE")
 
 
-class AppSettings(_EnvSettings):
+class FeatureSettings(EnvSettings):
+    """Feature toggle settings"""
+    # User Management
+    user_registration_enabled: bool = _env_field(True, "ENABLE_USER_REGISTRATION")
+    user_login_enabled: bool = _env_field(True, "ENABLE_USER_LOGIN")
+    
+    # AI Features  
+    ai_analysis_enabled: bool = _env_field(True, "ENABLE_AI_ANALYSIS")
+    ai_image_analysis_enabled: bool = _env_field(True, "ENABLE_AI_IMAGE_ANALYSIS")
+    
+    # Scraper Features
+    advanced_blocking_enabled: bool = _env_field(False, "ENABLE_ADVANCED_BLOCKING")
+    dynamic_rotation_enabled: bool = _env_field(False, "ENABLE_DYNAMIC_ROTATION")
+    
+    # Marketplace Features
+    favorites_enabled: bool = _env_field(True, "ENABLE_FAVORITES_SYSTEM")
+
+
+class ImageSettings(EnvSettings):
+    """Image processing configuration"""
+    max_images_for_ai: int = _env_field(3, "MAX_IMAGES_FOR_AI")
+    download_all_images: bool = _env_field(True, "DOWNLOAD_ALL_IMAGES")
+    image_quality: str = _env_field("high", "IMAGE_QUALITY")  # low, medium, high
+    image_concurrent_downloads: int = _env_field(5, "IMAGE_CONCURRENT_DOWNLOADS")
+    image_timeout_seconds: int = _env_field(20, "IMAGE_TIMEOUT_SECONDS")
+    
+    # Storage settings
+    image_format: str = _env_field("original", "IMAGE_FORMAT")  # original, jpeg, webp
+    image_max_size_mb: int = _env_field(10, "IMAGE_MAX_SIZE_MB")
+    
+    def get_ai_image_limit(self) -> int:
+        """Get configurable AI image limit"""
+        return self.max_images_for_ai
+
+
+class AppSettings(EnvSettings):
     """Apply main configuration"""
     server_port: int = _env_field(8000, "SERVER_PORT")
     web_username: str = _env_field("admin", "WEB_USERNAME")
@@ -119,7 +154,7 @@ def get_settings() -> AppSettings:
 
 def reload_settings() -> None:
     """Reload global configuration instance"""
-    global _settings_instance, settings, ai_settings, notification_settings, scraper_settings
+    global _settings_instance, settings, ai_settings, notification_settings, scraper_settings, feature_settings, image_settings
     from dotenv import load_dotenv
     from src.infrastructure.config.env_manager import env_manager
 
@@ -129,6 +164,8 @@ def reload_settings() -> None:
     ai_settings = AISettings()
     notification_settings = NotificationSettings()
     scraper_settings = ScraperSettings()
+    feature_settings = FeatureSettings()
+    image_settings = ImageSettings()
 
 
 # Export configuration instances for easy access
@@ -136,3 +173,5 @@ settings = get_settings()
 ai_settings = AISettings()
 notification_settings = NotificationSettings()
 scraper_settings = ScraperSettings()
+feature_settings = FeatureSettings()
+image_settings = ImageSettings()

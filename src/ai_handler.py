@@ -39,6 +39,7 @@ from src.config import (
     ENABLE_RESPONSE_FORMAT,
     client,
 )
+from src.infrastructure.config.settings import image_settings
 from src.utils import convert_goofish_link, retry_on_failure
 
 
@@ -71,7 +72,117 @@ async def _download_single_image(url, save_path):
     return save_path
 
 
-async def download_all_images(product_id, image_urls, task_name="default"):
+async def download_all_images(product_id, image_urls, task_name="default", max_concurrent=None):
+    """Download all images with concurrent processing"""
+    if not image_urls:
+        return []
+    
+    # Limit images based on settings
+    if not image_settings.download_all_images:
+        image_urls = image_urls[:image_settings.get_ai_image_limit()]
+    
+    max_concurrent = max_concurrent or image_settings.image_concurrent_downloads
+    
+    # Create separate image directories for each task
+    task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
+    os.makedirs(task_image_dir, exist_ok=True)
+
+    urls = [url.strip() for url in image_urls if url.strip().startswith('http')]
+    if not urls:
+        return []
+
+    # Create semaphore to limit concurrent downloads
+    import asyncio
+    semaphore = asyncio.Semaphore(max_concurrent)
+    
+    async def download_with_semaphore(url, index):
+        async with semaphore:
+            return await _download_single_image_enhanced(url, index, product_id, task_name)
+    
+    # Create download tasks
+    tasks = [
+        download_with_semaphore(url, i) 
+        for i, url in enumerate(urls)
+    ]
+    
+    # Execute concurrently
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Filter successful downloads
+    saved_paths = []
+    for result in results:
+        if isinstance(result, str):  # Success
+            saved_paths.append(result)
+        elif isinstance(result, Exception):
+            safe_print(f"Download failed: {result}")
+    
+    return saved_paths
+
+
+async def _download_single_image_enhanced(url, index, product_id, task_name):
+    """Enhanced single image download with better error handling"""
+    task_image_dir = os.path.join(IMAGE_SAVE_DIR, f"{TASK_IMAGE_DIR_PREFIX}{task_name}")
+    os.makedirs(task_image_dir, exist_ok=True)
+    
+    # Generate filename with quality and format considerations
+    file_name = f"product_{product_id}_{index + 1}_{url.split('/')[-1].split('?')[0]}"
+    file_name = re.sub(r'[\\/*?:"<>|]', "", file_name)
+    
+    # Apply format conversion if needed
+    if image_settings.image_format != "original":
+        file_name = os.path.splitext(file_name)[0] + f".{image_settings.image_format}"
+    elif not os.path.splitext(file_name)[1]:
+        file_name += ".jpg"
+    
+    save_path = os.path.join(task_image_dir, file_name)
+    
+    if os.path.exists(save_path):
+        return save_path
+    
+    try:
+        # Enhanced download with timeout and size limits
+        loop = asyncio.get_running_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: requests.get(
+                url, 
+                headers=IMAGE_DOWNLOAD_HEADERS, 
+                timeout=image_settings.image_timeout_seconds,
+                stream=True
+            )
+        )
+        response.raise_for_status()
+        
+        # Check content length
+        content_length = response.headers.get('content-length')
+        if content_length and int(content_length) > image_settings.image_max_size_mb * 1024 * 1024:
+            safe_print(f"Image too large: {content_length} bytes, skipping")
+            return None
+        
+        # Download with size check
+        downloaded_size = 0
+        max_size = image_settings.image_max_size_mb * 1024 * 1024
+        
+        with open(save_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                downloaded_size += len(chunk)
+                if downloaded_size > max_size:
+                    os.remove(save_path)
+                    safe_print(f"Image exceeded size limit during download: {downloaded_size} bytes")
+                    return None
+                f.write(chunk)
+        
+        return save_path
+        
+    except Exception as e:
+        if os.path.exists(save_path):
+            os.remove(save_path)
+        safe_print(f"Failed to download image {url}: {e}")
+        return None
+
+
+# Keep original function for backward compatibility
+async def download_all_images_legacy(product_id, image_urls, task_name="default"):
     """Download all images of a product asynchronously. Skip if image already exists。Support task isolation。"""
     if not image_urls:
         return []

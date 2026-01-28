@@ -43,10 +43,224 @@ from src.utils import (
     log_time,
 )
 from src.rotation import RotationPool, load_state_files, parse_proxy_pool, RotationItem
+from src.infrastructure.config.settings import feature_settings
 
 
 class RiskControlError(Exception):
     pass
+
+
+# Enhanced anti-blocking detection patterns
+BLOCKING_SELECTORS = [
+    # Existing patterns
+    "div.baxia-dialog-mask",
+    "div.J_MIDDLEWARE_FRAME_WIDGET",
+    
+    # New common blocking patterns
+    ".ant-modal-root",
+    ".verify-modal", 
+    "[class*='verify']",
+    "[class*='captcha']",
+    "[class*='verification']",
+    "[style*='position: fixed'][style*='z-index']",
+    "iframe[src*='captcha']",
+    "div[id*='popup']",
+    "div[class*='overlay']",
+    "div[role='dialog']",
+    ".modal-backdrop",
+    ".ant-modal-wrap"
+]
+
+# Enhanced anti-detection script for better fingerprint evasion
+ENHANCED_ANTI_DETECTION_SCRIPT = """
+// Remove webdriver traces
+delete navigator.__proto__.webdriver;
+Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+
+// Realistic plugin simulation
+Object.defineProperty(navigator, 'plugins', {
+    get: () => [
+        {name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format'},
+        {name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: ''},
+        {name: 'Native Client', filename: 'internal-nacl-plugin', description: ''}
+    ]
+});
+
+// Enhanced permissions handling
+Object.defineProperty(navigator, 'permissions', {
+    get: () => ({
+        query: (params) => {
+            const permissions = {
+                'notifications': {state: Notification.permission},
+                'geolocation': {state: 'prompt'},
+                'camera': {state: 'prompt'},
+                'microphone': {state: 'prompt'}
+            };
+            return Promise.resolve(permissions[params.name] || {state: 'denied'});
+        }
+    })
+});
+
+// Mobile device emulation improvements
+Object.defineProperty(screen, 'width', {get: () => 412});
+Object.defineProperty(screen, 'height', {get: () => 915});
+Object.defineProperty(screen, 'availWidth', {get: () => 412});
+Object.defineProperty(screen, 'availHeight', {get: () => 815});
+
+// Anti-fingerprinting
+Object.defineProperty(navigator, 'hardwareConcurrency', {get: () => 8});
+Object.defineProperty(navigator, 'deviceMemory', {get: () => 8});
+Object.defineProperty(navigator, 'maxTouchPoints', {get: () => 5});
+
+// Language simulation
+Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en-US', 'en']});
+
+// Chrome object for authenticity
+window.chrome = {
+    runtime: {},
+    loadTimes: function() { return {}; },
+    csi: function() { return {}; },
+    app: {}
+};
+
+// Canvas fingerprint randomization
+if (typeof HTMLCanvasElement !== 'undefined') {
+    const originalToDataURL = HTMLCanvasElement.prototype.toDataURL;
+    HTMLCanvasElement.prototype.toDataURL = function(...args) {
+        // Add slight noise to canvas data
+        const ctx = this.getContext('2d');
+        if (ctx && Math.random() < 0.1) {  // 10% chance
+            const imageData = ctx.getImageData(0, 0, this.width, this.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                if (Math.random() < 0.001) {
+                    data[i] = Math.min(255, data[i] + Math.random() * 2 - 1);
+                    data[i + 1] = Math.min(255, data[i + 1] + Math.random() * 2 - 1);
+                    data[i + 2] = Math.min(255, data[i + 2] + Math.random() * 2 - 1);
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+        return originalToDataURL.apply(this, args);
+    };
+}
+"""
+
+
+async def detect_blocking_elements(page):
+    """Detect blocking elements dynamically"""
+    return await page.evaluate("""
+        () => {
+            const elements = document.querySelectorAll('*');
+            const blockers = [];
+            elements.forEach(el => {
+                const style = window.getComputedStyle(el);
+                const rect = el.getBoundingClientRect();
+                
+                // Check for overlay characteristics
+                if (style.position === 'fixed' && 
+                    parseInt(style.zIndex) > 1000 &&
+                    rect.width > 200 && rect.height > 100 &&
+                    style.display !== 'none') {
+                    
+                    // Try to generate selector for this element
+                    let selector = '';
+                    if (el.id) {
+                        selector = `#${el.id}`;
+                    } else if (el.className) {
+                        selector = `.${el.className.split(' ').join('.')}`;
+                    } else {
+                        selector = el.tagName.toLowerCase();
+                    }
+                    
+                    blockers.push({
+                        selector: selector,
+                        zIndex: style.zIndex,
+                        visible: style.visibility !== 'hidden',
+                        width: rect.width,
+                        height: rect.height
+                    });
+                }
+            });
+            return blockers;
+        }
+    """)
+
+
+async def remove_blocking_elements(page, aggressive=False):
+    """Remove blocking elements with intelligent detection"""
+    removed_count = 0
+    
+    # 1. Check known blocking selectors first
+    for selector in BLOCKING_SELECTORS:
+        try:
+            element = page.locator(selector)
+            if await element.count() > 0:
+                # Try to find close button first
+                close_btn = element.locator('[class*="close"], [aria-label*="close"], [title*="close"]')
+                if await close_btn.count() > 0:
+                    await close_btn.click()
+                    print(f"Clicked close button for: {selector}")
+                else:
+                    # Remove entire element if no close button
+                    await element.evaluate("el => el.remove()")
+                    print(f"Removed blocking element: {selector}")
+                removed_count += 1
+        except Exception as e:
+            if aggressive:
+                # Fallback: force removal via JavaScript
+                await page.evaluate(f"""
+                    try {{
+                        document.querySelector('{selector}')?.remove();
+                    }} catch(e) {{
+                        // Ignore errors during removal
+                    }}
+                """)
+                removed_count += 1
+    
+    # 2. Dynamic detection for unknown blocking elements
+    if feature_settings.advanced_blocking_enabled:
+        try:
+            blocking_elements = await detect_blocking_elements(page)
+            for blocker in blocking_elements:
+                selector = blocker['selector']
+                try:
+                    element = page.locator(selector)
+                    if await element.count() > 0:
+                        # Try click close button first
+                        close_btn = element.locator('[class*="close"], [aria-label*="close"], [title*="close"]')
+                        if await close_btn.count() > 0:
+                            await close_btn.click()
+                        else:
+                            await element.evaluate("el => el.remove()")
+                        
+                        print(f"Removed dynamically detected blocker: {selector} (z-index: {blocker['zIndex']})")
+                        removed_count += 1
+                except Exception as e:
+                    print(f"Failed to remove dynamic blocker: {e}")
+        except Exception as e:
+            print(f"Dynamic blocking detection failed: {e}")
+    
+    return removed_count
+
+
+def _as_bool(value, default: bool = False) -> bool:
+    """Convert value to boolean"""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _as_int(value, default: int) -> int:
+    """Convert value to integer"""
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _as_bool(value, default: bool = False) -> bool:
@@ -682,29 +896,33 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
             context_kwargs = _clean_kwargs(context_kwargs)
             context = await browser.new_context(storage_state=storage_state_arg, **context_kwargs)
 
-            # Enhanced anti-detection script (emulates real mobile devices）
-            await context.add_init_script("""
-                // Removewebdriverlogo
-                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            # Enhanced anti-detection script
+            if feature_settings.advanced_blocking_enabled:
+                await context.add_init_script(ENHANCED_ANTI_DETECTION_SCRIPT)
+            else:
+                # Fallback to original script for compatibility
+                await context.add_init_script("""
+                    // Removewebdriverlogo
+                    Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
 
-                // Simulates real mobile devicesnavigatorproperty
-                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
-                Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en-US', 'en']});
+                    // Simulates real mobile devicesnavigatorproperty
+                    Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+                    Object.defineProperty(navigator, 'languages', {get: () => ['zh-CN', 'zh', 'en-US', 'en']});
 
-                // Add tochromeobject
-                window.chrome = {runtime: {}, loadTimes: function() {}, csi: function() {}};
+                    // Add tochromeobject
+                    window.chrome = {runtime: {}, loadTimes: function() {}, csi: function() {}};
 
-                // Analog touch support
-                Object.defineProperty(navigator, 'maxTouchPoints', {get: () => 5});
+                    // Analog touch support
+                    Object.defineProperty(navigator, 'maxTouchPoints', {get: () => 5});
 
-                // coverpermissionsQuery (avoid exposing automation）
-                const originalQuery = window.navigator.permissions.query;
-                window.navigator.permissions.query = (parameters) => (
-                    parameters.name === 'notifications' ?
-                        Promise.resolve({state: Notification.permission}) :
-                        originalQuery(parameters)
-                );
-            """)
+                    // coverpermissionsQuery (avoid exposing automation）
+                    const originalQuery = window.navigator.permissions.query;
+                    window.navigator.permissions.query = (parameters) => (
+                        parameters.name === 'notifications' ?
+                            Promise.resolve({state: Notification.permission}) :
+                            originalQuery(parameters)
+                    );
+                """)
 
             page = await context.new_page()
 
@@ -738,42 +956,45 @@ async def scrape_xianyu(task_config: dict, debug_limit: int = 0):
                 log_time("[Climb backward] Simulate user viewing page...")
                 await random_sleep(1, 3)
 
-                # --- New: Check if there is a verification popup ---
-                baxia_dialog = page.locator("div.baxia-dialog-mask")
-                middleware_widget = page.locator("div.J_MIDDLEWARE_FRAME_WIDGET")
-                try:
-                    # Wait for the pop-up window to appear2Appears within seconds. if appears，then execute the code within the block。
-                    await baxia_dialog.wait_for(state='visible', timeout=2000)
-                    print("\n==================== CRITICAL BLOCK DETECTED ====================")
-                    print("Xianyu anti-crawler verification pop-up window detected (baxia-dialog)，Unable to continue operation。")
-                    print("This is usually because the operation is too frequent or is recognized as a robot。")
-                    print("suggestion：")
-                    print("1. Stop the script for a while and try again。")
-                    print("2. (recommend) exist .env Set in file RUN_HEADLESS=false，Run in non-headless mode, which helps bypass detection。")
-                    print(f"Task '{keyword}' will abort here。")
-                    print("===================================================================")
-                    raise RiskControlError("baxia-dialog")
-                except PlaywrightTimeoutError:
-                    # 2The pop-up window did not appear within seconds. This is normal.，Continue execution
-                    pass
+                # --- Enhanced blocking detection and removal ---
+                if feature_settings.advanced_blocking_enabled:
+                    # Use advanced blocking detection
+                    removed_count = await remove_blocking_elements(page, aggressive=True)
+                    if removed_count > 0:
+                        print(f"[Advanced Blocking] Removed {removed_count} blocking elements")
+                else:
+                    # Fallback to original detection for compatibility
+                    baxia_dialog = page.locator("div.baxia-dialog-mask")
+                    middleware_widget = page.locator("div.J_MIDDLEWARE_FRAME_WIDGET")
+                    try:
+                        await baxia_dialog.wait_for(state='visible', timeout=2000)
+                        print("\n==================== CRITICAL BLOCK DETECTED ====================")
+                        print("Xianyu anti-crawler verification pop-up window detected (baxia-dialog)，Unable to continue operation。")
+                        print("This is usually because the operation is too frequent or is recognized as a robot。")
+                        print("suggestion：")
+                        print("1. Stop the script for a while and try again。")
+                        print("2. (recommend) exist .env Set in file RUN_HEADLESS=false，Run in non-headless mode, which helps bypass detection。")
+                        print(f"Task '{keyword}' will abort here。")
+                        print("===================================================================")
+                        raise RiskControlError("baxia-dialog")
+                    except PlaywrightTimeoutError:
+                        pass
 
-                # Check if there isJ_MIDDLEWARE_FRAME_WIDGETCovering layer
-                try:
-                    await middleware_widget.wait_for(state='visible', timeout=2000)
-                    print("\n==================== CRITICAL BLOCK DETECTED ====================")
-                    print("Xianyu anti-crawler verification pop-up window detected (J_MIDDLEWARE_FRAME_WIDGET)，Unable to continue operation。")
-                    print("This is usually because the operation is too frequent or is recognized as a robot。")
-                    print("suggestion：")
-                    print("1. Stop the script for a while and try again。")
-                    print("2. (recommend) Update the login status file to ensure the login status is valid。")
-                    print("3. Reduce the frequency of task execution to avoid being recognized as a robot。")
-                    print(f"Task '{keyword}' will abort here。")
-                    print("===================================================================")
-                    raise RiskControlError("J_MIDDLEWARE_FRAME_WIDGET")
-                except PlaywrightTimeoutError:
-                    # 2The pop-up window did not appear within seconds. This is normal.，Continue execution
-                    pass
-                # --- End new addition ---
+                    try:
+                        await middleware_widget.wait_for(state='visible', timeout=2000)
+                        print("\n==================== CRITICAL BLOCK DETECTED ====================")
+                        print("Xianyu anti-crawler verification pop-up window detected (J_MIDDLEWARE_FRAME_WIDGET)，Unable to continue operation。")
+                        print("This is usually because the operation is too frequent or is recognized as a robot。")
+                        print("suggestion：")
+                        print("1. Stop the script for a while and try again。")
+                        print("2. (recommend) Update the login status file to ensure the login status is valid。")
+                        print("3. Reduce the frequency of task execution to avoid being recognized as a robot。")
+                        print(f"Task '{keyword}' will abort here。")
+                        print("===================================================================")
+                        raise RiskControlError("J_MIDDLEWARE_FRAME_WIDGET")
+                    except PlaywrightTimeoutError:
+                        pass
+                # --- End enhanced blocking detection ---
 
                 try:
                     await page.click("div[class*='closeIconBg']", timeout=3000)
